@@ -137,9 +137,12 @@ jobs:
     - name: Build binary
       run: |
         mkdir -p dist
+        VERSION="${{ github.ref_name }}"
+        COMMIT="${{ github.sha }}"
+        DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
         CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build \
           -a -installsuffix cgo \
-          -ldflags="-s -w -X main.version=${{ github.ref_name }} -X main.commit=${{ github.sha }} -X main.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+          -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE}" \
           -o dist/golanggraph-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.ext }} \
           ./cmd/golanggraph
     
@@ -180,6 +183,10 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     
+    - name: Get current date
+      id: date
+      run: echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
+    
     - name: Extract metadata
       id: meta
       uses: docker/metadata-action@v5
@@ -206,7 +213,7 @@ jobs:
         build-args: |
           VERSION=${{ github.ref_name }}
           COMMIT=${{ github.sha }}
-          DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          BUILD_DATE=${{ steps.date.outputs.date }}
 
   docs:
     name: Deploy Documentation
