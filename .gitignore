@@ -11,6 +11,7 @@ bin/
 
 # Output of the go coverage tool
 *.out
+coverage.html
 
 # Go workspace file
 go.work
@@ -34,3 +35,22 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Documentation site (generated)
+site/
+.cache/
+
+# Log files
+*.log
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Docker volumes and data
+docker-data/
+
+# Large test data files
+testdata/*.bin
+testdata/*.db

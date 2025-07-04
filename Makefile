@@ -42,7 +42,8 @@ install: ## Install dependencies
 .PHONY: build
 build: ## Build the binary
 	@echo "$(BLUE)Building $(BINARY_NAME)...$(NC)"
-	go build -o bin/$(BINARY_NAME) $(MAIN_PATH)
+	@mkdir -p bin/
+	CGO_ENABLED=0 go build -ldflags="-w -s" -trimpath -o bin/$(BINARY_NAME) $(MAIN_PATH)
 
 .PHONY: build-all
 build-all: ## Build all binaries and examples
