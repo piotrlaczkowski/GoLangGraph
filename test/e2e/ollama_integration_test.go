@@ -295,7 +295,7 @@ func (suite *OllamaE2ETestSuite) TestGraphExecution() {
 
 	// Add input processing node
 	inputNode := graph.AddNode("input", "Input Processing", func(ctx context.Context, state *core.BaseState) (*core.BaseState, error) {
-		input := state.Get("input")
+		input, _ := state.Get("input")
 		processed := fmt.Sprintf("Processed: %v", input)
 		state.Set("processed_input", processed)
 		return state, nil
@@ -304,7 +304,7 @@ func (suite *OllamaE2ETestSuite) TestGraphExecution() {
 
 	// Add LLM processing node
 	llmNode := graph.AddNode("llm", "LLM Processing", func(ctx context.Context, state *core.BaseState) (*core.BaseState, error) {
-		processedInput := state.Get("processed_input")
+		processedInput, _ := state.Get("processed_input")
 
 		// Create completion request
 		request := llm.CompletionRequest{
@@ -333,7 +333,7 @@ func (suite *OllamaE2ETestSuite) TestGraphExecution() {
 
 	// Add output processing node
 	outputNode := graph.AddNode("output", "Output Processing", func(ctx context.Context, state *core.BaseState) (*core.BaseState, error) {
-		llmResponse := state.Get("llm_response")
+		llmResponse, _ := state.Get("llm_response")
 		finalOutput := fmt.Sprintf("Final: %v", llmResponse)
 		state.Set("final_output", finalOutput)
 		return state, nil
@@ -356,7 +356,7 @@ func (suite *OllamaE2ETestSuite) TestGraphExecution() {
 	require.NoError(suite.T(), err)
 	require.NotNil(suite.T(), result)
 
-	finalOutput := result.Get("final_output")
+	finalOutput, _ := result.Get("final_output")
 	require.NotNil(suite.T(), finalOutput)
 	suite.T().Logf("Graph Execution Result: %s", finalOutput)
 	assert.Contains(suite.T(), fmt.Sprintf("%v", finalOutput), "Final:")
