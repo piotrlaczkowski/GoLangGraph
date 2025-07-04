@@ -5,249 +5,325 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+  packages: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
   GO_VERSION: '1.21'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  test:
-    name: Test Before Release
+  # Pre-release validation
+  validate:
     runs-on: ubuntu-latest
-    
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_DB: golanggraph
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpass
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-      
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-    
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      is_prerelease: ${{ steps.version.outputs.is_prerelease }}
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ env.GO_VERSION }}
-    
-    - name: Install dependencies
-      run: |
-        go mod download
-        go mod tidy
-    
-    - name: Run tests
-      run: |
-        go test -v -race -coverprofile=coverage.out -covermode=atomic ./pkg/...
-      env:
-        POSTGRES_HOST: localhost
-        POSTGRES_PORT: 5432
-        POSTGRES_DB: golanggraph
-        POSTGRES_USER: testuser
-        POSTGRES_PASSWORD: testpass
-        REDIS_HOST: localhost
-        REDIS_PORT: 6379
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-  build-and-release:
-    name: Build and Release
-    runs-on: ubuntu-latest
-    needs: test
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ env.GO_VERSION }}
-    
-    - name: Install dependencies
-      run: |
-        go mod download
-        go mod tidy
-    
-    - name: Get version from tag
-      id: get_version
-      run: |
-        if [[ $GITHUB_REF == refs/tags/* ]]; then
-          VERSION=${GITHUB_REF#refs/tags/}
-        else
-          VERSION=dev-$(git rev-parse --short HEAD)
-        fi
-        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-        echo "Building version: $VERSION"
-    
-    - name: Build release binaries
-      run: |
-        mkdir -p bin/release
-        
-        # Build for multiple platforms
-        GOOS=linux GOARCH=amd64 go build -ldflags="-X main.version=${{ steps.get_version.outputs.VERSION }}" -o bin/release/golanggraph-linux-amd64 ./cmd/golanggraph
-        GOOS=linux GOARCH=arm64 go build -ldflags="-X main.version=${{ steps.get_version.outputs.VERSION }}" -o bin/release/golanggraph-linux-arm64 ./cmd/golanggraph
-        GOOS=darwin GOARCH=amd64 go build -ldflags="-X main.version=${{ steps.get_version.outputs.VERSION }}" -o bin/release/golanggraph-darwin-amd64 ./cmd/golanggraph
-        GOOS=darwin GOARCH=arm64 go build -ldflags="-X main.version=${{ steps.get_version.outputs.VERSION }}" -o bin/release/golanggraph-darwin-arm64 ./cmd/golanggraph
-        GOOS=windows GOARCH=amd64 go build -ldflags="-X main.version=${{ steps.get_version.outputs.VERSION }}" -o bin/release/golanggraph-windows-amd64.exe ./cmd/golanggraph
-        
-        # Create checksums
-        cd bin/release
-        sha256sum * > checksums.txt
-        cd ../..
-    
-    - name: Create release archives
-      run: |
-        cd bin/release
-        
-        # Create tar.gz for Unix systems
-        tar -czf golanggraph-linux-amd64.tar.gz golanggraph-linux-amd64
-        tar -czf golanggraph-linux-arm64.tar.gz golanggraph-linux-arm64
-        tar -czf golanggraph-darwin-amd64.tar.gz golanggraph-darwin-amd64
-        tar -czf golanggraph-darwin-arm64.tar.gz golanggraph-darwin-arm64
-        
-        # Create zip for Windows
-        zip golanggraph-windows-amd64.zip golanggraph-windows-amd64.exe
-        
-        cd ../..
-    
-    - name: Generate changelog
-      id: changelog
-      run: |
-        # Simple changelog generation
-        if [[ $GITHUB_REF == refs/tags/* ]]; then
-          # Get the previous tag
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-          if [[ -n "$PREV_TAG" ]]; then
-            echo "## Changes since $PREV_TAG" > changelog.md
-            git log --pretty=format:"- %s (%h)" $PREV_TAG..HEAD >> changelog.md
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
           else
-            echo "## Initial Release" > changelog.md
-            echo "First release of GoLangGraph" >> changelog.md
+            VERSION=${GITHUB_REF#refs/tags/}
           fi
-        else
-          echo "## Development Build" > changelog.md
-          echo "Development build from commit $(git rev-parse --short HEAD)" >> changelog.md
-        fi
-        
-        echo "CHANGELOG_FILE=changelog.md" >> $GITHUB_OUTPUT
-    
-    - name: Create GitHub Release
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: ${{ steps.get_version.outputs.VERSION }}
-        name: Release ${{ steps.get_version.outputs.VERSION }}
-        body_path: ${{ steps.changelog.outputs.CHANGELOG_FILE }}
-        draft: false
-        prerelease: false
-        files: |
-          bin/release/golanggraph-linux-amd64.tar.gz
-          bin/release/golanggraph-linux-arm64.tar.gz
-          bin/release/golanggraph-darwin-amd64.tar.gz
-          bin/release/golanggraph-darwin-arm64.tar.gz
-          bin/release/golanggraph-windows-amd64.zip
-          bin/release/checksums.txt
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    
-    - name: Upload artifacts for non-tag builds
-      if: ${{ !startsWith(github.ref, 'refs/tags/') }}
-      uses: actions/upload-artifact@v3
-      with:
-        name: golanggraph-${{ steps.get_version.outputs.VERSION }}
-        path: |
-          bin/release/golanggraph-*
-          bin/release/checksums.txt
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+          # Check if this is a prerelease
+          if [[ $VERSION =~ -[a-zA-Z] ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          fi
 
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run tests
+        run: |
+          go test -v -race ./pkg/...
+
+      - name: Run pre-commit validation
+        uses: pre-commit/action@v3.0.0
+
+  # Build multi-platform binaries
+  build:
+    needs: validate
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, darwin, windows]
+        goarch: [amd64, arm64]
+        exclude:
+          - goos: windows
+            goarch: arm64
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          # Create output directory
+          mkdir -p dist
+          
+          # Set binary name
+          BINARY_NAME="golanggraph"
+          if [ "$GOOS" = "windows" ]; then
+            BINARY_NAME="${BINARY_NAME}.exe"
+          fi
+          
+          # Build binary
+          CGO_ENABLED=0 go build \
+            -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${GITHUB_SHA} -X main.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            -o "dist/${BINARY_NAME}-${GOOS}-${GOARCH}" \
+            ./cmd/golanggraph
+          
+          # Create archive
+          cd dist
+          if [ "$GOOS" = "windows" ]; then
+            zip "${BINARY_NAME}-${VERSION}-${GOOS}-${GOARCH}.zip" "${BINARY_NAME}-${GOOS}-${GOARCH}"
+          else
+            tar -czf "${BINARY_NAME}-${VERSION}-${GOOS}-${GOARCH}.tar.gz" "${BINARY_NAME}-${GOOS}-${GOARCH}"
+          fi
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: binaries-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/
+
+  # Build and push Docker image
   docker:
-    name: Build and Push Docker Image
+    needs: validate
     runs-on: ubuntu-latest
-    needs: test
-    if: startsWith(github.ref, 'refs/tags/')
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-    
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-    
-    - name: Get version from tag
-      id: get_version
-      run: |
-        VERSION=${GITHUB_REF#refs/tags/}
-        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-    
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        platforms: linux/amd64,linux/arm64
-        push: true
-        tags: |
-          golanggraph/golanggraph:latest
-          golanggraph/golanggraph:${{ steps.get_version.outputs.VERSION }}
-        build-args: |
-          VERSION=${{ steps.get_version.outputs.VERSION }}
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-  publish-docs:
-    name: Publish Documentation
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ needs.validate.outputs.version }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ needs.validate.outputs.version }}
+            COMMIT=${{ github.sha }}
+            DATE=${{ github.event.head_commit.timestamp }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Build and deploy documentation
+  documentation:
+    needs: validate
     runs-on: ubuntu-latest
-    needs: test
-    if: startsWith(github.ref, 'refs/tags/')
-    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ env.GO_VERSION }}
-    
-    - name: Install dependencies
-      run: |
-        go mod download
-        go mod tidy
-        go install golang.org/x/tools/cmd/godoc@latest
-    
-    - name: Generate documentation
-      run: |
-        mkdir -p docs/api
-        godoc -html github.com/piotrlaczkowski/golanggraph/pkg/core > docs/api/core.html
-        godoc -html github.com/piotrlaczkowski/golanggraph/pkg/persistence > docs/api/persistence.html
-        godoc -html github.com/piotrlaczkowski/golanggraph/pkg/llm > docs/api/llm.html
-        godoc -html github.com/piotrlaczkowski/golanggraph/pkg/agent > docs/api/agent.html
-        godoc -html github.com/piotrlaczkowski/golanggraph/pkg/tools > docs/api/tools.html
-        godoc -html github.com/piotrlaczkowski/golanggraph/pkg/server > docs/api/server.html
-    
-    - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./docs
-        force_orphan: true 
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          go install golang.org/x/tools/cmd/godoc@latest
+
+      - name: Generate Go documentation
+        run: |
+          mkdir -p docs/api
+          echo "# Go Package Documentation" > docs/api/generated.md
+          echo "" >> docs/api/generated.md
+          echo "Auto-generated for version ${{ needs.validate.outputs.version }}" >> docs/api/generated.md
+          echo "" >> docs/api/generated.md
+          
+          for pkg in $(go list ./pkg/...); do
+            echo "## Package: $pkg" >> docs/api/generated.md
+            echo "" >> docs/api/generated.md
+            echo '```go' >> docs/api/generated.md
+            go doc -all $pkg >> docs/api/generated.md
+            echo '```' >> docs/api/generated.md
+            echo "" >> docs/api/generated.md
+          done
+
+      - name: Update version in documentation
+        run: |
+          # Update version in mkdocs.yml
+          sed -i "s/site_name: GoLangGraph/site_name: GoLangGraph ${{ needs.validate.outputs.version }}/" mkdocs.yml
+          
+          # Update version in documentation
+          find docs -name "*.md" -exec sed -i "s/{{version}}/${{ needs.validate.outputs.version }}/g" {} \;
+
+      - name: Build documentation
+        run: |
+          mkdocs build --strict --verbose
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Upload to GitHub Pages
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: site/
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
+
+  # Create GitHub release
+  release:
+    needs: [validate, build, docker, documentation]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts/
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release-assets
+          find artifacts -name "*.tar.gz" -o -name "*.zip" | xargs -I {} cp {} release-assets/
+          
+          # Generate checksums
+          cd release-assets
+          sha256sum * > checksums.txt
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get the previous tag
+          PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -v "${{ needs.validate.outputs.version }}" | head -n 1)
+          
+          if [ -z "$PREVIOUS_TAG" ]; then
+            PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+          
+          # Generate changelog
+          echo "## What's Changed" > CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          
+          # Get commits since last tag
+          git log ${PREVIOUS_TAG}..${{ needs.validate.outputs.version }} \
+            --pretty=format:"* %s (%h)" \
+            --no-merges >> CHANGELOG.md
+          
+          echo "" >> CHANGELOG.md
+          echo "## Docker Images" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "- \`ghcr.io/${{ github.repository }}:${{ needs.validate.outputs.version }}\`" >> CHANGELOG.md
+          echo "- \`ghcr.io/${{ github.repository }}:latest\`" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "## Documentation" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "- [Documentation Site](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/)" >> CHANGELOG.md
+          
+          # Set output for release notes
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          cat CHANGELOG.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.validate.outputs.version }}
+          name: Release ${{ needs.validate.outputs.version }}
+          body: ${{ steps.changelog.outputs.changelog }}
+          prerelease: ${{ needs.validate.outputs.is_prerelease }}
+          files: |
+            release-assets/*
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Notify on completion
+  notify:
+    needs: [validate, build, docker, documentation, release]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Notify success
+        if: needs.release.result == 'success'
+        run: |
+          echo "🎉 Release ${{ needs.validate.outputs.version }} completed successfully!"
+          echo "📦 Binaries: https://github.com/${{ github.repository }}/releases/tag/${{ needs.validate.outputs.version }}"
+          echo "🐳 Docker: ghcr.io/${{ github.repository }}:${{ needs.validate.outputs.version }}"
+          echo "📚 Documentation: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+
+      - name: Notify failure
+        if: needs.release.result == 'failure'
+        run: |
+          echo "❌ Release ${{ needs.validate.outputs.version }} failed!"
+          echo "Please check the workflow logs for details." 

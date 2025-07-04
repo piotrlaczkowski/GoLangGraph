@@ -1,0 +1,217 @@
+repos:
+  # Go formatting and imports
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: v0.5.1
+    hooks:
+      - id: go-fmt
+        name: Go Format
+        description: Run gofmt on Go source files
+      - id: go-imports
+        name: Go Imports
+        description: Run goimports on Go source files
+      - id: go-vet-mod
+        name: Go Vet
+        description: Run go vet on Go source files
+      - id: go-mod-tidy
+        name: Go Mod Tidy
+        description: Run go mod tidy to ensure go.mod matches source code
+      - id: go-unit-tests
+        name: Go Unit Tests
+        description: Run go test on Go source files
+        args: ["-timeout=30s", "-race", "-short"]
+      - id: go-build-mod
+        name: Go Build
+        description: Run go build on Go source files
+      - id: go-mod-vendor
+        name: Go Mod Vendor
+        description: Run go mod vendor to ensure vendor directory is up to date
+        args: ["-v"]
+      - id: golangci-lint
+        name: golangci-lint
+        description: Run golangci-lint on Go source files
+        args: ["--timeout=5m"]
+
+  # Security scanning
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        name: Detect Secrets
+        description: Scan for secrets in code
+        args: ['--baseline', '.secrets.baseline']
+        exclude: |
+          (?x)^(
+            .*\.lock$|
+            .*\.sum$|
+            .*\.mod$|
+            docs/.*\.md$
+          )$
+
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        name: Trim Trailing Whitespace
+        description: Remove trailing whitespace
+        exclude: |
+          (?x)^(
+            .*\.md$|
+            .*\.txt$
+          )$
+      - id: end-of-file-fixer
+        name: Fix End of Files
+        description: Ensure files end with a newline
+      - id: check-yaml
+        name: Check YAML
+        description: Validate YAML files
+      - id: check-json
+        name: Check JSON
+        description: Validate JSON files
+      - id: check-toml
+        name: Check TOML
+        description: Validate TOML files
+      - id: check-xml
+        name: Check XML
+        description: Validate XML files
+      - id: check-merge-conflict
+        name: Check Merge Conflicts
+        description: Check for merge conflict markers
+      - id: check-case-conflict
+        name: Check Case Conflicts
+        description: Check for case conflicts in filenames
+      - id: check-symlinks
+        name: Check Symlinks
+        description: Check for broken symlinks
+      - id: check-executables-have-shebangs
+        name: Check Executables Have Shebangs
+        description: Ensure executables have shebangs
+      - id: check-shebang-scripts-are-executable
+        name: Check Shebang Scripts Are Executable
+        description: Ensure shebang scripts are executable
+      - id: fix-byte-order-marker
+        name: Fix Byte Order Marker
+        description: Remove byte order markers
+      - id: mixed-line-ending
+        name: Mixed Line Ending
+        description: Check for mixed line endings
+      - id: check-docstring-first
+        name: Check Docstring First
+        description: Check that docstrings come first
+
+  # Dockerfile linting
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint-docker
+        name: Hadolint
+        description: Lint Dockerfile
+        args: ["--ignore", "DL3008", "--ignore", "DL3009"]
+
+  # Markdown linting
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.37.0
+    hooks:
+      - id: markdownlint
+        name: Markdown Lint
+        description: Lint Markdown files
+        args: ["--fix"]
+        exclude: |
+          (?x)^(
+            docs/.*\.md$|
+            CHANGELOG\.md$|
+            .*\.template\.md$
+          )$
+
+  # Commit message linting
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.12.0
+    hooks:
+      - id: commitizen
+        name: Commitizen Check
+        description: Check commit message format
+        stages: [commit-msg]
+
+  # License headers
+  - repo: https://github.com/Lucas-C/pre-commit-hooks
+    rev: v1.5.4
+    hooks:
+      - id: insert-license
+        name: Insert License Header
+        description: Insert license header in Go files
+        files: \.go$
+        args:
+          - --license-filepath
+          - LICENSE_HEADER.txt
+          - --comment-style
+          - //
+
+  # Additional Go-specific checks
+  - repo: local
+    hooks:
+      - id: go-no-replacement
+        name: Go No Replacement
+        description: Ensure go.mod does not contain replace directives
+        entry: bash -c 'if grep -q "replace " go.mod; then echo "go.mod contains replace directive"; exit 1; fi'
+        language: system
+        files: go\.mod$
+        pass_filenames: false
+      
+      - id: go-mod-outdated
+        name: Go Mod Outdated
+        description: Check for outdated Go modules
+        entry: bash -c 'go list -u -m all | grep -E "\[.*\]$" || true'
+        language: system
+        files: go\.mod$
+        pass_filenames: false
+        verbose: true
+      
+      - id: go-generate
+        name: Go Generate
+        description: Run go generate to ensure generated files are up to date
+        entry: go generate ./...
+        language: system
+        files: \.go$
+        pass_filenames: false
+      
+      - id: go-cyclo
+        name: Go Cyclomatic Complexity
+        description: Check cyclomatic complexity
+        entry: bash -c 'which gocyclo > /dev/null || go install github.com/fzipp/gocyclo/cmd/gocyclo@latest; gocyclo -over 15 .'
+        language: system
+        files: \.go$
+        pass_filenames: false
+      
+      - id: go-ineffassign
+        name: Go Ineffassign
+        description: Check for ineffectual assignments
+        entry: bash -c 'which ineffassign > /dev/null || go install github.com/gordonklaus/ineffassign@latest; ineffassign ./...'
+        language: system
+        files: \.go$
+        pass_filenames: false
+      
+      - id: go-misspell
+        name: Go Misspell
+        description: Check for misspellings
+        entry: bash -c 'which misspell > /dev/null || go install github.com/client9/misspell/cmd/misspell@latest; misspell -error .'
+        language: system
+        files: \.go$
+        pass_filenames: false
+
+# Global configuration
+default_stages: [commit]
+fail_fast: false
+minimum_pre_commit_version: 3.0.0
+
+# CI configuration
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+    
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false 

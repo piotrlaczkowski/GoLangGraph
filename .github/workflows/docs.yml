@@ -1,0 +1,201 @@
+name: Documentation
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - 'requirements.txt'
+      - 'pkg/**/*.go'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - 'requirements.txt'
+      - 'pkg/**/*.go'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Build documentation
+  build-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for git plugins
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          cache: true
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Generate Go documentation
+        run: |
+          # Install godoc if not available
+          go install golang.org/x/tools/cmd/godoc@latest
+          
+          # Create API documentation directory
+          mkdir -p docs/api
+          
+          # Generate Go documentation for each package
+          echo "# Go Package Documentation" > docs/api/generated.md
+          echo "" >> docs/api/generated.md
+          echo "This documentation is auto-generated from Go source code." >> docs/api/generated.md
+          echo "" >> docs/api/generated.md
+          
+          # Generate documentation for each package
+          for pkg in $(go list ./pkg/...); do
+            echo "## Package: $pkg" >> docs/api/generated.md
+            echo "" >> docs/api/generated.md
+            echo '```go' >> docs/api/generated.md
+            go doc -all $pkg >> docs/api/generated.md
+            echo '```' >> docs/api/generated.md
+            echo "" >> docs/api/generated.md
+          done
+
+      - name: Build MkDocs
+        run: |
+          mkdocs build --strict --verbose
+
+      - name: Upload documentation artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: documentation
+          path: site/
+          retention-days: 30
+
+      - name: Setup Pages
+        if: github.ref == 'refs/heads/main'
+        uses: actions/configure-pages@v3
+
+      - name: Upload to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: site/
+
+  # Deploy to GitHub Pages
+  deploy-pages:
+    if: github.ref == 'refs/heads/main'
+    needs: build-docs
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
+
+  # Test documentation links
+  test-docs:
+    runs-on: ubuntu-latest
+    needs: build-docs
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download documentation artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: documentation
+          path: site/
+
+      - name: Test documentation links
+        uses: lycheeverse/lychee-action@v1
+        with:
+          args: --verbose --no-progress --exclude-all-private --exclude-mail 'site/**/*.html'
+          fail: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Generate and upload Go documentation
+  godoc:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          cache: true
+
+      - name: Install godoc
+        run: go install golang.org/x/tools/cmd/godoc@latest
+
+      - name: Generate static Go documentation
+        run: |
+          mkdir -p static-godoc
+          
+          # Generate HTML documentation for each package
+          for pkg in $(go list ./pkg/...); do
+            pkg_path=$(echo $pkg | sed 's|github.com/piotrlaczkowski/GoLangGraph/||')
+            mkdir -p "static-godoc/$pkg_path"
+            godoc -html $pkg > "static-godoc/$pkg_path/index.html"
+          done
+          
+          # Create index page
+          cat > static-godoc/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>GoLangGraph - Go Documentation</title>
+              <style>
+                  body { font-family: Arial, sans-serif; margin: 40px; }
+                  h1 { color: #1976d2; }
+                  ul { list-style-type: none; }
+                  li { margin: 10px 0; }
+                  a { color: #1976d2; text-decoration: none; }
+                  a:hover { text-decoration: underline; }
+              </style>
+          </head>
+          <body>
+              <h1>GoLangGraph - Go Documentation</h1>
+              <p>Auto-generated Go package documentation.</p>
+              <ul>
+                  <li><a href="pkg/core/">Core Package</a> - Graph execution engine</li>
+                  <li><a href="pkg/agent/">Agent Package</a> - AI agent implementations</li>
+                  <li><a href="pkg/llm/">LLM Package</a> - Language model providers</li>
+                  <li><a href="pkg/tools/">Tools Package</a> - Tool integrations</li>
+                  <li><a href="pkg/persistence/">Persistence Package</a> - Database integrations</li>
+                  <li><a href="pkg/server/">Server Package</a> - HTTP server</li>
+                  <li><a href="pkg/builder/">Builder Package</a> - Quick builders</li>
+                  <li><a href="pkg/debug/">Debug Package</a> - Debugging tools</li>
+              </ul>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload Go documentation artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: go-documentation
+          path: static-godoc/
+          retention-days: 30 

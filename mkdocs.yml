@@ -1,0 +1,213 @@
+site_name: GoLangGraph
+site_description: A powerful Go framework for building AI agent workflows with graph-based execution
+site_author: GoLangGraph Team
+site_url: https://golanggraph.dev
+
+repo_name: piotrlaczkowski/GoLangGraph
+repo_url: https://github.com/piotrlaczkowski/GoLangGraph
+edit_uri: edit/main/docs/
+
+copyright: Copyright &copy; 2024 GoLangGraph Team
+
+theme:
+  name: material
+  custom_dir: docs/overrides
+  palette:
+    # Palette toggle for automatic mode
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+  
+  font:
+    text: Roboto
+    code: Roboto Mono
+  
+  features:
+    - announce.dismiss
+    - content.action.edit
+    - content.action.view
+    - content.code.annotate
+    - content.code.copy
+    - content.code.select
+    - content.footnote.tooltips
+    - content.tabs.link
+    - content.tooltips
+    - header.autohide
+    - navigation.expand
+    - navigation.footer
+    - navigation.indexes
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.prune
+    - navigation.sections
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+    - toc.integrate
+  
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
+    logo: material/graph-outline
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/piotrlaczkowski/GoLangGraph
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/golanggraph
+    - icon: fontawesome/brands/discord
+      link: https://discord.gg/golanggraph
+  
+  analytics:
+    provider: google
+    property: !ENV GOOGLE_ANALYTICS_KEY
+  
+  version:
+    provider: mike
+    default: stable
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/extra.js
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+      title: On this page
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      normalize_issue_symbols: true
+      repo_url_shorthand: true
+      user: piotrlaczkowski
+      repo: GoLangGraph
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      auto_append:
+        - includes/mkdocs.md
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+      combine_header_slug: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+plugins:
+  - search:
+      separator: '[\s\u200b\-_,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+  - minify:
+      minify_html: true
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: timeago
+  - git-committers:
+      repository: piotrlaczkowski/GoLangGraph
+      branch: main
+  - glightbox
+  - tags:
+      tags_file: tags.md
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Quick Start: getting-started/quick-start.md
+    - Installation: getting-started/installation.md
+    - First Agent: getting-started/first-agent.md
+    - Configuration: getting-started/configuration.md
+  - User Guide:
+    - Core Concepts: user-guide/core-concepts.md
+    - Building Agents: user-guide/building-agents.md
+    - Graph Workflows: user-guide/graph-workflows.md
+    - State Management: user-guide/state-management.md
+    - LLM Integration: user-guide/llm-integration.md
+    - Tools & Extensions: user-guide/tools-extensions.md
+    - Persistence: user-guide/persistence.md
+    - Debugging & Monitoring: user-guide/debugging-monitoring.md
+  - Examples:
+    - Simple Chat Bot: examples/simple-chatbot.md
+    - ReAct Agent: examples/react-agent.md
+    - Multi-Agent Workflows: examples/multi-agent.md
+    - RAG Implementation: examples/rag-implementation.md
+    - Custom Tools: examples/custom-tools.md
+    - Database Integration: examples/database-integration.md
+  - API Reference:
+    - Overview: api/overview.md
+    - Core Package: api/core.md
+    - Agent Package: api/agent.md
+    - LLM Package: api/llm.md
+    - Tools Package: api/tools.md
+    - Persistence Package: api/persistence.md
+    - Server Package: api/server.md
+    - Builder Package: api/builder.md
+    - Debug Package: api/debug.md
+  - Deployment:
+    - Docker: deployment/docker.md
+    - Kubernetes: deployment/kubernetes.md
+    - Cloud Platforms: deployment/cloud.md
+    - Performance Tuning: deployment/performance.md
+  - Development:
+    - Contributing: development/contributing.md
+    - Architecture: development/architecture.md
+    - Testing: development/testing.md
+    - Release Process: development/release-process.md
+  - Community:
+    - Support: community/support.md
+    - FAQ: community/faq.md
+    - Changelog: community/changelog.md
+    - Roadmap: community/roadmap.md
+  - Tags: tags.md 

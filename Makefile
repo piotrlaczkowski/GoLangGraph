@@ -215,18 +215,97 @@ security: ## Run security scan
 		gosec $(PKG_PATH); \
 	fi
 
+##@ Pre-commit
+
+.PHONY: pre-commit-install pre-commit-run pre-commit-update pre-commit-clean
+pre-commit-install: ## Install pre-commit hooks
+	@echo "$(BLUE)Installing pre-commit hooks...$(NC)"
+	@if command -v pre-commit &> /dev/null; then \
+		pre-commit install; \
+		pre-commit install --hook-type commit-msg; \
+		echo "$(GREEN)Pre-commit hooks installed!$(NC)"; \
+	else \
+		echo "$(YELLOW)pre-commit not found. Installing...$(NC)"; \
+		pip install pre-commit; \
+		pre-commit install; \
+		pre-commit install --hook-type commit-msg; \
+		echo "$(GREEN)Pre-commit hooks installed!$(NC)"; \
+	fi
+
+pre-commit-run: ## Run pre-commit hooks on all files
+	@echo "$(BLUE)Running pre-commit hooks on all files...$(NC)"
+	@if command -v pre-commit &> /dev/null; then \
+		pre-commit run --all-files; \
+	else \
+		echo "$(RED)pre-commit not found. Please install: make pre-commit-install$(NC)"; \
+	fi
+
+pre-commit-update: ## Update pre-commit hooks
+	@echo "$(BLUE)Updating pre-commit hooks...$(NC)"
+	@if command -v pre-commit &> /dev/null; then \
+		pre-commit autoupdate; \
+		echo "$(GREEN)Pre-commit hooks updated!$(NC)"; \
+	else \
+		echo "$(RED)pre-commit not found. Please install: make pre-commit-install$(NC)"; \
+	fi
+
+pre-commit-clean: ## Clean pre-commit cache
+	@echo "$(BLUE)Cleaning pre-commit cache...$(NC)"
+	@if command -v pre-commit &> /dev/null; then \
+		pre-commit clean; \
+		echo "$(GREEN)Pre-commit cache cleaned!$(NC)"; \
+	else \
+		echo "$(RED)pre-commit not found. Please install: make pre-commit-install$(NC)"; \
+	fi
+
 ##@ Documentation
 
-.PHONY: docs
-docs: ## Generate documentation
-	@echo "$(BLUE)Generating documentation...$(NC)"
+.PHONY: docs docs-serve docs-build docs-deploy godoc
+docs: ## Generate Go documentation
+	@echo "$(BLUE)Generating Go documentation...$(NC)"
+	@mkdir -p $(DOCS_PATH)/api
+	@go doc -all ./... > $(DOCS_PATH)/api/generated.md
+	@echo "$(GREEN)Go documentation generated in $(DOCS_PATH)/api/generated.md$(NC)"
+
+docs-serve: ## Serve MkDocs documentation locally
+	@echo "$(BLUE)Starting MkDocs development server...$(NC)"
+	@if command -v mkdocs &> /dev/null; then \
+		mkdocs serve --dev-addr=127.0.0.1:8000; \
+	else \
+		echo "$(YELLOW)MkDocs not found. Installing...$(NC)"; \
+		pip install mkdocs-material; \
+		mkdocs serve --dev-addr=127.0.0.1:8000; \
+	fi
+
+docs-build: ## Build MkDocs documentation
+	@echo "$(BLUE)Building MkDocs documentation...$(NC)"
+	@if command -v mkdocs &> /dev/null; then \
+		mkdocs build; \
+	else \
+		echo "$(YELLOW)MkDocs not found. Installing...$(NC)"; \
+		pip install mkdocs-material; \
+		mkdocs build; \
+	fi
+
+docs-deploy: ## Deploy documentation to GitHub Pages
+	@echo "$(BLUE)Deploying documentation to GitHub Pages...$(NC)"
+	@if command -v mkdocs &> /dev/null; then \
+		mkdocs gh-deploy --force; \
+	else \
+		echo "$(YELLOW)MkDocs not found. Installing...$(NC)"; \
+		pip install mkdocs-material; \
+		mkdocs gh-deploy --force; \
+	fi
+
+godoc: ## Start Go documentation server
+	@echo "$(BLUE)Starting Go documentation server...$(NC)"
 	@if command -v godoc &> /dev/null; then \
-		echo "$(GREEN)Starting godoc server at http://localhost:6060$(NC)"; \
+		echo "$(GREEN)Go documentation available at http://localhost:6060/pkg/github.com/piotrlaczkowski/GoLangGraph/$(NC)"; \
 		godoc -http=:6060; \
 	else \
 		echo "$(YELLOW)godoc not found. Installing...$(NC)"; \
 		go install golang.org/x/tools/cmd/godoc@latest; \
-		echo "$(GREEN)Starting godoc server at http://localhost:6060$(NC)"; \
+		echo "$(GREEN)Go documentation available at http://localhost:6060/pkg/github.com/piotrlaczkowski/GoLangGraph/$(NC)"; \
 		godoc -http=:6060; \
 	fi
 
