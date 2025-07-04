@@ -347,6 +347,24 @@ example-persistence: docker-up ## Run persistence example
 	sleep 10
 	go run examples/database_persistence_demo.go
 
+.PHONY: example-ollama
+example-ollama: ## Run Ollama demo with Gemma 3:1B
+	@echo "$(BLUE)Building and running Ollama demo...$(NC)"
+	@go build -o bin/ollama-demo ./cmd/examples
+	@echo "$(GREEN)Ollama demo built successfully$(NC)"
+	@echo "$(YELLOW)Running Ollama demo (requires Ollama + Gemma 3:1B)...$(NC)"
+	@./bin/ollama-demo
+
+.PHONY: test-ollama
+test-ollama: ## Test Ollama integration end-to-end
+	@echo "$(BLUE)Running comprehensive Ollama integration tests...$(NC)"
+	@./scripts/test-ollama-demo.sh
+
+.PHONY: test-ollama-setup
+test-ollama-setup: ## Test Ollama setup only (no demo execution)
+	@echo "$(BLUE)Testing Ollama setup and configuration...$(NC)"
+	@./scripts/test-ollama-demo.sh check-only
+
 ##@ CI/CD
 
 .PHONY: ci-test
