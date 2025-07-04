@@ -1,0 +1,18 @@
+server:
+  host: "localhost"
+  port: 8080
+  read_timeout: 30
+  write_timeout: 30
+
+ollama:
+  endpoint: "http://localhost:11434"
+  model: "gemma3:1b"
+  timeout: 30
+
+logging:
+  level: "info"
+  format: "json"
+
+metrics:
+  enabled: true
+  path: "/metrics" 

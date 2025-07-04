@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://golanggraph.dev/</loc>
+         <lastmod>2025-07-04</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://golanggraph.dev/CORE_PACKAGE/</loc>
+         <lastmod>2025-07-04</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://golanggraph.dev/PERSISTENCE_GUIDE/</loc>
+         <lastmod>2025-07-04</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://golanggraph.dev/examples/ollama-integration/</loc>
+         <lastmod>2025-07-04</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://golanggraph.dev/getting-started/quick-start/</loc>
+         <lastmod>2025-07-04</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+</urlset>
