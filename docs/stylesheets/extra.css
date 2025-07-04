@@ -1,204 +1,380 @@
-/* Custom styles for GoLangGraph documentation */
+/* GoLangGraph Documentation Custom Styles */
 
-/* Brand colors */
+/* Root variables for consistent theming */
 :root {
   --md-primary-fg-color: #1976d2;
   --md-primary-fg-color--light: #42a5f5;
   --md-primary-fg-color--dark: #1565c0;
-  --md-accent-fg-color: #2196f3;
-  --md-accent-fg-color--transparent: rgba(33, 150, 243, 0.1);
-
-  /* Custom colors for code blocks */
-  --md-code-bg-color: #f8f9fa;
-  --md-code-fg-color: #37474f;
-
-  /* Custom colors for admonitions */
-  --md-admonition-bg-color: #f8f9fa;
-  --md-admonition-fg-color: #263238;
-}
-
-/* Dark mode adjustments */
-[data-md-color-scheme="slate"] {
-  --md-code-bg-color: #263238;
-  --md-code-fg-color: #eceff1;
-  --md-admonition-bg-color: #263238;
-  --md-admonition-fg-color: #eceff1;
-}
-
-/* Enhanced code blocks */
-.highlight {
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.highlight pre {
-  margin: 0;
-  padding: 1rem;
-  background-color: var(--md-code-bg-color);
-  color: var(--md-code-fg-color);
-  font-size: 0.85rem;
-  line-height: 1.5;
-}
-
-/* Enhanced admonitions */
-.md-typeset .admonition {
-  border-radius: 8px;
-  border-left: 4px solid var(--md-accent-fg-color);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin: 1.5rem 0;
-}
-
-.md-typeset .admonition-title {
-  font-weight: 600;
-  padding: 0.75rem 1rem;
-  background-color: var(--md-accent-fg-color--transparent);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-/* Enhanced cards */
-.md-typeset .grid.cards > ol > li,
-.md-typeset .grid.cards > ul > li {
-  border-radius: 12px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-}
-
-.md-typeset .grid.cards > ol > li:hover,
-.md-typeset .grid.cards > ul > li:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-}
-
-/* Enhanced buttons */
-.md-button {
-  border-radius: 8px;
-  padding: 0.75rem 1.5rem;
-  font-weight: 500;
-  text-transform: none;
-  transition: all 0.2s ease-in-out;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.md-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.md-button--primary {
-  background: linear-gradient(135deg, var(--md-primary-fg-color), var(--md-primary-fg-color--light));
-  border: none;
+  --md-accent-fg-color: #00bcd4;
+  --md-accent-fg-color--transparent: rgba(0, 188, 212, 0.1);
+  --golanggraph-gradient: linear-gradient(135deg, #1976d2 0%, #00bcd4 100%);
+  --golanggraph-shadow: 0 4px 20px rgba(25, 118, 210, 0.15);
+  --golanggraph-border-radius: 12px;
 }
 
 /* Logo styling */
-.md-header__button.md-logo {
-  margin: 0.4rem;
+.md-header__button.md-logo img,
+.md-nav__title .md-nav__button img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  transition: transform 0.3s ease;
 }
 
-.md-header__button.md-logo img,
-.md-header__button.md-logo svg {
-  height: 2rem;
-  width: auto;
+.md-header__button.md-logo:hover img,
+.md-nav__title .md-nav__button:hover img {
+  transform: scale(1.1) rotate(5deg);
+}
+
+/* Hero section styling */
+.hero-section {
+  background: var(--golanggraph-gradient);
+  color: white;
+  padding: 4rem 2rem;
+  text-align: center;
+  margin: -2rem -2rem 2rem -2rem;
+  border-radius: 0 0 var(--golanggraph-border-radius) var(--golanggraph-border-radius);
+}
+
+.hero-section h1 {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.hero-section p {
+  font-size: 1.2rem;
+  opacity: 0.9;
+  margin-bottom: 2rem;
+}
+
+/* Enhanced cards */
+.md-typeset .grid.cards > * {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: var(--golanggraph-border-radius);
+  box-shadow: var(--golanggraph-shadow);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.md-typeset .grid.cards > *:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 30px rgba(25, 118, 210, 0.2);
+  border-color: var(--md-accent-fg-color);
+}
+
+.md-typeset .grid.cards > * > hr {
+  background: var(--golanggraph-gradient);
+  height: 3px;
+  border: none;
+  margin: 0;
+}
+
+/* Button enhancements */
+.md-button {
+  border-radius: var(--golanggraph-border-radius);
+  transition: all 0.3s ease;
+  font-weight: 600;
+  text-transform: none;
+  padding: 0.75rem 1.5rem;
+}
+
+.md-button--primary {
+  background: var(--golanggraph-gradient);
+  border: none;
+  color: white;
+  box-shadow: var(--golanggraph-shadow);
+}
+
+.md-button--primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(25, 118, 210, 0.3);
+}
+
+.md-button:not(.md-button--primary) {
+  border: 2px solid var(--md-accent-fg-color);
+  color: var(--md-accent-fg-color);
+}
+
+.md-button:not(.md-button--primary):hover {
+  background: var(--md-accent-fg-color--transparent);
+  transform: translateY(-2px);
+}
+
+/* Code blocks */
+.md-typeset .highlight {
+  border-radius: var(--golanggraph-border-radius);
+  overflow: hidden;
+  box-shadow: var(--golanggraph-shadow);
+}
+
+.md-typeset .highlight > pre {
+  margin: 0;
+}
+
+.md-typeset .highlight .filename {
+  background: var(--golanggraph-gradient);
+  color: white;
+  padding: 0.5rem 1rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+/* Admonitions */
+.md-typeset .admonition {
+  border-radius: var(--golanggraph-border-radius);
+  box-shadow: var(--golanggraph-shadow);
+  border: none;
+  overflow: hidden;
+}
+
+.md-typeset .admonition-title {
+  background: var(--golanggraph-gradient);
+  color: white;
+  font-weight: 600;
+  padding: 1rem;
+  margin: 0;
+}
+
+.md-typeset .admonition-title::before {
+  color: white;
+}
+
+/* Tables */
+.md-typeset table:not([class]) {
+  border-radius: var(--golanggraph-border-radius);
+  overflow: hidden;
+  box-shadow: var(--golanggraph-shadow);
+  border: none;
+}
+
+.md-typeset table:not([class]) th {
+  background: var(--golanggraph-gradient);
+  color: white;
+  font-weight: 600;
+}
+
+.md-typeset table:not([class]) tr:hover {
+  background: var(--md-accent-fg-color--transparent);
 }
 
 /* Navigation enhancements */
-.md-nav__item--active > .md-nav__link {
-  color: var(--md-accent-fg-color);
-  font-weight: 500;
+.md-nav__item .md-nav__link {
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  margin: 2px 0;
 }
 
-.md-nav__link:hover {
-  color: var(--md-accent-fg-color);
+.md-nav__item .md-nav__link:hover {
+  background: var(--md-accent-fg-color--transparent);
+  transform: translateX(5px);
 }
 
-/* Table of contents */
-.md-nav--secondary .md-nav__link {
-  font-size: 0.8rem;
-  padding: 0.25rem 0.75rem;
-}
-
-.md-nav--secondary .md-nav__link--active {
-  color: var(--md-accent-fg-color);
-  font-weight: 500;
+.md-nav__item .md-nav__link--active {
+  background: var(--golanggraph-gradient);
+  color: white;
+  box-shadow: var(--golanggraph-shadow);
 }
 
 /* Search enhancements */
 .md-search__form {
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: var(--golanggraph-border-radius);
+  box-shadow: var(--golanggraph-shadow);
 }
 
 .md-search__input {
-  border-radius: 8px;
+  border-radius: var(--golanggraph-border-radius);
 }
 
-/* Footer styling */
+/* Footer */
 .md-footer {
-  background: linear-gradient(135deg, var(--md-primary-fg-color--dark), var(--md-primary-fg-color));
+  background: var(--golanggraph-gradient);
+  color: white;
 }
 
-/* Mermaid diagram styling */
-.mermaid {
-  text-align: center;
-  margin: 2rem 0;
+.md-footer-meta {
+  background: rgba(0, 0, 0, 0.2);
 }
 
-.mermaid svg {
-  max-width: 100%;
-  height: auto;
-}
-
-/* Custom utility classes */
-.text-center {
-  text-align: center;
-}
-
-.text-muted {
-  color: var(--md-default-fg-color--light);
-}
-
-.mb-4 {
-  margin-bottom: 2rem;
-}
-
-.mt-4 {
-  margin-top: 2rem;
-}
-
-/* Responsive adjustments */
-@media screen and (max-width: 76.1875em) {
-  .md-typeset .grid.cards > ol > li,
-  .md-typeset .grid.cards > ul > li {
-    margin: 0.5rem 0;
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
   }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.md-typeset .grid.cards > * {
+  animation: fadeInUp 0.6s ease forwards;
+}
+
+.md-typeset .grid.cards > *:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.md-typeset .grid.cards > *:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.md-typeset .grid.cards > *:nth-child(4) {
+  animation-delay: 0.3s;
+}
+
+/* Responsive design */
+@media screen and (max-width: 768px) {
+  .hero-section h1 {
+    font-size: 2rem;
+  }
+  
+  .hero-section p {
+    font-size: 1rem;
+  }
+  
+  .md-typeset .grid.cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--md-default-bg-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--golanggraph-gradient);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--md-primary-fg-color--dark);
+}
+
+/* Mermaid diagrams */
+.mermaid {
+  background: transparent !important;
+  border-radius: var(--golanggraph-border-radius);
+  padding: 1rem;
+  box-shadow: var(--golanggraph-shadow);
+}
+
+/* Logo in content */
+.md-content img[alt*="Logo"] {
+  border-radius: 50%;
+  box-shadow: var(--golanggraph-shadow);
+  transition: transform 0.3s ease;
+}
+
+.md-content img[alt*="Logo"]:hover {
+  transform: scale(1.05) rotate(5deg);
+}
+
+/* Badges */
+.md-typeset .badge {
+  background: var(--golanggraph-gradient);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-block;
+  margin: 0.25rem;
+}
+
+/* Performance metrics styling */
+.performance-metric {
+  background: var(--md-accent-fg-color--transparent);
+  border-left: 4px solid var(--md-accent-fg-color);
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 0 var(--golanggraph-border-radius) var(--golanggraph-border-radius) 0;
+}
+
+.performance-metric strong {
+  color: var(--md-accent-fg-color);
+  font-size: 1.2rem;
+}
+
+/* Social links */
+.md-social__link {
+  transition: transform 0.3s ease;
+}
+
+.md-social__link:hover {
+  transform: scale(1.2);
+}
+
+/* Announcement bar */
+.md-banner {
+  background: var(--golanggraph-gradient);
+  color: white;
+}
+
+.md-banner__inner {
+  font-weight: 600;
+}
+
+/* Content animations */
+.md-content {
+  animation: fadeInUp 0.6s ease forwards;
+}
+
+/* Version selector */
+.md-version {
+  background: var(--golanggraph-gradient);
+  color: white;
+  border-radius: var(--golanggraph-border-radius);
+}
+
+/* Custom emoji sizing */
+.md-typeset .twemoji {
+  width: 1.2em;
+  height: 1.2em;
+}
+
+/* Header enhancements */
+.md-header {
+  box-shadow: var(--golanggraph-shadow);
+}
+
+.md-header[data-md-state="shadow"] {
+  box-shadow: 0 4px 20px rgba(25, 118, 210, 0.2);
+}
+
+/* Tab enhancements */
+.md-tabs {
+  background: var(--golanggraph-gradient);
+}
+
+.md-tabs__link {
+  color: white;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+
+.md-tabs__link:hover,
+.md-tabs__link--active {
+  opacity: 1;
 }
 
 /* Print styles */
 @media print {
   .md-header,
   .md-footer,
-  .md-nav,
-  .md-sidebar {
-    display: none;
+  .md-sidebar,
+  .md-nav {
+    display: none !important;
   }
-
+  
   .md-content {
-    margin: 0;
-    padding: 0;
-  }
-
-  .md-typeset {
-    color: #000;
-    font-size: 12pt;
-  }
-
-  .md-typeset .admonition {
-    border: 1px solid #ccc;
-    page-break-inside: avoid;
-  }
-
-  .highlight {
-    border: 1px solid #ccc;
-    page-break-inside: avoid;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 }

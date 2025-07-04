@@ -11,9 +11,15 @@ copyright: Copyright &copy; 2024 GoLangGraph Team
 
 theme:
   name: material
+  logo: logo.png
+  favicon: logo.png
+  
   palette:
     # Palette toggle for automatic mode
     - media: "(prefers-color-scheme)"
+      scheme: default
+      primary: blue
+      accent: cyan
       toggle:
         icon: material/brightness-auto
         name: Switch to light mode
@@ -21,7 +27,7 @@ theme:
     - media: "(prefers-color-scheme: light)"
       scheme: default
       primary: blue
-      accent: blue
+      accent: cyan
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
@@ -29,7 +35,7 @@ theme:
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
       primary: blue
-      accent: blue
+      accent: cyan
       toggle:
         icon: material/brightness-4
         name: Switch to system preference
@@ -77,10 +83,16 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/piotrlaczkowski/GoLangGraph
+      name: GoLangGraph on GitHub
     - icon: fontawesome/brands/twitter
       link: https://twitter.com/golanggraph
+      name: Follow us on Twitter
     - icon: fontawesome/brands/discord
       link: https://discord.gg/golanggraph
+      name: Join our Discord
+    - icon: fontawesome/brands/linkedin
+      link: https://linkedin.com/company/golanggraph
+      name: Connect on LinkedIn
 
   analytics:
     provider: google
@@ -90,8 +102,13 @@ extra:
     provider: mike
     default: stable
 
+  generator: false
+
 extra_css:
   - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/extra.js
 
 strict: false
 
@@ -151,14 +168,27 @@ plugins:
   - git-revision-date-localized:
       enable_creation_date: true
       type: timeago
-
-  - glightbox
+      timezone: UTC
+  - glightbox:
+      touchNavigation: true
+      loop: false
+      effect: zoom
+      slide_effect: slide
+      width: 100%
+      height: auto
+      zoomable: true
+      draggable: true
 
 nav:
-  - Home: index.md
-  - Getting Started:
-    - Quick Start: getting-started/quick-start.md
-  - Core Package: CORE_PACKAGE.md
-  - Persistence Guide: PERSISTENCE_GUIDE.md
-  - Examples:
-    - Ollama Integration: examples/ollama-integration.md
+  - 🏠 Home: index.md
+  - 🚀 Getting Started:
+    - 🏃 Quick Start: getting-started/quick-start.md
+  - 📚 Core Concepts:
+    - 🧠 Core Package: CORE_PACKAGE.md
+    - 💾 Persistence Guide: PERSISTENCE_GUIDE.md
+  - 📖 Examples:
+    - 🦙 Ollama Integration: examples/ollama-integration.md
+  - 🤝 Community:
+    - 🐛 Issues: https://github.com/piotrlaczkowski/GoLangGraph/issues
+    - 💬 Discussions: https://github.com/piotrlaczkowski/GoLangGraph/discussions
+    - 📧 Support: mailto:support@golanggraph.dev

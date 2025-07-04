@@ -1,25 +1,75 @@
-# GoLangGraph
+<div align="center">
+  <img src="logo.png" alt="GoLangGraph Logo" width="200" height="200">
+  <h1>🚀 GoLangGraph</h1>
+  <p><strong>Build Intelligent AI Agent Workflows with Go</strong></p>
+  
+  [![CI](https://github.com/piotrlaczkowski/GoLangGraph/actions/workflows/ci.yml/badge.svg)](https://github.com/piotrlaczkowski/GoLangGraph/actions/workflows/ci.yml)
+  [![codecov](https://codecov.io/gh/piotrlaczkowski/GoLangGraph/branch/main/graph/badge.svg)](https://codecov.io/gh/piotrlaczkowski/GoLangGraph)
+  [![Go Report Card](https://goreportcard.com/badge/github.com/piotrlaczkowski/GoLangGraph)](https://goreportcard.com/report/github.com/piotrlaczkowski/GoLangGraph)
+  [![GoDoc](https://godoc.org/github.com/piotrlaczkowski/GoLangGraph?status.svg)](https://godoc.org/github.com/piotrlaczkowski/GoLangGraph)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  
+  <p>
+    <a href="#-quick-start">Quick Start</a> •
+    <a href="#-features">Features</a> •
+    <a href="#-examples">Examples</a> •
+    <a href="#-documentation">Documentation</a> •
+    <a href="#-contributing">Contributing</a>
+  </p>
+</div>
 
-[![CI](https://github.com/piotrlaczkowski/GoLangGraph/actions/workflows/ci.yml/badge.svg)](https://github.com/piotrlaczkowski/GoLangGraph/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/piotrlaczkowski/GoLangGraph/branch/main/graph/badge.svg)](https://codecov.io/gh/piotrlaczkowski/GoLangGraph)
-[![Go Report Card](https://goreportcard.com/badge/github.com/piotrlaczkowski/GoLangGraph)](https://goreportcard.com/report/github.com/piotrlaczkowski/GoLangGraph)
-[![GoDoc](https://godoc.org/github.com/piotrlaczkowski/GoLangGraph?status.svg)](https://godoc.org/github.com/piotrlaczkowski/GoLangGraph)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+---
 
-A powerful and flexible Go library for building AI agent workflows using graph-based execution patterns. GoLangGraph provides a robust framework for creating, managing, and executing complex AI agent workflows with built-in persistence, streaming, and observability features.
+## 🎯 Overview
 
-## 🚀 Features
+**GoLangGraph** is a powerful and flexible Go library for building AI agent workflows using graph-based execution patterns. Design complex, intelligent workflows with ease using our intuitive API that combines the performance of Go with the flexibility of modern AI frameworks.
 
-- **Graph-Based Execution**: Build complex workflows using nodes and edges
-- **Conditional Routing**: Dynamic execution paths based on runtime conditions
-- **State Management**: Persistent state across workflow executions
-- **Database Integration**: Support for PostgreSQL, Redis, and vector databases
-- **RAG Support**: Built-in Retrieval-Augmented Generation capabilities
-- **LLM Integration**: Support for OpenAI, Ollama, and Gemini providers
-- **Streaming Execution**: Real-time workflow execution monitoring
-- **Checkpointing**: Save and restore workflow states
-- **Observability**: Comprehensive logging and metrics
-- **Production Ready**: Docker support, CI/CD, and monitoring
+> 💡 **Perfect for**: RAG applications, multi-agent systems, intelligent automation, and complex AI workflows that require reliability and performance.
+
+## ✨ Features
+
+<table>
+<tr>
+<td width="50%">
+
+### 🏗️ **Core Engine**
+- 🔄 **Graph-Based Execution** - Build workflows as directed graphs
+- ⚡ **Conditional Routing** - Dynamic paths based on runtime conditions  
+- 🧠 **State Management** - Persistent state across executions
+- 🔀 **Parallel Processing** - Concurrent node execution
+
+</td>
+<td width="50%">
+
+### 🤖 **AI Integration**
+- 🌐 **Multi-LLM Support** - OpenAI, Ollama, Gemini providers
+- 🔧 **Rich Tooling** - Built-in tools and custom extensions
+- 📊 **RAG Support** - Vector databases and retrieval systems
+- 🎭 **Agent Framework** - High-level agent abstractions
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+### 💾 **Persistence & Data**
+- 🗄️ **Database Integration** - PostgreSQL, Redis, Vector DBs
+- 💾 **Checkpointing** - Save and restore workflow states
+- 🔍 **Vector Search** - Semantic search capabilities
+- 📈 **Streaming** - Real-time execution monitoring
+
+</td>
+<td width="50%">
+
+### 🚀 **Production Ready**
+- 🔒 **Security** - Input validation, SQL injection prevention
+- 📊 **Observability** - Comprehensive logging and metrics
+- 🐳 **Docker Support** - Containerized deployment
+- 🧪 **Testing** - Comprehensive test coverage
+
+</td>
+</tr>
+</table>
 
 ## 📦 Installation
 
@@ -29,7 +79,7 @@ go get github.com/piotrlaczkowski/GoLangGraph
 
 ## 🏃 Quick Start
 
-### Basic Graph Execution
+### 🎯 Basic Graph Execution
 
 ```go
 package main
@@ -43,46 +93,46 @@ import (
 )
 
 func main() {
-    // Create a new graph
+    // 🏗️ Create a new graph
     graph := core.NewGraph("my_workflow")
 
-    // Define node functions
+    // 📝 Define node functions
     node1 := func(ctx context.Context, state *core.BaseState) (*core.BaseState, error) {
         state.Set("step1_completed", true)
-        state.Set("message", "Hello from Node 1")
+        state.Set("message", "Hello from Node 1! 👋")
         return state, nil
     }
 
     node2 := func(ctx context.Context, state *core.BaseState) (*core.BaseState, error) {
         msg, _ := state.Get("message")
-        state.Set("final_message", fmt.Sprintf("%s -> Node 2", msg))
+        state.Set("final_message", fmt.Sprintf("%s -> Node 2 ✨", msg))
         return state, nil
     }
 
-    // Build the graph
+    // 🔗 Build the graph
     graph.AddNode("node1", "First Node", node1)
     graph.AddNode("node2", "Second Node", node2)
     graph.AddEdge("node1", "node2", nil)
     graph.SetStartNode("node1")
     graph.AddEndNode("node2")
 
-    // Execute the workflow
+    // 🚀 Execute the workflow
     initialState := core.NewBaseState()
     result, err := graph.Execute(context.Background(), initialState)
     if err != nil {
         log.Fatal(err)
     }
 
-    // Get the final result
+    // 🎉 Get the final result
     finalMsg, _ := result.Get("final_message")
-    fmt.Printf("Final result: %s\n", finalMsg)
+    fmt.Printf("🎯 Final result: %s\n", finalMsg)
 }
 ```
 
-### Conditional Routing
+### 🔀 Conditional Routing
 
 ```go
-// Define a conditional edge function
+// 🧠 Define a conditional edge function
 condition := func(ctx context.Context, state *core.BaseState) (string, error) {
     value, _ := state.Get("decision")
     if value == "path_a" {
@@ -91,18 +141,19 @@ condition := func(ctx context.Context, state *core.BaseState) (string, error) {
     return "nodeB", nil
 }
 
-// Add conditional edges
+// 🔗 Add conditional edges
 graph.AddEdge("decision_node", "nodeA", condition)
 graph.AddEdge("decision_node", "nodeB", condition)
 ```
 
-### AI Agent with LLM Integration
+### 🤖 AI Agent with LLM Integration
 
 ```go
 package main
 
 import (
     "context"
+    "fmt"
     "log"
 
     "github.com/piotrlaczkowski/GoLangGraph/pkg/agent"
@@ -110,7 +161,7 @@ import (
 )
 
 func main() {
-    // Create OpenAI provider
+    // 🌐 Create OpenAI provider
     provider, err := llm.NewOpenAIProvider(llm.OpenAIConfig{
         APIKey: "your-api-key",
         Model:  "gpt-4",
@@ -119,54 +170,56 @@ func main() {
         log.Fatal(err)
     }
 
-    // Create agent
+    // 🤖 Create agent
     agent := agent.NewAgent("my_agent", provider)
 
-    // Add tools and behaviors
+    // 🔧 Add tools and behaviors
     agent.AddTool("search", searchTool)
     agent.AddTool("calculator", calculatorTool)
 
-    // Execute agent workflow
-    response, err := agent.Execute(context.Background(), "Analyze the market trends")
+    // 🚀 Execute agent workflow
+    response, err := agent.Execute(context.Background(), "Analyze the market trends 📊")
     if err != nil {
         log.Fatal(err)
     }
 
-    fmt.Printf("Agent response: %s\n", response)
+    fmt.Printf("🤖 Agent response: %s\n", response)
 }
 ```
 
 ## 🏗️ Architecture
 
-GoLangGraph is built with a modular architecture:
+GoLangGraph is built with a **modular, scalable architecture**:
 
 ```
-├── pkg/
-│   ├── core/           # Core graph execution engine
-│   ├── agent/          # AI agent framework
-│   ├── llm/            # LLM provider integrations
-│   ├── persistence/    # Database and storage
-│   ├── tools/          # Built-in tools and utilities
-│   ├── server/         # HTTP server and API
-│   └── debug/          # Debugging and visualization
+📁 pkg/
+├── 🧠 core/           # Core graph execution engine
+├── 🤖 agent/          # AI agent framework  
+├── 🌐 llm/            # LLM provider integrations
+├── 💾 persistence/    # Database and storage
+├── 🔧 tools/          # Built-in tools and utilities
+├── 🌐 server/         # HTTP server and API
+└── 🐛 debug/          # Debugging and visualization
 ```
 
-### Core Components
+### 🔧 Core Components
 
-- **Graph Engine**: Manages workflow execution, state transitions, and routing
-- **State Management**: Handles persistent state across executions
-- **LLM Providers**: Abstractions for different AI model providers
-- **Persistence Layer**: Database connections and checkpointing
-- **Agent Framework**: High-level AI agent abstractions
+| Component | Description | Key Features |
+|-----------|-------------|--------------|
+| **🧠 Graph Engine** | Manages workflow execution | State transitions, routing, parallel execution |
+| **💾 State Management** | Handles persistent state | Thread-safe, automatic persistence |
+| **🌐 LLM Providers** | AI model integrations | OpenAI, Ollama, Gemini support |
+| **💾 Persistence Layer** | Database connections | PostgreSQL, Redis, Vector DBs |
+| **🤖 Agent Framework** | High-level abstractions | Tools, behaviors, multi-agent systems |
 
 ## 🔧 Configuration
 
-### Database Configuration
+### 🗄️ Database Configuration
 
 ```go
 import "github.com/piotrlaczkowski/GoLangGraph/pkg/persistence"
 
-// PostgreSQL configuration
+// 🐘 PostgreSQL configuration
 pgConfig := persistence.PostgreSQLConfig{
     Host:     "localhost",
     Port:     5432,
@@ -175,7 +228,7 @@ pgConfig := persistence.PostgreSQLConfig{
     Password: "password",
 }
 
-// Redis configuration
+// 🔴 Redis configuration
 redisConfig := persistence.RedisConfig{
     Host:     "localhost",
     Port:     6379,
@@ -183,18 +236,18 @@ redisConfig := persistence.RedisConfig{
     Database: 0,
 }
 
-// Create database manager
+// 🏗️ Create database manager
 dbManager := persistence.NewDatabaseManager()
 dbManager.AddPostgreSQL("main", pgConfig)
 dbManager.AddRedis("cache", redisConfig)
 ```
 
-### LLM Provider Configuration
+### 🌐 LLM Provider Configuration
 
 ```go
 import "github.com/piotrlaczkowski/GoLangGraph/pkg/llm"
 
-// OpenAI
+// 🤖 OpenAI
 openaiProvider, err := llm.NewOpenAIProvider(llm.OpenAIConfig{
     APIKey:      "your-api-key",
     Model:       "gpt-4",
@@ -202,13 +255,13 @@ openaiProvider, err := llm.NewOpenAIProvider(llm.OpenAIConfig{
     MaxTokens:   1000,
 })
 
-// Ollama (local)
+// 🦙 Ollama (local)
 ollamaProvider, err := llm.NewOllamaProvider(llm.OllamaConfig{
     BaseURL: "http://localhost:11434",
     Model:   "llama2",
 })
 
-// Gemini
+// 💎 Gemini
 geminiProvider, err := llm.NewGeminiProvider(llm.GeminiConfig{
     APIKey: "your-gemini-api-key",
     Model:  "gemini-pro",
@@ -217,12 +270,12 @@ geminiProvider, err := llm.NewGeminiProvider(llm.GeminiConfig{
 
 ## 📊 Persistence & RAG
 
-### Vector Database Integration
+### 🔍 Vector Database Integration
 
 ```go
 import "github.com/piotrlaczkowski/GoLangGraph/pkg/persistence"
 
-// Configure pgvector for RAG
+// 🔧 Configure pgvector for RAG
 pgvectorConfig := persistence.PgVectorConfig{
     Host:       "localhost",
     Port:       5432,
@@ -232,17 +285,17 @@ pgvectorConfig := persistence.PgVectorConfig{
     Dimensions: 1536, // OpenAI embedding dimensions
 }
 
-// Create vector store
+// 🏗️ Create vector store
 vectorStore, err := persistence.NewPgVectorStore(pgvectorConfig)
 if err != nil {
     log.Fatal(err)
 }
 
-// Store documents
+// 📝 Store documents
 documents := []persistence.Document{
     {
         ID:      "doc1",
-        Content: "This is important information about AI",
+        Content: "This is important information about AI 🤖",
         Metadata: map[string]interface{}{
             "source": "manual",
             "type":   "knowledge",
@@ -255,25 +308,25 @@ if err != nil {
     log.Fatal(err)
 }
 
-// Search similar documents
+// 🔍 Search similar documents
 results, err := vectorStore.SimilaritySearch("AI information", 5)
 if err != nil {
     log.Fatal(err)
 }
 ```
 
-### Checkpointing
+### 💾 Checkpointing
 
 ```go
 import "github.com/piotrlaczkowski/GoLangGraph/pkg/persistence"
 
-// Create checkpointer
+// 🏗️ Create checkpointer
 checkpointer, err := persistence.NewDatabaseCheckpointer(dbManager, "main")
 if err != nil {
     log.Fatal(err)
 }
 
-// Save checkpoint
+// 💾 Save checkpoint
 checkpoint := &persistence.Checkpoint{
     ThreadID:  "thread-123",
     State:     state,
@@ -286,7 +339,7 @@ if err != nil {
     log.Fatal(err)
 }
 
-// Load checkpoint
+// 📂 Load checkpoint
 loadedCheckpoint, err := checkpointer.LoadCheckpoint("thread-123")
 if err != nil {
     log.Fatal(err)
@@ -296,136 +349,136 @@ if err != nil {
 ## 🔄 Streaming & Real-time Execution
 
 ```go
-// Enable streaming in graph configuration
+// 🚀 Enable streaming in graph configuration
 graph.Config.EnableStreaming = true
 
-// Get streaming channel
+// 📡 Get streaming channel
 streamChan := graph.Stream()
 
-// Execute in background
+// 🏃 Execute in background
 go func() {
     _, err := graph.Execute(context.Background(), initialState)
     if err != nil {
-        log.Printf("Execution error: %v", err)
+        log.Printf("❌ Execution error: %v", err)
     }
 }()
 
-// Listen for execution updates
+// 👂 Listen for execution updates
 for result := range streamChan {
-    fmt.Printf("Node %s completed in %v\n", result.NodeID, result.Duration)
+    fmt.Printf("✅ Node %s completed in %v\n", result.NodeID, result.Duration)
     if result.Error != nil {
-        fmt.Printf("Error: %v\n", result.Error)
+        fmt.Printf("❌ Error: %v\n", result.Error)
     }
 }
 ```
 
 ## 🛠️ Development
 
-### Prerequisites
+### 📋 Prerequisites
 
-- Go 1.21 or later
-- Docker and Docker Compose
-- PostgreSQL 14+ (for persistence)
-- Redis 6+ (for caching)
+- 🐹 **Go 1.23+** - Latest Go version for best performance
+- 🐳 **Docker & Docker Compose** - For containerized development
+- 🐘 **PostgreSQL 14+** - For persistence features
+- 🔴 **Redis 6+** - For caching and real-time features
 
-### Setup Development Environment
+### 🚀 Setup Development Environment
 
 ```bash
-# Clone the repository
+# 📥 Clone the repository
 git clone https://github.com/piotrlaczkowski/GoLangGraph.git
 cd GoLangGraph
 
-# Install dependencies
+# 📦 Install dependencies
 go mod tidy
 
-# Start development services
+# 🐳 Start development services
 make dev-up
 
-# Run tests
+# 🧪 Run tests
 make test
 
-# Run with coverage
+# 📊 Run with coverage
 make test-coverage
 
-# Lint code
+# 🔍 Lint code
 make lint
 
-# Format code
+# ✨ Format code
 make fmt
 ```
 
-### Running Examples
+### 🎯 Running Examples
 
 ```bash
-# Quick start demo
+# 🏃 Quick start demo
 make run-example EXAMPLE=quick_start_demo
 
-# Database persistence demo
+# 💾 Database persistence demo
 make run-example EXAMPLE=database_persistence_demo
 
-# Simple agent demo
+# 🤖 Simple agent demo
 make run-example EXAMPLE=simple_agent
 
-# Ultimate minimal demo
+# ⚡ Ultimate minimal demo
 make run-example EXAMPLE=ultimate_minimal_demo
 ```
 
-### Docker Development
+### 🐳 Docker Development
 
 ```bash
-# Build Docker image
+# 🏗️ Build Docker image
 make docker-build
 
-# Run with Docker Compose
+# 🚀 Run with Docker Compose
 make docker-up
 
-# View logs
+# 📋 View logs
 make docker-logs
 
-# Stop services
+# 🛑 Stop services
 make docker-down
 ```
 
 ## 🧪 Testing
 
-The project includes comprehensive tests across all packages:
+The project includes **comprehensive tests** across all packages:
 
 ```bash
-# Run all tests
+# 🧪 Run all tests
 make test
 
-# Run specific package tests
+# 🎯 Run specific package tests
 go test ./pkg/core -v
 go test ./pkg/llm -v
 go test ./pkg/persistence -v
 
-# Run integration tests
+# 🔗 Run integration tests
 make test-integration
 
-# Run benchmarks
+# 📊 Run benchmarks
 make benchmark
 
-# Generate coverage report
+# 📈 Generate coverage report
 make test-coverage
 ```
 
 ## 📈 Performance
 
-GoLangGraph is designed for high performance:
+GoLangGraph is designed for **high performance**:
 
-- **Concurrent Execution**: Parallel node execution where possible
-- **Efficient State Management**: Optimized state copying and merging
-- **Connection Pooling**: Database connection reuse
-- **Streaming**: Real-time execution monitoring without blocking
-- **Memory Optimization**: Efficient memory usage patterns
+- ⚡ **Concurrent Execution** - Parallel node execution where possible
+- 🧠 **Efficient State Management** - Optimized state copying and merging
+- 🔗 **Connection Pooling** - Database connection reuse
+- 📡 **Streaming** - Real-time execution monitoring without blocking
+- 💾 **Memory Optimization** - Efficient memory usage patterns
 
-### Benchmarks
+### 📊 Benchmarks
 
 ```bash
-# Run performance benchmarks
+# 🏃 Run performance benchmarks
 make benchmark
 
-# Example results:
+# 📊 Example results:
 BenchmarkGraph_Execute-8           1000000    1.2 ms/op    512 B/op    8 allocs/op
 BenchmarkState_Set-8              10000000    120 ns/op     48 B/op    1 allocs/op
 BenchmarkLLM_Complete-8              1000    1.5 s/op    1024 B/op   12 allocs/op
@@ -433,15 +486,15 @@ BenchmarkLLM_Complete-8              1000    1.5 s/op    1024 B/op   12 allocs/o
 
 ## 🔐 Security
 
-- **Input Validation**: All inputs are validated and sanitized
-- **SQL Injection Prevention**: Parameterized queries throughout
-- **API Key Management**: Secure credential handling
-- **Access Control**: Role-based permissions (coming soon)
-- **Audit Logging**: Comprehensive execution logging
+- ✅ **Input Validation** - All inputs are validated and sanitized
+- 🛡️ **SQL Injection Prevention** - Parameterized queries throughout
+- 🔑 **API Key Management** - Secure credential handling
+- 🔒 **Access Control** - Role-based permissions (coming soon)
+- 📝 **Audit Logging** - Comprehensive execution logging
 
 ## 📚 Examples
 
-### Advanced Agent with Tools
+### 🔧 Advanced Agent with Tools
 
 ```go
 package main
@@ -459,7 +512,7 @@ import (
 )
 
 func main() {
-    // Create LLM provider
+    // 🌐 Create LLM provider
     provider, err := llm.NewOpenAIProvider(llm.OpenAIConfig{
         APIKey: "your-api-key",
         Model:  "gpt-4",
@@ -468,60 +521,60 @@ func main() {
         log.Fatal(err)
     }
 
-    // Create agent with tools
+    // 🤖 Create agent with tools
     agent := agent.NewAgent("research_agent", provider)
     
-    // Add web search tool
+    // 🔍 Add web search tool
     searchTool := tools.NewWebSearchTool("your-search-api-key")
     agent.AddTool("web_search", searchTool)
     
-    // Add calculator tool
+    // 🧮 Add calculator tool
     calcTool := tools.NewCalculatorTool()
     agent.AddTool("calculator", calcTool)
     
-    // Add custom tool
+    // 🌤️ Add custom weather tool
     weatherTool := &tools.CustomTool{
         Name:        "weather",
-        Description: "Get current weather for a location",
+        Description: "Get current weather for a location 🌤️",
         Function: func(args map[string]interface{}) (interface{}, error) {
             location := args["location"].(string)
-            // Implement weather API call
             return getWeather(location), nil
         },
     }
     agent.AddTool("weather", weatherTool)
 
-    // Execute complex task
-    task := `Research the current market trends for renewable energy, 
-             calculate the projected growth rate, and provide a summary 
-             including weather patterns that might affect solar energy.`
+    // 🚀 Execute complex task
+    task := `🔍 Research the current market trends for renewable energy, 
+             🧮 calculate the projected growth rate, and provide a summary 
+             🌤️ including weather patterns that might affect solar energy.`
     
     response, err := agent.Execute(context.Background(), task)
     if err != nil {
         log.Fatal(err)
     }
 
-    fmt.Printf("Agent Response:\n%s\n", response)
+    fmt.Printf("🤖 Agent Response:\n%s\n", response)
 }
 
 func getWeather(location string) map[string]interface{} {
-    // Mock weather data
+    // 🌤️ Mock weather data
     return map[string]interface{}{
         "location":    location,
         "temperature": 22,
-        "condition":   "sunny",
+        "condition":   "sunny ☀️",
         "humidity":    65,
     }
 }
 ```
 
-### Multi-Agent Collaboration
+### 🤝 Multi-Agent Collaboration
 
 ```go
 package main
 
 import (
     "context"
+    "fmt"
     "log"
 
     "github.com/piotrlaczkowski/GoLangGraph/pkg/agent"
@@ -530,7 +583,7 @@ import (
 )
 
 func main() {
-    // Create providers
+    // 🌐 Create providers
     provider, err := llm.NewOpenAIProvider(llm.OpenAIConfig{
         APIKey: "your-api-key",
         Model:  "gpt-4",
@@ -539,23 +592,23 @@ func main() {
         log.Fatal(err)
     }
 
-    // Create specialized agents
+    // 🔍 Create specialized agents
     researchAgent := agent.NewAgent("researcher", provider)
-    researchAgent.SetSystemPrompt("You are a research specialist. Focus on gathering and analyzing information.")
+    researchAgent.SetSystemPrompt("🔍 You are a research specialist. Focus on gathering and analyzing information.")
 
     writerAgent := agent.NewAgent("writer", provider)
-    writerAgent.SetSystemPrompt("You are a technical writer. Create clear, well-structured documents.")
+    writerAgent.SetSystemPrompt("✍️ You are a technical writer. Create clear, well-structured documents.")
 
     reviewerAgent := agent.NewAgent("reviewer", provider)
-    reviewerAgent.SetSystemPrompt("You are a quality reviewer. Ensure accuracy and completeness.")
+    reviewerAgent.SetSystemPrompt("🔍 You are a quality reviewer. Ensure accuracy and completeness.")
 
-    // Create collaboration graph
+    // 🏗️ Create collaboration graph
     graph := core.NewGraph("multi_agent_workflow")
 
-    // Research phase
+    // 🔍 Research phase
     researchNode := func(ctx context.Context, state *core.BaseState) (*core.BaseState, error) {
         topic, _ := state.Get("topic")
-        research, err := researchAgent.Execute(ctx, fmt.Sprintf("Research: %s", topic))
+        research, err := researchAgent.Execute(ctx, fmt.Sprintf("🔍 Research: %s", topic))
         if err != nil {
             return nil, err
         }
@@ -563,10 +616,10 @@ func main() {
         return state, nil
     }
 
-    // Writing phase
+    // ✍️ Writing phase
     writeNode := func(ctx context.Context, state *core.BaseState) (*core.BaseState, error) {
         research, _ := state.Get("research_results")
-        document, err := writerAgent.Execute(ctx, fmt.Sprintf("Write a document based on: %s", research))
+        document, err := writerAgent.Execute(ctx, fmt.Sprintf("✍️ Write a document based on: %s", research))
         if err != nil {
             return nil, err
         }
@@ -574,10 +627,10 @@ func main() {
         return state, nil
     }
 
-    // Review phase
+    // 🔍 Review phase
     reviewNode := func(ctx context.Context, state *core.BaseState) (*core.BaseState, error) {
         draft, _ := state.Get("draft_document")
-        review, err := reviewerAgent.Execute(ctx, fmt.Sprintf("Review and improve: %s", draft))
+        review, err := reviewerAgent.Execute(ctx, fmt.Sprintf("🔍 Review and improve: %s", draft))
         if err != nil {
             return nil, err
         }
@@ -585,10 +638,10 @@ func main() {
         return state, nil
     }
 
-    // Build workflow
-    graph.AddNode("research", "Research Phase", researchNode)
-    graph.AddNode("write", "Writing Phase", writeNode)
-    graph.AddNode("review", "Review Phase", reviewNode)
+    // 🔗 Build workflow
+    graph.AddNode("research", "🔍 Research Phase", researchNode)
+    graph.AddNode("write", "✍️ Writing Phase", writeNode)
+    graph.AddNode("review", "🔍 Review Phase", reviewNode)
     
     graph.AddEdge("research", "write", nil)
     graph.AddEdge("write", "review", nil)
@@ -596,9 +649,9 @@ func main() {
     graph.SetStartNode("research")
     graph.AddEndNode("review")
 
-    // Execute workflow
+    // 🚀 Execute workflow
     initialState := core.NewBaseState()
-    initialState.Set("topic", "Artificial Intelligence in Healthcare")
+    initialState.Set("topic", "🤖 Artificial Intelligence in Healthcare")
 
     result, err := graph.Execute(context.Background(), initialState)
     if err != nil {
@@ -606,7 +659,7 @@ func main() {
     }
 
     finalDoc, _ := result.Get("final_document")
-    fmt.Printf("Final Document:\n%s\n", finalDoc)
+    fmt.Printf("📄 Final Document:\n%s\n", finalDoc)
 }
 ```
 
@@ -614,50 +667,78 @@ func main() {
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
-### Development Workflow
+### 🔄 Development Workflow
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes and add tests
-4. Run tests: `make test`
-5. Commit your changes: `git commit -m 'Add amazing feature'`
-6. Push to the branch: `git push origin feature/amazing-feature`
-7. Open a Pull Request
+1. 🍴 **Fork** the repository
+2. 🌿 **Create** a feature branch: `git checkout -b feature/amazing-feature`
+3. ✨ **Make** your changes and add tests
+4. 🧪 **Run** tests: `make test`
+5. 💾 **Commit** your changes: `git commit -m 'Add amazing feature'`
+6. 🚀 **Push** to the branch: `git push origin feature/amazing-feature`
+7. 📝 **Open** a Pull Request
 
-### Code Style
+### 📝 Code Style
 
-- Follow Go best practices and idioms
-- Use `gofmt` for formatting
-- Write comprehensive tests
-- Add documentation for public APIs
-- Use meaningful variable and function names
+- 🐹 Follow **Go best practices** and idioms
+- ✨ Use `gofmt` for formatting
+- 🧪 Write **comprehensive tests**
+- 📚 Add **documentation** for public APIs
+- 🎯 Use **meaningful** variable and function names
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
 ## 🆘 Support
 
-- **Documentation**: [GoDoc](https://godoc.org/github.com/piotrlaczkowski/GoLangGraph)
-- **Issues**: [GitHub Issues](https://github.com/piotrlaczkowski/GoLangGraph/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/piotrlaczkowski/GoLangGraph/discussions)
-- **Email**: <support@golanggraph.dev>
+<div align="center">
+
+| Resource | Link |
+|----------|------|
+| 📚 **Documentation** | [GoDoc](https://godoc.org/github.com/piotrlaczkowski/GoLangGraph) |
+| 🐛 **Issues** | [GitHub Issues](https://github.com/piotrlaczkowski/GoLangGraph/issues) |
+| 💬 **Discussions** | [GitHub Discussions](https://github.com/piotrlaczkowski/GoLangGraph/discussions) |
+| 📧 **Email** | support@golanggraph.dev |
+
+</div>
 
 ## 🙏 Acknowledgments
 
-- Inspired by LangGraph and similar workflow engines
-- Built with the excellent Go ecosystem
-- Special thanks to all contributors
+- 🌟 Inspired by **LangGraph** and similar workflow engines
+- 🐹 Built with the excellent **Go ecosystem**
+- 👥 Special thanks to **all contributors**
 
 ## 🗺️ Roadmap
 
-- [ ] **v1.1**: Enhanced RAG capabilities
-- [ ] **v1.2**: Multi-modal support (images, audio)
-- [ ] **v1.3**: Distributed execution
-- [ ] **v1.4**: Visual workflow editor
-- [ ] **v1.5**: Advanced monitoring and analytics
-- [ ] **v2.0**: Cloud-native deployment options
+<table>
+<tr>
+<td width="50%">
+
+### 🚀 **Near Term**
+- [ ] **v1.1**: 🔍 Enhanced RAG capabilities
+- [ ] **v1.2**: 🎭 Multi-modal support (images, audio)
+- [ ] **v1.3**: 🌐 Distributed execution
+
+</td>
+<td width="50%">
+
+### 🔮 **Future**
+- [ ] **v1.4**: 🎨 Visual workflow editor
+- [ ] **v1.5**: 📊 Advanced monitoring and analytics
+- [ ] **v2.0**: ☁️ Cloud-native deployment options
+
+</td>
+</tr>
+</table>
 
 ---
 
-**GoLangGraph** - Building the future of AI agent workflows in Go! 🚀
+<div align="center">
+  <h3>🚀 <strong>GoLangGraph</strong> - Building the future of AI agent workflows in Go! 🚀</h3>
+  
+  <p>
+    <a href="https://github.com/piotrlaczkowski/GoLangGraph">⭐ Star us on GitHub</a> •
+    <a href="https://github.com/piotrlaczkowski/GoLangGraph/issues">🐛 Report Bug</a> •
+    <a href="https://github.com/piotrlaczkowski/GoLangGraph/discussions">💬 Request Feature</a>
+  </p>
+</div>
