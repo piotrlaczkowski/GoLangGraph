@@ -1,0 +1,21 @@
+name: "basic-agent"
+type: "chat"
+model: "gpt-3.5-turbo"
+provider: "openai"
+system_prompt: "You are a helpful assistant."
+temperature: 0.7
+max_tokens: 1000
+
+tools:
+  - name: "calculator"
+    enabled: true
+  - name: "web_search"
+    enabled: false
+
+database:
+  type: "postgres"
+  host: "localhost"
+  port: 5432
+  database: "golanggraph"
+  username: "postgres"
+  password: "password"

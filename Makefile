@@ -100,6 +100,15 @@ test-examples: ## Test all examples
 	@echo "$(BLUE)Testing examples...$(NC)"
 	go test -v $(EXAMPLES_PATH)
 
+.PHONY: test-cli
+test-cli: ## Test CLI functionality
+	@echo "$(BLUE)Testing CLI functionality...$(NC)"
+	go test -v ./test/cli_test.go
+
+.PHONY: test-enhanced
+test-enhanced: test test-cli ## Run enhanced test suite including CLI tests
+	@echo "$(GREEN)Enhanced test suite completed!$(NC)"
+
 .PHONY: benchmark
 benchmark: ## Run benchmarks
 	@echo "$(BLUE)Running benchmarks...$(NC)"
@@ -322,6 +331,69 @@ docs-generate: ## Generate static documentation
 	else \
 		echo "$(RED)godoc not found. Please install: go install golang.org/x/tools/cmd/godoc@latest$(NC)"; \
 	fi
+
+##@ CLI Commands
+
+.PHONY: cli-init
+cli-init: build ## Initialize new project with CLI
+	@echo "$(BLUE)Initializing new project...$(NC)"
+	./bin/$(BINARY_NAME) init test-project --template=basic
+
+.PHONY: cli-dev
+cli-dev: build ## Start development server
+	@echo "$(BLUE)Starting development server...$(NC)"
+	./bin/$(BINARY_NAME) dev --host=localhost --port=8080
+
+.PHONY: cli-docker-build
+cli-docker-build: build ## Build Docker container
+	@echo "$(BLUE)Building Docker container...$(NC)"
+	./bin/$(BINARY_NAME) docker build --tag=golanggraph-agent:latest
+
+.PHONY: cli-docker-build-distroless
+cli-docker-build-distroless: build ## Build distroless Docker container
+	@echo "$(BLUE)Building distroless Docker container...$(NC)"
+	./bin/$(BINARY_NAME) docker build --distroless --tag=golanggraph-agent:distroless
+
+.PHONY: cli-validate
+cli-validate: build ## Validate configuration
+	@echo "$(BLUE)Validating configuration...$(NC)"
+	./bin/$(BINARY_NAME) validate configs/agent-config.yaml
+
+.PHONY: cli-test-all
+cli-test-all: cli-init cli-validate cli-docker-build ## Test all CLI commands
+	@echo "$(GREEN)All CLI commands tested successfully!$(NC)"
+
+##@ Docker Operations
+
+.PHONY: docker-build-agent
+docker-build-agent: ## Build agent Docker image
+	@echo "$(BLUE)Building agent Docker image...$(NC)"
+	docker build -f Dockerfile.agent -t golanggraph-agent:latest .
+
+.PHONY: docker-build-distroless
+docker-build-distroless: ## Build distroless agent Docker image
+	@echo "$(BLUE)Building distroless agent Docker image...$(NC)"
+	docker build -f Dockerfile.distroless -t golanggraph-agent:distroless .
+
+.PHONY: docker-run-agent
+docker-run-agent: ## Run agent Docker container
+	@echo "$(BLUE)Running agent Docker container...$(NC)"
+	docker run -p 8080:8080 --name golanggraph-agent -d golanggraph-agent:latest
+
+.PHONY: docker-stop-agent
+docker-stop-agent: ## Stop agent Docker container
+	@echo "$(BLUE)Stopping agent Docker container...$(NC)"
+	docker stop golanggraph-agent || true
+	docker rm golanggraph-agent || true
+
+.PHONY: docker-logs-agent
+docker-logs-agent: ## Show agent Docker container logs
+	@echo "$(BLUE)Agent container logs:$(NC)"
+	docker logs golanggraph-agent
+
+.PHONY: docker-agent-complete
+docker-agent-complete: docker-build-agent docker-run-agent ## Build and run agent container
+	@echo "$(GREEN)Agent container is running on http://localhost:8080$(NC)"
 
 ##@ Examples
 

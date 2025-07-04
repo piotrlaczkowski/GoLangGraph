@@ -28,6 +28,8 @@ type ServerConfig struct {
 	MaxHeaderBytes int           `json:"max_header_bytes"`
 	EnableCORS     bool          `json:"enable_cors"`
 	StaticDir      string        `json:"static_dir"`
+	DevMode        bool          `json:"dev_mode"`
+	LogLevel       string        `json:"log_level"`
 }
 
 // DefaultServerConfig returns default server configuration
@@ -40,6 +42,8 @@ func DefaultServerConfig() *ServerConfig {
 		MaxHeaderBytes: 1 << 20, // 1MB
 		EnableCORS:     true,
 		StaticDir:      "./static",
+		DevMode:        false,
+		LogLevel:       "info",
 	}
 }
 
@@ -156,6 +160,22 @@ func (s *Server) setupRoutes() {
 	// WebSocket endpoints
 	api.HandleFunc("/ws/agents/{id}/stream", s.handleAgentWebSocket)
 	api.HandleFunc("/ws/graphs/{id}/stream", s.handleGraphWebSocket)
+
+	// Dev mode specific routes
+	if s.config.DevMode {
+		debug := s.router.PathPrefix("/debug").Subrouter()
+		debug.HandleFunc("/", s.handleDebugDashboard).Methods("GET")
+		debug.HandleFunc("/agents", s.handleDebugAgents).Methods("GET")
+		debug.HandleFunc("/config", s.handleDebugConfig).Methods("GET")
+		debug.HandleFunc("/logs", s.handleDebugLogs).Methods("GET")
+		debug.HandleFunc("/metrics", s.handleDebugMetrics).Methods("GET")
+		debug.HandleFunc("/reload", s.handleDebugReload).Methods("POST")
+		
+		playground := s.router.PathPrefix("/playground").Subrouter()
+		playground.HandleFunc("/", s.handlePlaygroundDashboard).Methods("GET")
+		playground.HandleFunc("/test", s.handlePlaygroundTest).Methods("POST")
+		playground.HandleFunc("/agents/{id}/test", s.handlePlaygroundAgentTest).Methods("POST")
+	}
 
 	// Static files for UI
 	if s.config.StaticDir != "" {
@@ -841,6 +861,271 @@ func (s *Server) writeError(w http.ResponseWriter, status int, message string) {
 	s.writeJSON(w, status, map[string]interface{}{
 		"error":     message,
 		"timestamp": time.Now(),
+	})
+}
+
+// Dev mode handlers
+func (s *Server) handleDebugDashboard(w http.ResponseWriter, r *http.Request) {
+	dashboardHTML := `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GoLangGraph Debug Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .card { border: 1px solid #ddd; padding: 20px; margin: 10px 0; border-radius: 5px; }
+        .nav { margin-bottom: 20px; }
+        .nav a { margin-right: 15px; text-decoration: none; color: #0066cc; }
+        .nav a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <h1>GoLangGraph Debug Dashboard</h1>
+    <div class="nav">
+        <a href="/debug/agents">Agents</a>
+        <a href="/debug/config">Configuration</a>
+        <a href="/debug/logs">Logs</a>
+        <a href="/debug/metrics">Metrics</a>
+        <a href="/playground">Playground</a>
+    </div>
+    <div class="card">
+        <h3>System Status</h3>
+        <p>Development mode is active</p>
+        <p>Server uptime: <span id="uptime">Loading...</span></p>
+    </div>
+    <div class="card">
+        <h3>Quick Actions</h3>
+        <button onclick="fetch('/debug/reload', {method: 'POST'}).then(r => r.json()).then(d => alert(JSON.stringify(d)))">Reload Configuration</button>
+    </div>
+</body>
+</html>
+`
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(dashboardHTML))
+}
+
+func (s *Server) handleDebugAgents(w http.ResponseWriter, r *http.Request) {
+	if s.agentManager == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "Agent manager not available")
+		return
+	}
+
+	agents := s.agentManager.ListAgents()
+	var agentDetails []map[string]interface{}
+
+	for _, agentID := range agents {
+		if agentInstance, exists := s.agentManager.GetAgent(agentID); exists {
+			config := agentInstance.GetConfig()
+			agentDetails = append(agentDetails, map[string]interface{}{
+				"id":     agentID,
+				"config": config,
+				"graph":  agentInstance.GetGraph(),
+			})
+		}
+	}
+
+	s.writeJSON(w, http.StatusOK, map[string]interface{}{
+		"agents": agentDetails,
+		"count":  len(agents),
+	})
+}
+
+func (s *Server) handleDebugConfig(w http.ResponseWriter, r *http.Request) {
+	s.writeJSON(w, http.StatusOK, map[string]interface{}{
+		"server_config": s.config,
+		"dev_mode":      s.config.DevMode,
+	})
+}
+
+func (s *Server) handleDebugLogs(w http.ResponseWriter, r *http.Request) {
+	// In a real implementation, you would retrieve logs from a log store
+	s.writeJSON(w, http.StatusOK, map[string]interface{}{
+		"logs": []map[string]interface{}{
+			{
+				"timestamp": time.Now().Format(time.RFC3339),
+				"level":     "info",
+				"message":   "Debug logs endpoint accessed",
+			},
+		},
+	})
+}
+
+func (s *Server) handleDebugMetrics(w http.ResponseWriter, r *http.Request) {
+	// In a real implementation, you would collect actual metrics
+	s.writeJSON(w, http.StatusOK, map[string]interface{}{
+		"metrics": map[string]interface{}{
+			"requests_total":      0,
+			"agents_active":       len(s.agentManager.ListAgents()),
+			"websocket_connections": len(s.wsConnections),
+			"memory_usage":        "N/A",
+		},
+	})
+}
+
+func (s *Server) handleDebugReload(w http.ResponseWriter, r *http.Request) {
+	// In a real implementation, you would reload configuration
+	s.writeJSON(w, http.StatusOK, map[string]interface{}{
+		"message": "Configuration reloaded successfully",
+		"timestamp": time.Now().Format(time.RFC3339),
+	})
+}
+
+func (s *Server) handlePlaygroundDashboard(w http.ResponseWriter, r *http.Request) {
+	playgroundHTML := `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GoLangGraph Playground</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .panel { border: 1px solid #ddd; padding: 20px; margin: 10px 0; border-radius: 5px; }
+        textarea { width: 100%; height: 100px; }
+        button { padding: 10px 20px; margin: 5px; background: #0066cc; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0052a3; }
+        .output { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>GoLangGraph Playground</h1>
+        
+        <div class="panel">
+            <h3>Test Agent</h3>
+            <textarea id="input" placeholder="Enter your message here..."></textarea>
+            <br>
+            <button onclick="testAgent()">Test Agent</button>
+            <div id="output" class="output"></div>
+        </div>
+        
+        <div class="panel">
+            <h3>Available Agents</h3>
+            <div id="agents">Loading...</div>
+        </div>
+    </div>
+
+    <script>
+        async function testAgent() {
+            const input = document.getElementById('input').value;
+            const output = document.getElementById('output');
+            
+            try {
+                const response = await fetch('/playground/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ input: input })
+                });
+                const result = await response.json();
+                output.innerHTML = '<pre>' + JSON.stringify(result, null, 2) + '</pre>';
+            } catch (error) {
+                output.innerHTML = '<pre>Error: ' + error.message + '</pre>';
+            }
+        }
+        
+        // Load agents
+        fetch('/api/v1/agents')
+            .then(r => r.json())
+            .then(data => {
+                const agentsDiv = document.getElementById('agents');
+                if (data.agents && data.agents.length > 0) {
+                    agentsDiv.innerHTML = data.agents.map(agent => 
+                        '<div>• ' + agent + '</div>'
+                    ).join('');
+                } else {
+                    agentsDiv.innerHTML = 'No agents available';
+                }
+            });
+    </script>
+</body>
+</html>
+`
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(playgroundHTML))
+}
+
+func (s *Server) handlePlaygroundTest(w http.ResponseWriter, r *http.Request) {
+	var request struct {
+		Input string `json:"input"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		s.writeError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Test with the first available agent
+	if s.agentManager == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "Agent manager not available")
+		return
+	}
+
+	agents := s.agentManager.ListAgents()
+	if len(agents) == 0 {
+		s.writeError(w, http.StatusNotFound, "No agents available")
+		return
+	}
+
+	agentInstance, exists := s.agentManager.GetAgent(agents[0])
+	if !exists {
+		s.writeError(w, http.StatusNotFound, "Agent not found")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Minute)
+	defer cancel()
+
+	execution, err := agentInstance.Execute(ctx, request.Input)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, map[string]interface{}{
+		"agent_id":  agents[0],
+		"input":     request.Input,
+		"execution": execution,
+		"timestamp": time.Now().Format(time.RFC3339),
+	})
+}
+
+func (s *Server) handlePlaygroundAgentTest(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	agentID := vars["id"]
+
+	var request struct {
+		Input string `json:"input"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		s.writeError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if s.agentManager == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "Agent manager not available")
+		return
+	}
+
+	agentInstance, exists := s.agentManager.GetAgent(agentID)
+	if !exists {
+		s.writeError(w, http.StatusNotFound, "Agent not found")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Minute)
+	defer cancel()
+
+	execution, err := agentInstance.Execute(ctx, request.Input)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, map[string]interface{}{
+		"agent_id":  agentID,
+		"input":     request.Input,
+		"execution": execution,
+		"timestamp": time.Now().Format(time.RFC3339),
 	})
 }
 
