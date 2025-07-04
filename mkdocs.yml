@@ -11,7 +11,6 @@ copyright: Copyright &copy; 2024 GoLangGraph Team
 
 theme:
   name: material
-  custom_dir: docs/overrides
   palette:
     # Palette toggle for automatic mode
     - media: "(prefers-color-scheme)"
@@ -94,9 +93,6 @@ extra:
 extra_css:
   - stylesheets/extra.css
 
-extra_javascript:
-  - javascripts/extra.js
-
 markdown_extensions:
   - abbr
   - admonition
@@ -129,9 +125,7 @@ markdown_extensions:
       repo: GoLangGraph
   - pymdownx.mark
   - pymdownx.smartsymbols
-  - pymdownx.snippets:
-      auto_append:
-        - includes/mkdocs.md
+  - pymdownx.snippets
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
@@ -155,59 +149,14 @@ plugins:
   - git-revision-date-localized:
       enable_creation_date: true
       type: timeago
-  - git-committers:
-      repository: piotrlaczkowski/GoLangGraph
-      branch: main
+
   - glightbox
-  - tags:
-      tags_file: tags.md
 
 nav:
   - Home: index.md
   - Getting Started:
     - Quick Start: getting-started/quick-start.md
-    - Installation: getting-started/installation.md
-    - First Agent: getting-started/first-agent.md
-    - Configuration: getting-started/configuration.md
-  - User Guide:
-    - Core Concepts: user-guide/core-concepts.md
-    - Building Agents: user-guide/building-agents.md
-    - Graph Workflows: user-guide/graph-workflows.md
-    - State Management: user-guide/state-management.md
-    - LLM Integration: user-guide/llm-integration.md
-    - Tools & Extensions: user-guide/tools-extensions.md
-    - Persistence: user-guide/persistence.md
-    - Debugging & Monitoring: user-guide/debugging-monitoring.md
+  - Core Package: CORE_PACKAGE.md
+  - Persistence Guide: PERSISTENCE_GUIDE.md
   - Examples:
-    - Simple Chat Bot: examples/simple-chatbot.md
-    - ReAct Agent: examples/react-agent.md
-    - Multi-Agent Workflows: examples/multi-agent.md
-    - RAG Implementation: examples/rag-implementation.md
-    - Custom Tools: examples/custom-tools.md
-    - Database Integration: examples/database-integration.md
-  - API Reference:
-    - Overview: api/overview.md
-    - Core Package: api/core.md
-    - Agent Package: api/agent.md
-    - LLM Package: api/llm.md
-    - Tools Package: api/tools.md
-    - Persistence Package: api/persistence.md
-    - Server Package: api/server.md
-    - Builder Package: api/builder.md
-    - Debug Package: api/debug.md
-  - Deployment:
-    - Docker: deployment/docker.md
-    - Kubernetes: deployment/kubernetes.md
-    - Cloud Platforms: deployment/cloud.md
-    - Performance Tuning: deployment/performance.md
-  - Development:
-    - Contributing: development/contributing.md
-    - Architecture: development/architecture.md
-    - Testing: development/testing.md
-    - Release Process: development/release-process.md
-  - Community:
-    - Support: community/support.md
-    - FAQ: community/faq.md
-    - Changelog: community/changelog.md
-    - Roadmap: community/roadmap.md
-  - Tags: tags.md 
+    - Ollama Integration: examples/ollama-integration.md 
