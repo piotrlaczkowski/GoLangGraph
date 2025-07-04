@@ -7,11 +7,11 @@
   --md-primary-fg-color--dark: #1565c0;
   --md-accent-fg-color: #2196f3;
   --md-accent-fg-color--transparent: rgba(33, 150, 243, 0.1);
-  
+
   /* Custom colors for code blocks */
   --md-code-bg-color: #f8f9fa;
   --md-code-fg-color: #37474f;
-  
+
   /* Custom colors for admonitions */
   --md-admonition-bg-color: #f8f9fa;
   --md-admonition-fg-color: #263238;
@@ -181,24 +181,24 @@
   .md-sidebar {
     display: none;
   }
-  
+
   .md-content {
     margin: 0;
     padding: 0;
   }
-  
+
   .md-typeset {
     color: #000;
     font-size: 12pt;
   }
-  
+
   .md-typeset .admonition {
     border: 1px solid #ccc;
     page-break-inside: avoid;
   }
-  
+
   .highlight {
     border: 1px solid #ccc;
     page-break-inside: avoid;
   }
-} 
+}

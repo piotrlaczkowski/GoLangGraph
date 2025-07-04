@@ -33,11 +33,11 @@ theme:
       toggle:
         icon: material/brightness-4
         name: Switch to system preference
-  
+
   font:
     text: Roboto
     code: Roboto Mono
-  
+
   features:
     - announce.dismiss
     - content.action.edit
@@ -66,7 +66,7 @@ theme:
     - search.suggest
     - toc.follow
     - toc.integrate
-  
+
   icon:
     repo: fontawesome/brands/github
     edit: material/pencil
@@ -81,11 +81,11 @@ extra:
       link: https://twitter.com/golanggraph
     - icon: fontawesome/brands/discord
       link: https://discord.gg/golanggraph
-  
+
   analytics:
     provider: google
     property: !ENV GOOGLE_ANALYTICS_KEY
-  
+
   version:
     provider: mike
     default: stable
@@ -161,4 +161,4 @@ nav:
   - Core Package: CORE_PACKAGE.md
   - Persistence Guide: PERSISTENCE_GUIDE.md
   - Examples:
-    - Ollama Integration: examples/ollama-integration.md 
+    - Ollama Integration: examples/ollama-integration.md

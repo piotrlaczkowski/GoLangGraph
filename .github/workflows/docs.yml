@@ -30,23 +30,23 @@ jobs:
   build:
     name: Build Documentation
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
-    
+
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
-    
+
     - name: Cache Python dependencies
       uses: actions/cache@v4
       with:
@@ -54,7 +54,7 @@ jobs:
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
-    
+
     - name: Cache Go modules
       uses: actions/cache@v4
       with:
@@ -64,17 +64,17 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
-    
+
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-    
+
     - name: Install Go dependencies
       run: |
         go mod download
         go mod tidy
-    
+
     - name: Generate Go documentation
       run: |
         mkdir -p docs/api
@@ -82,7 +82,7 @@ jobs:
         echo "" >> docs/api/generated.md
         echo "Auto-generated API documentation for all packages." >> docs/api/generated.md
         echo "" >> docs/api/generated.md
-        
+
         for pkg in $(go list ./pkg/...); do
           echo "## Package: $pkg" >> docs/api/generated.md
           echo "" >> docs/api/generated.md
@@ -91,43 +91,43 @@ jobs:
           echo '```' >> docs/api/generated.md
           echo "" >> docs/api/generated.md
         done
-    
+
     - name: Build documentation
       run: |
         mkdocs build --verbose
-    
+
     - name: Test documentation links
       run: |
         # Install link checker
         pip install pytest-html-reporter
-        
+
         # Basic validation - check if HTML files were generated
         if [ ! -d "site" ]; then
           echo "Error: Documentation site not built"
           exit 1
         fi
-        
+
         # Count HTML files
         HTML_COUNT=$(find site -name "*.html" | wc -l)
         echo "Generated $HTML_COUNT HTML files"
-        
+
         if [ $HTML_COUNT -eq 0 ]; then
           echo "Error: No HTML files generated"
           exit 1
         fi
-        
+
         # Check for common issues
         find site -name "*.html" -exec grep -l "404\|Not Found\|Error" {} \; | head -5 | while read file; do
           echo "Warning: Potential issue in $file"
         done
-    
+
     - name: Upload documentation artifacts
       uses: actions/upload-artifact@v4
       with:
         name: documentation
         path: site/
         retention-days: 7
-    
+
     - name: Upload documentation coverage
       uses: actions/upload-artifact@v4
       with:
@@ -140,35 +140,35 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    
+
     permissions:
       contents: read
       pages: write
       id-token: write
-    
+
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    
+
     steps:
     - name: Download documentation artifacts
       uses: actions/download-artifact@v4
       with:
         name: documentation
         path: site/
-    
+
     - name: Setup Pages
       uses: actions/configure-pages@v3
-    
+
     - name: Upload to GitHub Pages
       uses: actions/upload-pages-artifact@v3
       with:
         path: site/
-    
+
     - name: Deploy to GitHub Pages
       id: deployment
       uses: actions/deploy-pages@v4
-    
+
     - name: Summary
       run: |
         echo "## Documentation Deployed 🚀" >> $GITHUB_STEP_SUMMARY
@@ -180,4 +180,4 @@ jobs:
         echo "- Getting Started Guide" >> $GITHUB_STEP_SUMMARY
         echo "- API Reference" >> $GITHUB_STEP_SUMMARY
         echo "- Examples and Tutorials" >> $GITHUB_STEP_SUMMARY
-        echo "- Architecture Documentation" >> $GITHUB_STEP_SUMMARY 
+        echo "- Architecture Documentation" >> $GITHUB_STEP_SUMMARY

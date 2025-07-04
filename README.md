@@ -641,7 +641,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Documentation**: [GoDoc](https://godoc.org/github.com/piotrlaczkowski/GoLangGraph)
 - **Issues**: [GitHub Issues](https://github.com/piotrlaczkowski/GoLangGraph/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/piotrlaczkowski/GoLangGraph/discussions)
-- **Email**: support@golanggraph.dev
+- **Email**: <support@golanggraph.dev>
 
 ## 🙏 Acknowledgments
 
@@ -660,4 +660,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**GoLangGraph** - Building the future of AI agent workflows in Go! 🚀 
+**GoLangGraph** - Building the future of AI agent workflows in Go! 🚀

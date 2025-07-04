@@ -1,3 +1,9 @@
+// Copyright (c) 2024 GoLangGraph Team
+//
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+//
+// Package: GoLangGraph - A powerful Go framework for building AI agent workflows
+
 // Package core provides the fundamental building blocks for creating and executing graph-based workflows in GoLangGraph.
 //
 // The core package implements a graph execution engine that allows you to define workflows as directed graphs

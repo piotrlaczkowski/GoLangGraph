@@ -35,21 +35,21 @@ check_git_repo() {
         print_error "Not in a git repository. Please run this script from the project root."
         exit 1
     fi
-    
+
     print_status "Git repository detected"
 }
 
 # Setup GitHub repository settings
 setup_github_settings() {
     print_status "Setting up GitHub repository settings..."
-    
+
     # Check if GitHub CLI is available
     if command -v gh &> /dev/null; then
         print_status "GitHub CLI detected. Configuring repository settings..."
-        
+
         # Enable GitHub Pages
         gh api repos/:owner/:repo --method PATCH --field has_pages=true || print_warning "Could not enable GitHub Pages via API"
-        
+
         # Set up branch protection (optional)
         read -p "Do you want to set up branch protection for main branch? (y/n): " -n 1 -r
         echo
@@ -72,7 +72,7 @@ setup_github_settings() {
 # Initialize secrets baseline for detect-secrets
 setup_secrets_baseline() {
     print_status "Setting up secrets detection baseline..."
-    
+
     if ! command -v detect-secrets &> /dev/null; then
         print_status "Installing detect-secrets..."
         pip install detect-secrets || {
@@ -80,7 +80,7 @@ setup_secrets_baseline() {
             return
         }
     fi
-    
+
     # Create secrets baseline
     detect-secrets scan --baseline .secrets.baseline --exclude-files '\.git/.*|\.secrets\.baseline|go\.sum|go\.mod|docs/.*\.md'
     print_success "Secrets baseline created at .secrets.baseline"
@@ -89,7 +89,7 @@ setup_secrets_baseline() {
 # Setup pre-commit hooks
 setup_precommit() {
     print_status "Setting up pre-commit hooks..."
-    
+
     # Run the documentation setup script first
     if [ -f "scripts/setup-docs.sh" ]; then
         print_status "Running documentation setup..."
@@ -97,7 +97,7 @@ setup_precommit() {
         ./scripts/setup-docs.sh
     else
         print_warning "Documentation setup script not found. Setting up pre-commit manually..."
-        
+
         # Install pre-commit if not available
         if ! command -v pre-commit &> /dev/null; then
             print_status "Installing pre-commit..."
@@ -106,28 +106,28 @@ setup_precommit() {
                 exit 1
             }
         fi
-        
+
         # Install hooks
         pre-commit install
         pre-commit install --hook-type commit-msg
     fi
-    
+
     print_success "Pre-commit hooks installed!"
 }
 
 # Test CI workflows locally (if act is available)
 test_workflows() {
     print_status "Testing workflows..."
-    
+
     if command -v act &> /dev/null; then
         print_status "act detected. Running workflow tests..."
-        
+
         # Test pre-commit workflow
         act -W .github/workflows/pre-commit.yml --dryrun || print_warning "Pre-commit workflow test failed"
-        
+
         # Test documentation workflow
         act -W .github/workflows/docs.yml --dryrun || print_warning "Documentation workflow test failed"
-        
+
         print_success "Workflow tests completed!"
     else
         print_warning "act not found. Install act to test workflows locally: https://github.com/nektos/act"
@@ -138,7 +138,7 @@ test_workflows() {
 # Generate GitHub repository configuration
 generate_repo_config() {
     print_status "Generating repository configuration..."
-    
+
     cat > .github/settings.yml << 'EOF'
 # Repository settings for GoLangGraph
 repository:
@@ -155,21 +155,21 @@ repository:
     - llm
     - rag
     - framework
-  
+
   # Repository features
   has_issues: true
   has_projects: true
   has_wiki: true
   has_pages: true
   has_downloads: true
-  
+
   # Repository settings
   default_branch: main
   allow_squash_merge: true
   allow_merge_commit: true
   allow_rebase_merge: true
   delete_branch_on_merge: true
-  
+
   # Security settings
   enable_automated_security_fixes: true
   enable_vulnerability_alerts: true
@@ -196,41 +196,41 @@ labels:
   - name: "bug"
     color: "d73a4a"
     description: "Something isn't working"
-  
+
   - name: "enhancement"
     color: "a2eeef"
     description: "New feature or request"
-  
+
   - name: "documentation"
     color: "0075ca"
     description: "Improvements or additions to documentation"
-  
+
   - name: "good first issue"
     color: "7057ff"
     description: "Good for newcomers"
-  
+
   - name: "help wanted"
     color: "008672"
     description: "Extra attention is needed"
-  
+
   - name: "dependencies"
     color: "0366d6"
     description: "Pull requests that update a dependency file"
-  
+
   - name: "ci/cd"
     color: "f9d0c4"
     description: "Related to CI/CD pipeline"
 EOF
-    
+
     print_success "Repository configuration generated at .github/settings.yml"
 }
 
 # Create development documentation
 create_dev_docs() {
     print_status "Creating development documentation..."
-    
+
     mkdir -p docs/development
-    
+
     cat > docs/development/ci-cd.md << 'EOF'
 # CI/CD Pipeline
 
@@ -348,26 +348,26 @@ EOF
 # Main function
 main() {
     print_status "Setting up CI/CD pipeline for GoLangGraph..."
-    
+
     # Check prerequisites
     check_git_repo
-    
+
     # Setup components
     setup_secrets_baseline
     setup_precommit
     generate_repo_config
     create_dev_docs
-    
+
     # Optional GitHub setup
     read -p "Do you want to configure GitHub repository settings? (y/n): " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         setup_github_settings
     fi
-    
+
     # Test workflows if possible
     test_workflows
-    
+
     print_success "CI/CD pipeline setup complete!"
     print_status ""
     print_status "Next steps:"
@@ -386,4 +386,4 @@ main() {
 }
 
 # Run main function
-main "$@" 
+main "$@"

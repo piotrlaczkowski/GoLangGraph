@@ -39,19 +39,26 @@ This project adheres to a code of conduct that we expect all contributors to fol
 
 1. **Fork the repository** on GitHub
 2. **Clone your fork** locally:
+
    ```bash
    git clone https://github.com/YOUR_USERNAME/GoLangGraph.git
    cd GoLangGraph
    ```
+
 3. **Add upstream remote**:
+
    ```bash
    git remote add upstream https://github.com/piotrlaczkowski/GoLangGraph.git
    ```
+
 4. **Install dependencies**:
+
    ```bash
    go mod tidy
    ```
+
 5. **Verify setup**:
+
    ```bash
    make test
    ```
@@ -127,6 +134,7 @@ OLLAMA_BASE_URL=http://localhost:11434
 ### Branching Strategy
 
 1. **Create a feature branch** from `main`:
+
    ```bash
    git checkout main
    git pull upstream main
@@ -136,12 +144,14 @@ OLLAMA_BASE_URL=http://localhost:11434
 2. **Make your changes** following the guidelines below
 
 3. **Commit your changes** with clear messages:
+
    ```bash
    git add .
    git commit -m "feat: add new feature description"
    ```
 
 4. **Push to your fork**:
+
    ```bash
    git push origin feature/your-feature-name
    ```
@@ -159,6 +169,7 @@ We follow the [Conventional Commits](https://www.conventionalcommits.org/) speci
 ```
 
 **Types:**
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation changes
@@ -170,6 +181,7 @@ We follow the [Conventional Commits](https://www.conventionalcommits.org/) speci
 - `ci`: CI/CD changes
 
 **Examples:**
+
 ```
 feat(core): add conditional edge support
 fix(persistence): resolve connection pool leak
@@ -180,26 +192,31 @@ test(agent): add comprehensive agent tests
 ### Types of Contributions
 
 #### 🐛 Bug Fixes
+
 - Fix existing functionality that isn't working correctly
 - Include reproduction steps in the issue
 - Add tests to prevent regression
 
 #### ✨ New Features
+
 - Add new functionality to the project
 - Discuss in an issue before implementing large features
 - Include documentation and tests
 
 #### 📚 Documentation
+
 - Improve existing documentation
 - Add new documentation for features
 - Fix typos and improve clarity
 
 #### 🧪 Testing
+
 - Add missing tests
 - Improve test coverage
 - Add integration tests
 
 #### 🏗️ Infrastructure
+
 - Improve build process
 - Update CI/CD pipelines
 - Enhance development tools
@@ -233,6 +250,7 @@ make test-race
 ### Writing Tests
 
 #### Unit Tests
+
 - Test individual functions and methods
 - Use table-driven tests for multiple scenarios
 - Mock external dependencies
@@ -271,6 +289,7 @@ func TestFunction(t *testing.T) {
 ```
 
 #### Integration Tests
+
 - Test component interactions
 - Use real databases when possible
 - Clean up resources after tests
@@ -289,6 +308,7 @@ func TestDatabaseIntegration(t *testing.T) {
 ```
 
 #### Benchmark Tests
+
 - Measure performance of critical paths
 - Use `testing.B` for benchmarks
 
@@ -307,16 +327,19 @@ func BenchmarkFunction(b *testing.B) {
 We follow standard Go conventions with some additions:
 
 #### Formatting
+
 - Use `gofmt` for formatting
 - Use `goimports` for import organization
 - Run `make fmt` before committing
 
 #### Naming Conventions
+
 - Use descriptive names for variables and functions
 - Follow Go naming conventions (PascalCase for exported, camelCase for unexported)
 - Use meaningful package names
 
 #### Error Handling
+
 - Always handle errors explicitly
 - Use wrapped errors for context: `fmt.Errorf("operation failed: %w", err)`
 - Return errors as the last return value
@@ -338,6 +361,7 @@ func ProcessData(data string) (string, error) {
 ```
 
 #### Documentation
+
 - Add godoc comments for all exported functions, types, and packages
 - Use complete sentences in comments
 - Include examples for complex functions
@@ -372,16 +396,19 @@ make lint-fix
 ### Code Organization
 
 #### Package Structure
+
 - Keep packages focused and cohesive
 - Avoid circular dependencies
 - Use internal packages for implementation details
 
 #### File Organization
+
 - Group related functionality in the same file
 - Keep files reasonably sized (< 500 lines)
 - Use meaningful file names
 
 #### Interface Design
+
 - Keep interfaces small and focused
 - Define interfaces where they're used, not where they're implemented
 - Use composition over inheritance
@@ -391,6 +418,7 @@ make lint-fix
 ### Pull Request Process
 
 1. **Ensure your branch is up to date**:
+
    ```bash
    git checkout main
    git pull upstream main
@@ -399,6 +427,7 @@ make lint-fix
    ```
 
 2. **Run the full test suite**:
+
    ```bash
    make test
    make lint
@@ -454,6 +483,7 @@ Brief description of changes
 ### Versioning
 
 We follow [Semantic Versioning](https://semver.org/):
+
 - `MAJOR.MINOR.PATCH`
 - Major: Breaking changes
 - Minor: New features (backward compatible)
@@ -540,4 +570,4 @@ If you have any questions about contributing, please:
 3. Create a new discussion or issue
 4. Reach out to maintainers
 
-Thank you for contributing to GoLangGraph! 🚀 
+Thank you for contributing to GoLangGraph! 🚀

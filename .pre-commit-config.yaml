@@ -149,7 +149,7 @@ repos:
         language: system
         files: go\.mod$
         pass_filenames: false
-      
+
       - id: go-mod-outdated
         name: Go Mod Outdated
         description: Check for outdated Go modules
@@ -158,7 +158,7 @@ repos:
         files: go\.mod$
         pass_filenames: false
         verbose: true
-      
+
       - id: go-generate
         name: Go Generate
         description: Run go generate to ensure generated files are up to date
@@ -166,7 +166,7 @@ repos:
         language: system
         files: \.go$
         pass_filenames: false
-      
+
       - id: go-cyclo
         name: Go Cyclomatic Complexity
         description: Check cyclomatic complexity
@@ -174,7 +174,7 @@ repos:
         language: system
         files: \.go$
         pass_filenames: false
-      
+
       - id: go-ineffassign
         name: Go Ineffassign
         description: Check for ineffectual assignments
@@ -182,7 +182,7 @@ repos:
         language: system
         files: \.go$
         pass_filenames: false
-      
+
       - id: go-misspell
         name: Go Misspell
         description: Check for misspellings
@@ -192,4 +192,4 @@ repos:
         pass_filenames: false
 
 # Configuration
-default_install_hook_types: [pre-commit, pre-merge-commit, pre-push, prepare-commit-msg, commit-msg, post-checkout, post-commit, post-merge, post-rewrite] 
+default_install_hook_types: [pre-commit, pre-merge-commit, pre-push, prepare-commit-msg, commit-msg, post-checkout, post-commit, post-merge, post-rewrite]
