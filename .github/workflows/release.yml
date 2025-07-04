@@ -1,0 +1,253 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+env:
+  GO_VERSION: '1.21'
+
+jobs:
+  test:
+    name: Test Before Release
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: golanggraph
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+    
+    - name: Install dependencies
+      run: |
+        go mod download
+        go mod tidy
+    
+    - name: Run tests
+      run: |
+        go test -v -race -coverprofile=coverage.out -covermode=atomic ./pkg/...
+      env:
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: 5432
+        POSTGRES_DB: golanggraph
+        POSTGRES_USER: testuser
+        POSTGRES_PASSWORD: testpass
+        REDIS_HOST: localhost
+        REDIS_PORT: 6379
+
+  build-and-release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+    
+    - name: Install dependencies
+      run: |
+        go mod download
+        go mod tidy
+    
+    - name: Get version from tag
+      id: get_version
+      run: |
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/}
+        else
+          VERSION=dev-$(git rev-parse --short HEAD)
+        fi
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Building version: $VERSION"
+    
+    - name: Build release binaries
+      run: |
+        mkdir -p bin/release
+        
+        # Build for multiple platforms
+        GOOS=linux GOARCH=amd64 go build -ldflags="-X main.version=${{ steps.get_version.outputs.VERSION }}" -o bin/release/golanggraph-linux-amd64 ./cmd/golanggraph
+        GOOS=linux GOARCH=arm64 go build -ldflags="-X main.version=${{ steps.get_version.outputs.VERSION }}" -o bin/release/golanggraph-linux-arm64 ./cmd/golanggraph
+        GOOS=darwin GOARCH=amd64 go build -ldflags="-X main.version=${{ steps.get_version.outputs.VERSION }}" -o bin/release/golanggraph-darwin-amd64 ./cmd/golanggraph
+        GOOS=darwin GOARCH=arm64 go build -ldflags="-X main.version=${{ steps.get_version.outputs.VERSION }}" -o bin/release/golanggraph-darwin-arm64 ./cmd/golanggraph
+        GOOS=windows GOARCH=amd64 go build -ldflags="-X main.version=${{ steps.get_version.outputs.VERSION }}" -o bin/release/golanggraph-windows-amd64.exe ./cmd/golanggraph
+        
+        # Create checksums
+        cd bin/release
+        sha256sum * > checksums.txt
+        cd ../..
+    
+    - name: Create release archives
+      run: |
+        cd bin/release
+        
+        # Create tar.gz for Unix systems
+        tar -czf golanggraph-linux-amd64.tar.gz golanggraph-linux-amd64
+        tar -czf golanggraph-linux-arm64.tar.gz golanggraph-linux-arm64
+        tar -czf golanggraph-darwin-amd64.tar.gz golanggraph-darwin-amd64
+        tar -czf golanggraph-darwin-arm64.tar.gz golanggraph-darwin-arm64
+        
+        # Create zip for Windows
+        zip golanggraph-windows-amd64.zip golanggraph-windows-amd64.exe
+        
+        cd ../..
+    
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Simple changelog generation
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          # Get the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [[ -n "$PREV_TAG" ]]; then
+            echo "## Changes since $PREV_TAG" > changelog.md
+            git log --pretty=format:"- %s (%h)" $PREV_TAG..HEAD >> changelog.md
+          else
+            echo "## Initial Release" > changelog.md
+            echo "First release of GoLangGraph" >> changelog.md
+          fi
+        else
+          echo "## Development Build" > changelog.md
+          echo "Development build from commit $(git rev-parse --short HEAD)" >> changelog.md
+        fi
+        
+        echo "CHANGELOG_FILE=changelog.md" >> $GITHUB_OUTPUT
+    
+    - name: Create GitHub Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.get_version.outputs.VERSION }}
+        name: Release ${{ steps.get_version.outputs.VERSION }}
+        body_path: ${{ steps.changelog.outputs.CHANGELOG_FILE }}
+        draft: false
+        prerelease: false
+        files: |
+          bin/release/golanggraph-linux-amd64.tar.gz
+          bin/release/golanggraph-linux-arm64.tar.gz
+          bin/release/golanggraph-darwin-amd64.tar.gz
+          bin/release/golanggraph-darwin-arm64.tar.gz
+          bin/release/golanggraph-windows-amd64.zip
+          bin/release/checksums.txt
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Upload artifacts for non-tag builds
+      if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: golanggraph-${{ steps.get_version.outputs.VERSION }}
+        path: |
+          bin/release/golanggraph-*
+          bin/release/checksums.txt
+
+  docker:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+    
+    - name: Get version from tag
+      id: get_version
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+    
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: |
+          golanggraph/golanggraph:latest
+          golanggraph/golanggraph:${{ steps.get_version.outputs.VERSION }}
+        build-args: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+
+  publish-docs:
+    name: Publish Documentation
+    runs-on: ubuntu-latest
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+    
+    - name: Install dependencies
+      run: |
+        go mod download
+        go mod tidy
+        go install golang.org/x/tools/cmd/godoc@latest
+    
+    - name: Generate documentation
+      run: |
+        mkdir -p docs/api
+        godoc -html github.com/piotrlaczkowski/golanggraph/pkg/core > docs/api/core.html
+        godoc -html github.com/piotrlaczkowski/golanggraph/pkg/persistence > docs/api/persistence.html
+        godoc -html github.com/piotrlaczkowski/golanggraph/pkg/llm > docs/api/llm.html
+        godoc -html github.com/piotrlaczkowski/golanggraph/pkg/agent > docs/api/agent.html
+        godoc -html github.com/piotrlaczkowski/golanggraph/pkg/tools > docs/api/tools.html
+        godoc -html github.com/piotrlaczkowski/golanggraph/pkg/server > docs/api/server.html
+    
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs
+        force_orphan: true 
