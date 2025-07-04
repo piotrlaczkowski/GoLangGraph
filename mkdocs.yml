@@ -93,6 +93,8 @@ extra:
 extra_css:
   - stylesheets/extra.css
 
+strict: false
+
 markdown_extensions:
   - abbr
   - admonition

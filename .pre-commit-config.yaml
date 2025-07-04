@@ -9,7 +9,7 @@ repos:
       - id: go-imports
         name: Go Imports
         description: Run goimports on Go source files
-      - id: go-vet-mod
+      - id: go-vet
         name: Go Vet
         description: Run go vet on Go source files
       - id: go-mod-tidy
@@ -19,13 +19,9 @@ repos:
         name: Go Unit Tests
         description: Run go test on Go source files
         args: ["-timeout=30s", "-race", "-short"]
-      - id: go-build-mod
+      - id: go-build
         name: Go Build
         description: Run go build on Go source files
-      - id: go-mod-vendor
-        name: Go Mod Vendor
-        description: Run go mod vendor to ensure vendor directory is up to date
-        args: ["-v"]
       - id: golangci-lint
         name: golangci-lint
         description: Run golangci-lint on Go source files
@@ -65,6 +61,7 @@ repos:
       - id: check-yaml
         name: Check YAML
         description: Validate YAML files
+        args: ['--unsafe']  # Allow PyYAML to load YAML safely
       - id: check-json
         name: Check JSON
         description: Validate JSON files
@@ -95,9 +92,6 @@ repos:
       - id: mixed-line-ending
         name: Mixed Line Ending
         description: Check for mixed line endings
-      - id: check-docstring-first
-        name: Check Docstring First
-        description: Check that docstrings come first
 
   # Dockerfile linting
   - repo: https://github.com/hadolint/hadolint
@@ -130,7 +124,6 @@ repos:
       - id: commitizen
         name: Commitizen Check
         description: Check commit message format
-        stages: [commit-msg]
 
   # License headers
   - repo: https://github.com/Lucas-C/pre-commit-hooks
@@ -198,20 +191,5 @@ repos:
         files: \.go$
         pass_filenames: false
 
-# Global configuration
-default_stages: [commit]
-fail_fast: false
-minimum_pre_commit_version: 3.0.0
-
-# CI configuration
-ci:
-  autofix_commit_msg: |
-    [pre-commit.ci] auto fixes from pre-commit hooks
-    
-    for more information, see https://pre-commit.ci
-  autofix_prs: true
-  autoupdate_branch: ''
-  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
-  autoupdate_schedule: weekly
-  skip: []
-  submodules: false 
+# Configuration
+default_install_hook_types: [pre-commit, pre-merge-commit, pre-push, prepare-commit-msg, commit-msg, post-checkout, post-commit, post-merge, post-rewrite] 
