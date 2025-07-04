@@ -6,17 +6,16 @@
 
 > **The most comprehensive Go implementation of LangGraph** - Build stateful, multi-agent AI applications with **minimal code**.
 
-## 🚀 Quick Start - Build an Agent in 3 Lines
+## 🚀 Quick Start - Build an Agent in 1 Line!
 
 ```go
-// Create a chat agent in just 3 lines!
-config := &agent.AgentConfig{Name: "ChatBot", Type: agent.AgentTypeChat}
-llmManager := createLLMManager() // Your LLM provider
-chatAgent := agent.NewAgent(config, llmManager, tools.NewToolRegistry())
-
-// Use it
+// Create ANY agent in just 1 line!
+chatAgent := builder.OneLineChat("MyAgent")
 response, _ := chatAgent.Execute(ctx, "Hello! Tell me about Go programming.")
 fmt.Println(response.Output)
+
+// Or use the builder pattern
+agent := builder.Quick().Chat("MyAgent")
 ```
 
 ## 🎯 Why GoLangGraph?
@@ -45,31 +44,47 @@ go get github.com/piotrlaczkowski/GoLangGraph
 - **Streaming**: Real-time response streaming
 - **Visual Debugging**: Graph visualization and execution tracing
 
-### 🎯 Minimal Code Examples
+### 🎯 Ultimate Minimal Code Examples
 
-#### 1. Simple Chat Agent (1 line!)
+#### 1. One-Line Agent Creation
 ```go
-agent := agent.NewAgent(&agent.AgentConfig{Name: "Chat", Type: agent.AgentTypeChat}, llmManager, tools.NewToolRegistry())
+// Chat Agent
+chatAgent := builder.OneLineChat("MyChat")
+
+// ReAct Agent with Tools
+reactAgent := builder.OneLineReAct("MyReAct")
+
+// Tool Agent
+toolAgent := builder.OneLineTool("MyTool")
+
+// RAG Agent
+ragAgent := builder.OneLineRAG("MyRAG")
 ```
 
-#### 2. ReAct Agent with Tools (2 lines!)
+#### 2. Specialized Agents (1 line each!)
 ```go
-reactAgent := agent.NewAgent(&agent.AgentConfig{Name: "ReAct", Type: agent.AgentTypeReAct, Tools: []string{"calculator"}}, llmManager, toolRegistry)
-response, _ := reactAgent.Execute(ctx, "Calculate the square root of 144")
+researcher := builder.Quick().Researcher("MyResearcher")
+writer := builder.Quick().Writer("MyWriter")
+analyst := builder.Quick().Analyst("MyAnalyst")
+coder := builder.Quick().Coder("MyCoder")
 ```
 
-#### 3. Multi-Agent System (3 lines!)
+#### 3. Multi-Agent Workflows (1 line each!)
 ```go
-coordinator := agent.NewMultiAgentCoordinator()
-coordinator.AddAgent("researcher", researchAgent)
-coordinator.AddAgent("writer", writerAgent)
-responses, _ := coordinator.ExecuteSequential(ctx, []string{"researcher", "writer"}, "Research Go benefits")
+// Sequential Pipeline
+pipeline := builder.OneLinePipeline(researcher, writer)
+
+// Parallel Swarm
+swarm := builder.OneLineSwarm(analyst, coder)
+
+// Multi-Agent Coordinator
+coordinator := builder.Quick().Multi()
 ```
 
-#### 4. Persistent Memory Agent (2 lines!)
+#### 4. Production Server (1 line!)
 ```go
-memoryAgent := agent.NewAgent(&agent.AgentConfig{Name: "Memory", Type: agent.AgentTypeChat}, llmManager, tools.NewToolRegistry())
-// Memory is automatically handled via checkpointing
+server := builder.OneLineServer(8080)
+// Includes: REST API, WebSocket, persistence, monitoring
 ```
 
 ## 🔧 Real-World Examples
@@ -209,27 +224,68 @@ spec:
 - **Memory**: Efficient state management with minimal overhead
 - **Concurrency**: Full Go concurrency support with goroutines
 
+## 🏗️ QuickBuilder Framework
+
+The QuickBuilder framework provides the ultimate minimal code experience while maintaining all comprehensive functionality.
+
+### Auto-Configuration
+```go
+// Automatically configures LLM providers, tools, and persistence
+quick := builder.Quick()
+
+// Or with custom configuration
+quick := builder.Quick().WithConfig(&builder.QuickConfig{
+    DefaultModel:   "gpt-4",
+    Temperature:    0.7,
+    EnableAllTools: true,
+    UseMemory:      true,
+})
+```
+
+### Fluent API
+```go
+// Chain methods for complex configurations
+agent := builder.Quick().
+    WithConfig(customConfig).
+    WithTools(customTool1, customTool2).
+    WithPersistence(dbCheckpointer).
+    Chat("AdvancedAgent")
+```
+
+### Global One-Line Functions
+```go
+// Use anywhere in your code
+chatAgent := builder.OneLineChat()
+reactAgent := builder.OneLineReAct()
+server := builder.OneLineServer()
+pipeline := builder.OneLinePipeline(agent1, agent2)
+```
+
 ## 🔌 LLM Provider Support
 
-### OpenAI
+### Auto-Detection
 ```go
-provider, _ := llm.NewOpenAIProvider(&llm.ProviderConfig{
+// Automatically detects and configures available providers
+quick := builder.Quick()
+// Checks for OPENAI_API_KEY, GEMINI_API_KEY, Ollama at localhost:11434
+```
+
+### Manual Configuration
+```go
+// OpenAI
+quick.WithLLM("openai", &llm.ProviderConfig{
     APIKey: "your-api-key",
     Model:  "gpt-4",
 })
-```
 
-### Ollama (Local)
-```go
-provider, _ := llm.NewOllamaProvider(&llm.ProviderConfig{
+// Ollama (Local)
+quick.WithLLM("ollama", &llm.ProviderConfig{
     Endpoint: "http://localhost:11434",
     Model:    "llama2",
 })
-```
 
-### Gemini
-```go
-provider, _ := llm.NewGeminiProvider(&llm.ProviderConfig{
+// Gemini
+quick.WithLLM("gemini", &llm.ProviderConfig{
     APIKey: "your-api-key",
     Model:  "gemini-pro",
 })
@@ -279,32 +335,66 @@ fmt.Printf("Executions: %d, Avg Duration: %v", metrics.TotalExecutions, metrics.
 - [**Architecture Guide**](docs/architecture.md)
 - [**Deployment Guide**](docs/deployment.md)
 
-## 🎯 Use Cases
+## 🎯 Real-World Use Cases
 
-### 1. Customer Support Automation
+### 1. Customer Support System (1 line!)
 ```go
-supportAgent := agent.NewAgent(&agent.AgentConfig{
-    Name: "Support",
-    Type: agent.AgentTypeReAct,
-    Tools: []string{"knowledge_base", "ticket_system"},
-}, llmManager, toolRegistry)
+// Create complete support pipeline
+supportPipeline := builder.OneLinePipeline(
+    builder.Quick().Chat("Classifier"),
+    builder.Quick().ReAct("Resolver"),
+    builder.Quick().Tool("Escalator"),
+)
 ```
 
-### 2. Content Generation Pipeline
+### 2. Content Creation Workflow (1 line!)
 ```go
-coordinator := agent.NewMultiAgentCoordinator()
-coordinator.AddAgent("researcher", researchAgent)
-coordinator.AddAgent("writer", writerAgent)
-coordinator.AddAgent("editor", editorAgent)
+// Parallel content creation team
+contentTeam := builder.OneLineSwarm(
+    builder.Quick().Researcher("ContentResearcher"),
+    builder.Quick().Writer("ContentWriter"),
+    builder.Quick().Chat("ContentEditor"),
+)
 ```
 
-### 3. Data Analysis Assistant
+### 3. AI Development Team (1 line!)
 ```go
-dataAgent := agent.NewAgent(&agent.AgentConfig{
-    Name: "DataAnalyst",
-    Type: agent.AgentTypeReAct,
-    Tools: []string{"sql_query", "chart_generator", "statistics"},
-}, llmManager, toolRegistry)
+// Complete software development lifecycle
+devTeam := builder.OneLinePipeline(
+    builder.Quick().Coder("Architect"),
+    builder.Quick().Coder("Developer"),
+    builder.Quick().Tool("Tester"),
+    builder.Quick().Chat("Reviewer"),
+    builder.Quick().Tool("Deployer"),
+)
+```
+
+### 4. Enterprise Multi-Agent System
+```go
+// Department-specific agents
+salesAgent := builder.Quick().Chat("SalesAssistant")
+supportAgent := builder.Quick().ReAct("SupportAgent")
+devAgent := builder.Quick().Coder("DevAssistant")
+analyticsAgent := builder.Quick().Analyst("AnalyticsAgent")
+
+// Enterprise coordinator
+enterprise := builder.Quick().Multi()
+enterprise.AddAgent("sales", salesAgent)
+enterprise.AddAgent("support", supportAgent)
+enterprise.AddAgent("dev", devAgent)
+enterprise.AddAgent("analytics", analyticsAgent)
+```
+
+### 5. Production Deployment (1 line!)
+```go
+// Production-ready server with all features
+server := builder.Quick().
+    WithConfig(&builder.QuickConfig{
+        DefaultModel:   "gpt-4",
+        EnableAllTools: true,
+        UseMemory:      true,
+    }).
+    Server(8080)
 ```
 
 ## 🔐 Security

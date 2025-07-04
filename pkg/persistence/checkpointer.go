@@ -32,7 +32,7 @@ type Checkpointer interface {
 type Checkpoint struct {
 	ID        string                 `json:"id"`
 	ThreadID  string                 `json:"thread_id"`
-	State     core.State             `json:"state"`
+	State     *core.BaseState        `json:"state"`
 	Metadata  map[string]interface{} `json:"metadata"`
 	CreatedAt time.Time              `json:"created_at"`
 	NodeID    string                 `json:"node_id"`
@@ -352,7 +352,7 @@ func NewCheckpointManager(checkpointer Checkpointer) *CheckpointManager {
 }
 
 // SaveCheckpoint saves a checkpoint
-func (cm *CheckpointManager) SaveCheckpoint(ctx context.Context, threadID, nodeID string, stepID int, state core.State) error {
+func (cm *CheckpointManager) SaveCheckpoint(ctx context.Context, threadID, nodeID string, stepID int, state *core.BaseState) error {
 	if !cm.enabled {
 		return nil
 	}
@@ -423,7 +423,7 @@ func NewTimeTravel(checkpointManager *CheckpointManager) *TimeTravel {
 }
 
 // RewindTo rewinds execution to a specific checkpoint
-func (tt *TimeTravel) RewindTo(ctx context.Context, threadID, checkpointID string) (core.State, error) {
+func (tt *TimeTravel) RewindTo(ctx context.Context, threadID, checkpointID string) (*core.BaseState, error) {
 	checkpoint, err := tt.checkpointManager.LoadCheckpoint(ctx, threadID, checkpointID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load checkpoint: %w", err)

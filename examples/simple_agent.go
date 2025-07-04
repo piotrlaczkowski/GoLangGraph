@@ -13,7 +13,7 @@ import (
 	"github.com/piotrlaczkowski/GoLangGraph/pkg/tools"
 )
 
-func main() {
+func SimpleAgentDemo() {
 	fmt.Println("GoLangGraph Simple Agent Example")
 	fmt.Println("=================================")
 
@@ -23,9 +23,9 @@ func main() {
 	// Add OpenAI provider if API key is available
 	if apiKey := os.Getenv("OPENAI_API_KEY"); apiKey != "" {
 		fmt.Println("Initializing OpenAI provider...")
-		openaiProvider, err := llm.NewOpenAIProvider(&llm.OpenAIConfig{
-			APIKey:  apiKey,
-			BaseURL: "https://api.openai.com/v1",
+		openaiProvider, err := llm.NewOpenAIProvider(&llm.ProviderConfig{
+			APIKey:   apiKey,
+			Endpoint: "https://api.openai.com/v1",
 		})
 		if err != nil {
 			log.Fatalf("Failed to create OpenAI provider: %v", err)
@@ -36,8 +36,8 @@ func main() {
 
 	// Add Ollama provider (local LLM)
 	fmt.Println("Initializing Ollama provider...")
-	ollamaProvider, err := llm.NewOllamaProvider(&llm.OllamaConfig{
-		BaseURL: "http://localhost:11434",
+	ollamaProvider, err := llm.NewOllamaProvider(&llm.ProviderConfig{
+		Endpoint: "http://localhost:11434",
 	})
 	if err != nil {
 		fmt.Printf("⚠ Failed to create Ollama provider: %v\n", err)
@@ -98,7 +98,7 @@ func main() {
 		if len(execution.ToolCalls) > 0 {
 			fmt.Printf("Tools used: %d\n", len(execution.ToolCalls))
 			for i, toolCall := range execution.ToolCalls {
-				fmt.Printf("  %d. %s: %s\n", i+1, toolCall.Name, toolCall.Arguments)
+				fmt.Printf("  %d. %s: %s\n", i+1, toolCall.Function.Name, toolCall.Function.Arguments)
 			}
 		}
 	}
@@ -117,7 +117,7 @@ func main() {
 		if len(execution2.ToolCalls) > 0 {
 			fmt.Printf("Tools used: %d\n", len(execution2.ToolCalls))
 			for i, toolCall := range execution2.ToolCalls {
-				fmt.Printf("  %d. %s: %s\n", i+1, toolCall.Name, toolCall.Arguments)
+				fmt.Printf("  %d. %s: %s\n", i+1, toolCall.Function.Name, toolCall.Function.Arguments)
 			}
 		}
 	}

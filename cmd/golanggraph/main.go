@@ -216,43 +216,47 @@ func initializeComponents(srv *server.Server) error {
 
 	// Add OpenAI provider if API key is available
 	if apiKey := os.Getenv("OPENAI_API_KEY"); apiKey != "" {
-		openaiConfig := &llm.OpenAIConfig{
-			APIKey:  apiKey,
-			BaseURL: "https://api.openai.com/v1",
+		openaiConfig := &llm.ProviderConfig{
+			APIKey:   apiKey,
+			Endpoint: "https://api.openai.com/v1",
 		}
-		openaiProvider := llm.NewOpenAIProvider(openaiConfig)
-		llmManager.RegisterProvider("openai", openaiProvider)
+		openaiProvider, err := llm.NewOpenAIProvider(openaiConfig)
+		if err == nil {
+			llmManager.RegisterProvider("openai", openaiProvider)
+		}
 	}
 
 	// Add Ollama provider if available
 	if ollamaURL := os.Getenv("OLLAMA_URL"); ollamaURL != "" {
-		ollamaConfig := &llm.OllamaConfig{
-			BaseURL: ollamaURL,
+		ollamaConfig := &llm.ProviderConfig{
+			Endpoint: ollamaURL,
 		}
-		ollamaProvider := llm.NewOllamaProvider(ollamaConfig)
-		llmManager.RegisterProvider("ollama", ollamaProvider)
+		ollamaProvider, err := llm.NewOllamaProvider(ollamaConfig)
+		if err == nil {
+			llmManager.RegisterProvider("ollama", ollamaProvider)
+		}
 	} else {
 		// Default Ollama URL
-		ollamaConfig := &llm.OllamaConfig{
-			BaseURL: "http://localhost:11434",
+		ollamaConfig := &llm.ProviderConfig{
+			Endpoint: "http://localhost:11434",
 		}
-		ollamaProvider := llm.NewOllamaProvider(ollamaConfig)
-		llmManager.RegisterProvider("ollama", ollamaProvider)
+		ollamaProvider, err := llm.NewOllamaProvider(ollamaConfig)
+		if err == nil {
+			llmManager.RegisterProvider("ollama", ollamaProvider)
+		}
 	}
 
 	// Initialize tool registry
 	toolRegistry := tools.NewToolRegistry()
 
-	// Load default tools
-	if err := toolRegistry.LoadFromConfig("tools.json"); err != nil {
-		// If config file doesn't exist, register default tools
-		toolRegistry.RegisterTool("web_search", tools.NewWebSearchTool())
-		toolRegistry.RegisterTool("calculator", tools.NewCalculatorTool())
-		toolRegistry.RegisterTool("file_read", tools.NewFileReadTool())
-		toolRegistry.RegisterTool("file_write", tools.NewFileWriteTool())
-		toolRegistry.RegisterTool("shell", tools.NewShellTool())
-		toolRegistry.RegisterTool("http_request", tools.NewHTTPRequestTool())
-	}
+	// Register default tools
+	toolRegistry.RegisterTool(tools.NewWebSearchTool())
+	toolRegistry.RegisterTool(tools.NewCalculatorTool())
+	toolRegistry.RegisterTool(tools.NewFileReadTool())
+	toolRegistry.RegisterTool(tools.NewFileWriteTool())
+	toolRegistry.RegisterTool(tools.NewShellTool())
+	toolRegistry.RegisterTool(tools.NewHTTPTool())
+	toolRegistry.RegisterTool(tools.NewTimeTool())
 
 	// Initialize session manager (using memory for now)
 	sessionManager := persistence.NewSessionManager(nil, nil)

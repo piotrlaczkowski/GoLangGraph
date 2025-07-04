@@ -14,7 +14,7 @@ import (
 // This file demonstrates minimal code examples for creating agents
 // Run with: go run quick_start_demo.go
 
-func main() {
+func QuickStartDemo() {
 	fmt.Println("🚀 GoLangGraph Minimal Code Examples")
 	fmt.Println("====================================")
 	fmt.Println()
