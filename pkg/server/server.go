@@ -119,7 +119,7 @@ func (s *Server) setupRoutes() {
 	api := s.router.PathPrefix("/api/v1").Subrouter()
 
 	// Health check
-	api.HandleFunc("/health", s.handleHealth).Methods("GET")
+	api.HandleFunc("/health", s.handleHealth).Methods("GET", "OPTIONS")
 
 	// LLM providers
 	api.HandleFunc("/providers", s.handleListProviders).Methods("GET")

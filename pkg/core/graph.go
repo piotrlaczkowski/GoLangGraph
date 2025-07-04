@@ -230,6 +230,7 @@ func (g *Graph) Execute(ctx context.Context, initialState *BaseState) (*BaseStat
 	iterations := 0
 
 	for {
+
 		// Check for context cancellation
 		select {
 		case <-execCtx.Done():
@@ -242,11 +243,6 @@ func (g *Graph) Execute(ctx context.Context, initialState *BaseState) (*BaseStat
 		// Check iteration limit
 		if iterations >= g.Config.MaxIterations {
 			return nil, fmt.Errorf("maximum iterations (%d) exceeded", g.Config.MaxIterations)
-		}
-
-		// Check if we've reached an end node
-		if g.isEndNode(currentNode) {
-			break
 		}
 
 		// Execute the current node
@@ -268,6 +264,11 @@ func (g *Graph) Execute(ctx context.Context, initialState *BaseState) (*BaseStat
 			default:
 				// Channel is full, skip streaming this result
 			}
+		}
+
+		// Check if we've reached an end node AFTER executing it
+		if g.isEndNode(currentNode) {
+			break
 		}
 
 		// Determine next node
@@ -365,22 +366,6 @@ func (g *Graph) getNextNode(ctx context.Context, currentNodeID string) (string, 
 	g.mu.RLock()
 	defer g.mu.RUnlock()
 
-	// Check for conditional edges first
-	if conditionalEdge, exists := g.GetConditionalEdge(currentNodeID); exists {
-		nextNode, err := conditionalEdge.Condition(ctx, g.currentState)
-		if err != nil {
-			return "", fmt.Errorf("conditional edge evaluation failed: %w", err)
-		}
-
-		// Map the condition result to actual node
-		if targetNode, exists := conditionalEdge.Routes[nextNode]; exists {
-			return targetNode, nil
-		}
-
-		// If no mapping found, use the result directly
-		return nextNode, nil
-	}
-
 	// Find all outgoing edges from the current node
 	var outgoingEdges []*Edge
 	for _, edge := range g.Edges {
@@ -402,12 +387,14 @@ func (g *Graph) getNextNode(ctx context.Context, currentNodeID string) (string, 
 	// Evaluate conditions for conditional edges
 	for _, edge := range outgoingEdges {
 		if edge.Condition != nil {
-			nextNode, err := edge.Condition(ctx, g.currentState)
+			nextNodeID, err := edge.Condition(ctx, g.currentState)
 			if err != nil {
 				return "", fmt.Errorf("edge condition evaluation failed: %w", err)
 			}
-			if nextNode != "" {
-				return nextNode, nil
+			// The condition function should return the node ID to go to
+			// Check if the returned node ID matches this edge's target
+			if nextNodeID == edge.To {
+				return edge.To, nil
 			}
 		}
 	}

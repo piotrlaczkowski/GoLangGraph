@@ -1,570 +1,746 @@
-# GoLangGraph Persistence Guide
+# Persistence Package Documentation
+
+The `pkg/persistence` package provides comprehensive database integration and state persistence capabilities for GoLangGraph, including support for traditional databases, vector databases, and checkpointing systems.
 
 ## Overview
 
-The GoLangGraph persistence package provides comprehensive database connectivity and state management capabilities for building production-ready AI agents. It supports multiple database types, RAG (Retrieval-Augmented Generation) functionality, and advanced checkpointing mechanisms.
+The persistence package enables:
+- **Database Connections**: Support for PostgreSQL, Redis, and vector databases
+- **State Checkpointing**: Save and restore workflow states
+- **Vector Storage**: RAG (Retrieval-Augmented Generation) capabilities
+- **Document Management**: Store and search documents with embeddings
+- **Session Management**: Thread-safe session and conversation handling
 
-## Supported Database Types
+## Supported Databases
 
-### 1. PostgreSQL
-- **Type**: `DatabaseTypePostgres`
-- **Use Case**: Primary persistence for production applications
-- **Features**: ACID transactions, complex queries, robust data integrity
-- **Configuration**: `NewPostgresConfig(host, port, database, username, password)`
+### PostgreSQL
+Full-featured relational database support with advanced features:
+- JSON/JSONB support for flexible data storage
+- Connection pooling and transaction management
+- Schema migrations and versioning
+- Full-text search capabilities
 
-### 2. PostgreSQL with pgvector
-- **Type**: `DatabaseTypePgVector`
-- **Use Case**: RAG applications with vector similarity search
-- **Features**: Vector embeddings, similarity search, document storage
-- **Configuration**: `NewPgVectorConfig(host, port, database, username, password, vectorDim)`
+### Redis
+High-performance in-memory data store:
+- Key-value storage with expiration
+- Pub/Sub messaging for real-time updates
+- Caching layer for improved performance
+- Session storage and management
 
-### 3. Redis
-- **Type**: `DatabaseTypeRedis`
-- **Use Case**: Fast caching and session management
-- **Features**: In-memory storage, TTL support, high performance
-- **Configuration**: `NewRedisConfig(host, port, password)`
+### pgvector
+Vector database capabilities for AI applications:
+- High-dimensional vector storage
+- Similarity search with multiple distance metrics
+- Embedding storage and retrieval
+- RAG (Retrieval-Augmented Generation) support
 
-### 4. OpenSearch (Future Support)
-- **Type**: `DatabaseTypeOpenSearch`
-- **Use Case**: Advanced search and analytics
-- **Features**: Full-text search, vector search, real-time analytics
-- **Status**: Planned for future implementation
-
-### 5. Elasticsearch (Future Support)
-- **Type**: `DatabaseTypeElastic`
-- **Use Case**: Enterprise search and analytics
-- **Features**: Distributed search, machine learning, observability
-- **Status**: Planned for future implementation
-
-### 6. MongoDB (Future Support)
-- **Type**: `DatabaseTypeMongoDB`
-- **Use Case**: Document-based storage
-- **Features**: Flexible schema, horizontal scaling
-- **Status**: Planned for future implementation
-
-## Quick Start
-
-### Basic PostgreSQL Setup
-
-```go
-package main
-
-import (
-    "context"
-    "github.com/piotrlaczkowski/GoLangGraph/pkg/persistence"
-    "github.com/piotrlaczkowski/GoLangGraph/pkg/core"
-)
-
-func main() {
-    // Create PostgreSQL configuration
-    config := persistence.NewPostgresConfig("localhost", 5432, "golanggraph", "postgres", "password")
-    
-    // Create checkpointer
-    checkpointer, err := persistence.NewPostgresCheckpointer(config)
-    if err != nil {
-        panic(err)
-    }
-    defer checkpointer.Close()
-    
-    // Create and save a checkpoint
-    state := core.NewBaseState()
-    state.Set("step", 1)
-    state.Set("message", "Hello World")
-    
-    checkpoint := &persistence.Checkpoint{
-        ID:        "checkpoint-1",
-        ThreadID:  "thread-123",
-        State:     state,
-        Metadata:  map[string]interface{}{"agent": "demo"},
-        CreatedAt: time.Now(),
-        NodeID:    "start_node",
-        StepID:    1,
-    }
-    
-    ctx := context.Background()
-    err = checkpointer.Save(ctx, checkpoint)
-    if err != nil {
-        panic(err)
-    }
-    
-    // Load the checkpoint
-    loaded, err := checkpointer.Load(ctx, "thread-123", "checkpoint-1")
-    if err != nil {
-        panic(err)
-    }
-    
-    fmt.Printf("Loaded checkpoint: %s\n", loaded.ID)
-}
-```
-
-### RAG with PostgreSQL + pgvector
-
-```go
-// Create pgvector configuration
-config := persistence.NewPgVectorConfig("localhost", 5432, "golanggraph_rag", "postgres", "password", 1536)
-
-// Create checkpointer with RAG support
-checkpointer, err := persistence.NewPostgresCheckpointer(config)
-if err != nil {
-    panic(err)
-}
-defer checkpointer.Close()
-
-// Save a document with embeddings
-doc := &persistence.Document{
-    ID:        "doc-1",
-    ThreadID:  "thread-456",
-    Content:   "This is a sample document for RAG.",
-    Metadata:  map[string]interface{}{"source": "demo"},
-    Embedding: []float64{0.1, 0.2, 0.3, ...}, // Your embedding vector
-    CreatedAt: time.Now(),
-    UpdatedAt: time.Now(),
-}
-
-ctx := context.Background()
-err = checkpointer.SaveDocument(ctx, doc)
-if err != nil {
-    panic(err)
-}
-
-// Search for similar documents
-queryEmbedding := []float64{0.1, 0.2, 0.3, ...} // Your query embedding
-results, err := checkpointer.SearchDocuments(ctx, "thread-456", queryEmbedding, 5)
-if err != nil {
-    panic(err)
-}
-
-fmt.Printf("Found %d similar documents\n", len(results))
-```
-
-### Redis for Fast Caching
-
-```go
-// Create Redis configuration
-config := persistence.NewRedisConfig("localhost", 6379, "")
-
-// Create Redis checkpointer
-checkpointer, err := persistence.NewRedisCheckpointer(config)
-if err != nil {
-    panic(err)
-}
-defer checkpointer.Close()
-
-// Save checkpoint to Redis (with TTL)
-checkpoint := &persistence.Checkpoint{
-    ID:        "cache-1",
-    ThreadID:  "thread-789",
-    State:     state,
-    Metadata:  map[string]interface{}{"cache": "redis"},
-    CreatedAt: time.Now(),
-    NodeID:    "cache_node",
-    StepID:    1,
-}
-
-ctx := context.Background()
-err = checkpointer.Save(ctx, checkpoint)
-if err != nil {
-    panic(err)
-}
-```
-
-## Database Connection Manager
-
-For applications requiring multiple database connections:
-
-```go
-// Create connection manager
-manager := persistence.NewDatabaseConnectionManager()
-defer manager.CloseAll()
-
-// Add PostgreSQL connection
-postgresConfig := persistence.NewPostgresConfig("localhost", 5432, "golanggraph", "postgres", "password")
-err := manager.AddConnection("postgres-main", postgresConfig)
-if err != nil {
-    panic(err)
-}
-
-// Add pgvector connection
-pgvectorConfig := persistence.NewPgVectorConfig("localhost", 5432, "golanggraph_rag", "postgres", "password", 1536)
-err = manager.AddConnection("postgres-rag", pgvectorConfig)
-if err != nil {
-    panic(err)
-}
-
-// Get connection
-conn, err := manager.GetConnection("postgres-main")
-if err != nil {
-    panic(err)
-}
-
-// Use connection
-fmt.Printf("Connected to: %s\n", conn.GetType())
-```
-
-## Configuration Options
+## Database Configuration
 
 ### PostgreSQL Configuration
 
 ```go
-config := &persistence.DatabaseConfig{
-    Type:         persistence.DatabaseTypePostgres,
-    Host:         "localhost",
-    Port:         5432,
-    Database:     "golanggraph",
-    Username:     "postgres",
-    Password:     "password",
-    SSLMode:      "require",
-    MaxOpenConns: 50,
-    MaxIdleConns: 10,
-    MaxLifetime:  "10m",
-    ConnectionParams: map[string]string{
-        "application_name": "golanggraph",
-        "connect_timeout":  "10",
-    },
+import "github.com/piotrlaczkowski/GoLangGraph/pkg/persistence"
+
+// Basic PostgreSQL configuration
+pgConfig := persistence.PostgreSQLConfig{
+    Host:     "localhost",
+    Port:     5432,
+    Database: "golanggraph",
+    Username: "user",
+    Password: "password",
+    SSLMode:  "disable",
 }
-```
 
-### pgvector Configuration
+// Advanced configuration with connection pooling
+pgConfig = persistence.PostgreSQLConfig{
+    Host:            "localhost",
+    Port:            5432,
+    Database:        "golanggraph",
+    Username:        "user",
+    Password:        "password",
+    SSLMode:         "require",
+    MaxConnections:  25,
+    MaxIdleConns:    5,
+    ConnMaxLifetime: 30 * time.Minute,
+    ConnMaxIdleTime: 5 * time.Minute,
+}
 
-```go
-config := &persistence.DatabaseConfig{
-    Type:               persistence.DatabaseTypePgVector,
-    Host:               "localhost",
-    Port:               5432,
-    Database:           "golanggraph_rag",
-    Username:           "postgres",
-    Password:           "password",
-    SSLMode:            "require",
-    VectorDimension:    1536,
-    VectorMetric:       "cosine",
-    EnableRAG:          true,
-    EmbeddingModel:     "text-embedding-ada-002",
-    EmbeddingDimension: 1536,
-    SimilarityThreshold: 0.7,
+// Validate configuration
+if err := pgConfig.Validate(); err != nil {
+    log.Fatal("Invalid PostgreSQL config:", err)
 }
 ```
 
 ### Redis Configuration
 
 ```go
-config := &persistence.DatabaseConfig{
-    Type:     persistence.DatabaseTypeRedis,
+// Basic Redis configuration
+redisConfig := persistence.RedisConfig{
     Host:     "localhost",
     Port:     6379,
-    Password: "your-redis-password",
-    ConnectionParams: map[string]string{
-        "max_retries":      "3",
-        "retry_delay":      "100ms",
-        "dial_timeout":     "5s",
-        "read_timeout":     "3s",
-        "write_timeout":    "3s",
-        "pool_size":        "10",
-        "pool_timeout":     "4s",
-        "idle_timeout":     "5m",
-        "idle_check_freq":  "1m",
-    },
+    Password: "",
+    Database: 0,
+}
+
+// Advanced configuration with clustering
+redisConfig = persistence.RedisConfig{
+    Host:           "localhost",
+    Port:           6379,
+    Password:       "secure_password",
+    Database:       0,
+    PoolSize:       10,
+    MinIdleConns:   3,
+    MaxRetries:     3,
+    DialTimeout:    5 * time.Second,
+    ReadTimeout:    3 * time.Second,
+    WriteTimeout:   3 * time.Second,
+    PoolTimeout:    4 * time.Second,
+    IdleTimeout:    5 * time.Minute,
+}
+
+// Validate configuration
+if err := redisConfig.Validate(); err != nil {
+    log.Fatal("Invalid Redis config:", err)
 }
 ```
 
-## Database Setup Instructions
+### pgvector Configuration
 
-### PostgreSQL Setup
+```go
+// pgvector configuration for RAG applications
+pgvectorConfig := persistence.PgVectorConfig{
+    Host:       "localhost",
+    Port:       5432,
+    Database:   "vectordb",
+    Username:   "vector_user",
+    Password:   "vector_password",
+    SSLMode:    "disable",
+    Dimensions: 1536, // OpenAI embedding dimensions
+    
+    // Vector-specific settings
+    IndexType:    "ivfflat",
+    IndexOptions: map[string]interface{}{
+        "lists": 100,
+    },
+    DistanceMetric: "cosine",
+}
 
-1. **Install PostgreSQL**:
-   ```bash
-   # Ubuntu/Debian
-   sudo apt-get install postgresql postgresql-contrib
-   
-   # macOS
-   brew install postgresql
-   
-   # Docker
-   docker run --name postgres -e POSTGRES_PASSWORD=password -p 5432:5432 -d postgres
-   ```
+// Validate configuration
+if err := pgvectorConfig.Validate(); err != nil {
+    log.Fatal("Invalid pgvector config:", err)
+}
+```
 
-2. **Create Database**:
-   ```sql
-   CREATE DATABASE golanggraph;
-   CREATE USER golanggraph_user WITH PASSWORD 'password';
-   GRANT ALL PRIVILEGES ON DATABASE golanggraph TO golanggraph_user;
-   ```
+## Database Manager
 
-### PostgreSQL with pgvector Setup
+The `DatabaseManager` provides centralized database connection management:
 
-1. **Install pgvector**:
-   ```bash
-   # Ubuntu/Debian
-   sudo apt-get install postgresql-15-pgvector
-   
-   # macOS
-   brew install pgvector
-   
-   # Docker
-   docker run --name postgres-pgvector -e POSTGRES_PASSWORD=password -p 5432:5432 -d pgvector/pgvector:pg15
-   ```
+```go
+// Create database manager
+dbManager := persistence.NewDatabaseManager()
 
-2. **Enable Extension**:
-   ```sql
-   CREATE EXTENSION vector;
-   ```
+// Add database connections
+err := dbManager.AddPostgreSQL("main", pgConfig)
+if err != nil {
+    log.Fatal("Failed to add PostgreSQL:", err)
+}
 
-3. **Create RAG Database**:
-   ```sql
-   CREATE DATABASE golanggraph_rag;
-   ```
+err = dbManager.AddRedis("cache", redisConfig)
+if err != nil {
+    log.Fatal("Failed to add Redis:", err)
+}
 
-### Redis Setup
+err = dbManager.AddPgVector("vectors", pgvectorConfig)
+if err != nil {
+    log.Fatal("Failed to add pgvector:", err)
+}
 
-1. **Install Redis**:
-   ```bash
-   # Ubuntu/Debian
-   sudo apt-get install redis-server
-   
-   # macOS
-   brew install redis
-   
-   # Docker
-   docker run --name redis -p 6379:6379 -d redis:alpine
-   ```
+// Get connections
+pgConn, err := dbManager.GetPostgreSQL("main")
+if err != nil {
+    log.Fatal("Failed to get PostgreSQL connection:", err)
+}
 
-2. **Start Redis**:
-   ```bash
-   redis-server
-   ```
+redisConn, err := dbManager.GetRedis("cache")
+if err != nil {
+    log.Fatal("Failed to get Redis connection:", err)
+}
 
-## RAG (Retrieval-Augmented Generation) Support
+vectorConn, err := dbManager.GetPgVector("vectors")
+if err != nil {
+    log.Fatal("Failed to get pgvector connection:", err)
+}
+
+// Health checks
+healthStatus := dbManager.HealthCheck()
+for name, healthy := range healthStatus {
+    if healthy {
+        fmt.Printf("Database %s: healthy\n", name)
+    } else {
+        fmt.Printf("Database %s: unhealthy\n", name)
+    }
+}
+
+// Close all connections
+defer dbManager.Close()
+```
+
+## Checkpointing System
+
+The checkpointing system allows you to save and restore workflow states:
+
+### Database Checkpointer
+
+```go
+// Create database checkpointer
+checkpointer, err := persistence.NewDatabaseCheckpointer(dbManager, "main")
+if err != nil {
+    log.Fatal("Failed to create checkpointer:", err)
+}
+
+// Save a checkpoint
+checkpoint := &persistence.Checkpoint{
+    ThreadID:    "conversation-123",
+    State:       state,
+    Metadata:    map[string]interface{}{
+        "user_id":    "user123",
+        "session_id": "session456",
+        "step":       "processing",
+    },
+    Timestamp:   time.Now(),
+    Version:     1,
+}
+
+err = checkpointer.SaveCheckpoint(checkpoint)
+if err != nil {
+    log.Fatal("Failed to save checkpoint:", err)
+}
+
+// Load a checkpoint
+loadedCheckpoint, err := checkpointer.LoadCheckpoint("conversation-123")
+if err != nil {
+    log.Fatal("Failed to load checkpoint:", err)
+}
+
+// List checkpoints for a thread
+checkpoints, err := checkpointer.ListCheckpoints("conversation-123")
+if err != nil {
+    log.Fatal("Failed to list checkpoints:", err)
+}
+
+// Delete old checkpoints
+err = checkpointer.DeleteCheckpoint("conversation-123", 1)
+if err != nil {
+    log.Fatal("Failed to delete checkpoint:", err)
+}
+```
+
+### Memory Checkpointer
+
+```go
+// Create in-memory checkpointer (for testing/development)
+memCheckpointer := persistence.NewMemoryCheckpointer()
+
+// Use the same interface as database checkpointer
+err = memCheckpointer.SaveCheckpoint(checkpoint)
+if err != nil {
+    log.Fatal("Failed to save checkpoint:", err)
+}
+
+loadedCheckpoint, err := memCheckpointer.LoadCheckpoint("conversation-123")
+if err != nil {
+    log.Fatal("Failed to load checkpoint:", err)
+}
+```
+
+## Vector Database & RAG Support
 
 ### Document Storage
 
-The persistence package provides comprehensive RAG support with vector embeddings:
+```go
+// Create vector store
+vectorStore, err := persistence.NewPgVectorStore(pgvectorConfig)
+if err != nil {
+    log.Fatal("Failed to create vector store:", err)
+}
+
+// Define documents
+documents := []persistence.Document{
+    {
+        ID:      "doc1",
+        Content: "GoLangGraph is a powerful framework for building AI agent workflows.",
+        Metadata: map[string]interface{}{
+            "source":    "documentation",
+            "category":  "framework",
+            "timestamp": time.Now(),
+        },
+        Embedding: []float32{0.1, 0.2, 0.3, /* ... 1536 dimensions */},
+    },
+    {
+        ID:      "doc2",
+        Content: "The persistence package provides database integration capabilities.",
+        Metadata: map[string]interface{}{
+            "source":    "documentation",
+            "category":  "persistence",
+            "timestamp": time.Now(),
+        },
+        Embedding: []float32{0.2, 0.3, 0.4, /* ... 1536 dimensions */},
+    },
+}
+
+// Store documents
+err = vectorStore.StoreDocuments(documents)
+if err != nil {
+    log.Fatal("Failed to store documents:", err)
+}
+
+// Update a document
+updatedDoc := persistence.Document{
+    ID:      "doc1",
+    Content: "GoLangGraph is an advanced framework for building AI agent workflows with persistence.",
+    Metadata: map[string]interface{}{
+        "source":    "documentation",
+        "category":  "framework",
+        "updated":   time.Now(),
+    },
+    Embedding: []float32{0.15, 0.25, 0.35, /* ... 1536 dimensions */},
+}
+
+err = vectorStore.UpdateDocument(updatedDoc)
+if err != nil {
+    log.Fatal("Failed to update document:", err)
+}
+```
+
+### Similarity Search
 
 ```go
-// Save documents with embeddings
-doc := &persistence.Document{
-    ID:        "doc-1",
-    ThreadID:  "thread-123",
-    Content:   "Your document content here",
+// Search by embedding vector
+queryEmbedding := []float32{0.1, 0.2, 0.3, /* ... 1536 dimensions */}
+results, err := vectorStore.SimilaritySearchByVector(queryEmbedding, 5)
+if err != nil {
+    log.Fatal("Failed to search by vector:", err)
+}
+
+// Search by text (requires embedding generation)
+textResults, err := vectorStore.SimilaritySearch("AI agent workflows", 5)
+if err != nil {
+    log.Fatal("Failed to search by text:", err)
+}
+
+// Process results
+for _, result := range results {
+    fmt.Printf("Document ID: %s\n", result.ID)
+    fmt.Printf("Content: %s\n", result.Content)
+    fmt.Printf("Similarity Score: %.4f\n", result.Score)
+    fmt.Printf("Metadata: %+v\n", result.Metadata)
+    fmt.Println("---")
+}
+```
+
+### Advanced Search with Filters
+
+```go
+// Search with metadata filters
+filters := map[string]interface{}{
+    "category": "framework",
+    "source":   "documentation",
+}
+
+filteredResults, err := vectorStore.SimilaritySearchWithFilters(
+    queryEmbedding, 
+    5, 
+    filters,
+)
+if err != nil {
+    log.Fatal("Failed to search with filters:", err)
+}
+
+// Search with score threshold
+thresholdResults, err := vectorStore.SimilaritySearchWithThreshold(
+    queryEmbedding,
+    5,
+    0.8, // Minimum similarity score
+)
+if err != nil {
+    log.Fatal("Failed to search with threshold:", err)
+}
+```
+
+## Session and Thread Management
+
+### Session Management
+
+```go
+// Create session manager
+sessionManager := persistence.NewSessionManager(dbManager, "main")
+
+// Create a new session
+session := &persistence.Session{
+    ID:        "session-123",
+    UserID:    "user-456",
     Metadata:  map[string]interface{}{
-        "source": "documentation",
-        "category": "api",
-        "tags": []string{"important", "reference"},
+        "app_version": "1.0.0",
+        "user_agent":  "GoLangGraph-Client/1.0",
     },
-    Embedding: embedding, // []float64 from your embedding model
     CreatedAt: time.Now(),
     UpdatedAt: time.Now(),
 }
 
-err := checkpointer.SaveDocument(ctx, doc)
+err = sessionManager.CreateSession(session)
+if err != nil {
+    log.Fatal("Failed to create session:", err)
+}
+
+// Get session
+retrievedSession, err := sessionManager.GetSession("session-123")
+if err != nil {
+    log.Fatal("Failed to get session:", err)
+}
+
+// Update session
+retrievedSession.Metadata["last_activity"] = time.Now()
+err = sessionManager.UpdateSession(retrievedSession)
+if err != nil {
+    log.Fatal("Failed to update session:", err)
+}
+
+// List user sessions
+userSessions, err := sessionManager.ListUserSessions("user-456")
+if err != nil {
+    log.Fatal("Failed to list user sessions:", err)
+}
+
+// Delete session
+err = sessionManager.DeleteSession("session-123")
+if err != nil {
+    log.Fatal("Failed to delete session:", err)
+}
 ```
 
-### Vector Similarity Search
+### Thread Management
 
 ```go
-// Search for similar documents
-queryEmbedding := getEmbedding("user query text")
-results, err := checkpointer.SearchDocuments(ctx, threadID, queryEmbedding, 5)
-if err != nil {
-    panic(err)
+// Create thread manager
+threadManager := persistence.NewThreadManager(dbManager, "main")
+
+// Create a new thread
+thread := &persistence.Thread{
+    ID:        "thread-789",
+    SessionID: "session-123",
+    UserID:    "user-456",
+    Title:     "AI Workflow Discussion",
+    Metadata:  map[string]interface{}{
+        "topic":    "workflow_design",
+        "priority": "high",
+    },
+    CreatedAt: time.Now(),
+    UpdatedAt: time.Now(),
 }
 
-for _, doc := range results {
-    fmt.Printf("Similar document: %s\n", doc.Content)
-    fmt.Printf("Metadata: %v\n", doc.Metadata)
+err = threadManager.CreateThread(thread)
+if err != nil {
+    log.Fatal("Failed to create thread:", err)
+}
+
+// Get thread
+retrievedThread, err := threadManager.GetThread("thread-789")
+if err != nil {
+    log.Fatal("Failed to get thread:", err)
+}
+
+// List session threads
+sessionThreads, err := threadManager.ListSessionThreads("session-123")
+if err != nil {
+    log.Fatal("Failed to list session threads:", err)
+}
+
+// Update thread
+retrievedThread.Title = "Updated AI Workflow Discussion"
+err = threadManager.UpdateThread(retrievedThread)
+if err != nil {
+    log.Fatal("Failed to update thread:", err)
+}
+
+// Delete thread
+err = threadManager.DeleteThread("thread-789")
+if err != nil {
+    log.Fatal("Failed to delete thread:", err)
 }
 ```
 
-### Database Schema
-
-The persistence package automatically creates the following tables:
-
-#### Basic Tables
-- `threads`: Conversation threads
-- `checkpoints`: State checkpoints
-- `sessions`: User sessions
-
-#### RAG Tables (when enabled)
-- `documents`: Document storage with optional vector embeddings
-- `memory`: Conversational memory with embeddings
-
-#### Vector Indexes (pgvector)
-- `idx_documents_embedding`: IVFFlat index for document embeddings
-- `idx_memory_embedding`: IVFFlat index for memory embeddings
-
-## Production Considerations
+## Advanced Features
 
 ### Connection Pooling
 
 ```go
-config := &persistence.DatabaseConfig{
-    Type:         persistence.DatabaseTypePostgres,
-    Host:         "localhost",
-    Port:         5432,
-    Database:     "golanggraph",
-    Username:     "postgres",
-    Password:     "password",
-    MaxOpenConns: 50,  // Maximum open connections
-    MaxIdleConns: 10,  // Maximum idle connections
-    MaxLifetime:  "10m", // Connection lifetime
+// Configure connection pooling for PostgreSQL
+pgConfig := persistence.PostgreSQLConfig{
+    // ... basic config
+    MaxConnections:  25,              // Maximum number of connections
+    MaxIdleConns:    5,               // Maximum idle connections
+    ConnMaxLifetime: 30 * time.Minute, // Connection lifetime
+    ConnMaxIdleTime: 5 * time.Minute,  // Idle connection timeout
+}
+
+// Configure connection pooling for Redis
+redisConfig := persistence.RedisConfig{
+    // ... basic config
+    PoolSize:     10,               // Connection pool size
+    MinIdleConns: 3,                // Minimum idle connections
+    PoolTimeout:  4 * time.Second,  // Pool timeout
+    IdleTimeout:  5 * time.Minute,  // Idle connection timeout
 }
 ```
 
-### SSL Configuration
+### Transaction Management
 
 ```go
-config := &persistence.DatabaseConfig{
-    Type:    persistence.DatabaseTypePostgres,
-    SSLMode: "require", // or "verify-full" for production
-    ConnectionParams: map[string]string{
-        "sslcert":     "/path/to/client-cert.pem",
-        "sslkey":      "/path/to/client-key.pem",
-        "sslrootcert": "/path/to/ca-cert.pem",
-    },
-}
-```
-
-### Monitoring and Logging
-
-The persistence package includes comprehensive logging:
-
-```go
-// Logs are automatically generated for:
-// - Connection establishment
-// - Query execution
-// - Error conditions
-// - Performance metrics
-```
-
-### Error Handling
-
-```go
-checkpointer, err := persistence.NewPostgresCheckpointer(config)
+// Begin transaction
+tx, err := pgConn.BeginTx(context.Background(), nil)
 if err != nil {
-    // Handle connection errors
-    log.Printf("Failed to connect to database: %v", err)
-    return
+    log.Fatal("Failed to begin transaction:", err)
+}
+defer tx.Rollback() // Rollback if not committed
+
+// Perform operations within transaction
+_, err = tx.ExecContext(context.Background(), 
+    "INSERT INTO checkpoints (thread_id, state_data) VALUES ($1, $2)",
+    "thread-123", stateData)
+if err != nil {
+    log.Fatal("Failed to insert checkpoint:", err)
 }
 
-err = checkpointer.Save(ctx, checkpoint)
+_, err = tx.ExecContext(context.Background(),
+    "UPDATE sessions SET updated_at = $1 WHERE id = $2",
+    time.Now(), "session-123")
 if err != nil {
-    // Handle save errors
-    log.Printf("Failed to save checkpoint: %v", err)
-    return
+    log.Fatal("Failed to update session:", err)
+}
+
+// Commit transaction
+err = tx.Commit()
+if err != nil {
+    log.Fatal("Failed to commit transaction:", err)
+}
+```
+
+### Batch Operations
+
+```go
+// Batch insert documents
+batchSize := 100
+documents := make([]persistence.Document, 1000)
+// ... populate documents
+
+for i := 0; i < len(documents); i += batchSize {
+    end := i + batchSize
+    if end > len(documents) {
+        end = len(documents)
+    }
+    
+    batch := documents[i:end]
+    err := vectorStore.StoreDocuments(batch)
+    if err != nil {
+        log.Printf("Failed to store batch %d-%d: %v", i, end, err)
+        continue
+    }
+    
+    fmt.Printf("Stored batch %d-%d\n", i, end)
+}
+```
+
+### Monitoring and Metrics
+
+```go
+// Database health monitoring
+go func() {
+    ticker := time.NewTicker(30 * time.Second)
+    defer ticker.Stop()
+    
+    for {
+        select {
+        case <-ticker.C:
+            health := dbManager.HealthCheck()
+            for name, healthy := range health {
+                if !healthy {
+                    log.Printf("Database %s is unhealthy", name)
+                    // Trigger alerts or recovery procedures
+                }
+            }
+        }
+    }
+}()
+
+// Connection pool monitoring
+stats := pgConn.Stats()
+fmt.Printf("Open connections: %d\n", stats.OpenConnections)
+fmt.Printf("In use: %d\n", stats.InUse)
+fmt.Printf("Idle: %d\n", stats.Idle)
+```
+
+## Testing
+
+The persistence package includes comprehensive tests:
+
+```bash
+# Run all persistence tests
+go test ./pkg/persistence -v
+
+# Run specific test
+go test ./pkg/persistence -v -run TestDatabaseManager
+
+# Run integration tests (requires running databases)
+go test ./pkg/persistence -v -tags=integration
+```
+
+### Example Test
+
+```go
+func TestDatabaseCheckpointer(t *testing.T) {
+    // Setup test database
+    dbManager := setupTestDatabase(t)
+    defer dbManager.Close()
+    
+    // Create checkpointer
+    checkpointer, err := persistence.NewDatabaseCheckpointer(dbManager, "test")
+    require.NoError(t, err)
+    
+    // Create test checkpoint
+    state := core.NewBaseState()
+    state.Set("test_key", "test_value")
+    
+    checkpoint := &persistence.Checkpoint{
+        ThreadID:  "test-thread",
+        State:     state,
+        Metadata:  map[string]interface{}{"test": true},
+        Timestamp: time.Now(),
+        Version:   1,
+    }
+    
+    // Save checkpoint
+    err = checkpointer.SaveCheckpoint(checkpoint)
+    require.NoError(t, err)
+    
+    // Load checkpoint
+    loaded, err := checkpointer.LoadCheckpoint("test-thread")
+    require.NoError(t, err)
+    require.Equal(t, checkpoint.ThreadID, loaded.ThreadID)
+    
+    // Verify state
+    value, exists := loaded.State.Get("test_key")
+    require.True(t, exists)
+    require.Equal(t, "test_value", value)
 }
 ```
 
 ## Best Practices
 
 ### 1. Connection Management
-- Use connection pooling for production
-- Close connections properly
-- Handle connection timeouts
-
-### 2. RAG Implementation
-- Use appropriate embedding dimensions
-- Implement proper similarity thresholds
-- Consider document chunking strategies
-
-### 3. Performance Optimization
-- Create proper indexes
-- Use connection pooling
-- Implement caching strategies
-
-### 4. Security
-- Use SSL/TLS connections
-- Implement proper authentication
-- Validate input data
-
-### 5. Monitoring
-- Monitor connection pool usage
-- Track query performance
-- Implement health checks
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Connection Refused**
-   - Check if database server is running
-   - Verify host and port configuration
-   - Check firewall settings
-
-2. **Authentication Failed**
-   - Verify username and password
-   - Check database permissions
-   - Ensure user has necessary privileges
-
-3. **Database Not Found**
-   - Create the database first
-   - Check database name spelling
-   - Verify user has access to database
-
-4. **pgvector Extension Missing**
-   - Install pgvector extension
-   - Enable extension in database
-   - Check PostgreSQL version compatibility
-
-### Debug Mode
-
-Enable debug logging:
 
 ```go
-import "github.com/sirupsen/logrus"
+// ✅ Good: Use connection pooling
+dbManager := persistence.NewDatabaseManager()
+defer dbManager.Close() // Always close connections
 
-// Set log level to debug
-logrus.SetLevel(logrus.DebugLevel)
+// ❌ Bad: Creating new connections for each operation
+// This leads to connection leaks and poor performance
 ```
 
-## Migration Guide
+### 2. Error Handling
 
-### From Memory to Database
+```go
+// ✅ Good: Handle specific database errors
+err := checkpointer.SaveCheckpoint(checkpoint)
+if err != nil {
+    var pgErr *pq.Error
+    if errors.As(err, &pgErr) {
+        switch pgErr.Code {
+        case "23505": // Unique violation
+            return fmt.Errorf("checkpoint already exists: %w", err)
+        case "23503": // Foreign key violation
+            return fmt.Errorf("invalid thread reference: %w", err)
+        default:
+            return fmt.Errorf("database error: %w", err)
+        }
+    }
+    return fmt.Errorf("failed to save checkpoint: %w", err)
+}
+```
 
-1. **Export existing data**:
-   ```go
-   // Export from memory checkpointer
-   checkpoints, err := memoryCheckpointer.List(ctx, threadID)
-   ```
+### 3. Resource Cleanup
 
-2. **Import to database**:
-   ```go
-   // Import to database checkpointer
-   for _, checkpoint := range checkpoints {
-       err := dbCheckpointer.Save(ctx, checkpoint)
-   }
-   ```
+```go
+// ✅ Good: Always clean up resources
+func processWithTransaction(db *sql.DB) error {
+    tx, err := db.Begin()
+    if err != nil {
+        return err
+    }
+    defer tx.Rollback() // Rollback if not committed
+    
+    // ... perform operations
+    
+    return tx.Commit()
+}
+```
 
-### Database Schema Updates
+### 4. Configuration Validation
 
-The persistence package automatically handles schema migrations when initializing connections.
+```go
+// ✅ Good: Validate configuration before use
+if err := config.Validate(); err != nil {
+    return fmt.Errorf("invalid configuration: %w", err)
+}
 
-## Examples
+// ❌ Bad: Using configuration without validation
+// This can lead to runtime errors
+```
 
-See `examples/database_persistence_demo.go` for comprehensive usage examples covering:
-- Basic PostgreSQL operations
-- RAG with pgvector
-- Redis caching
-- Connection management
-- Error handling
+## Performance Optimization
 
-## API Reference
+### 1. Connection Pooling
 
-### Core Interfaces
+```go
+// Optimize connection pool settings based on your workload
+pgConfig := persistence.PostgreSQLConfig{
+    MaxConnections:  25,              // Based on database limits
+    MaxIdleConns:    5,               // Keep some connections ready
+    ConnMaxLifetime: 30 * time.Minute, // Prevent stale connections
+    ConnMaxIdleTime: 5 * time.Minute,  // Clean up idle connections
+}
+```
 
-- `Checkpointer`: Main persistence interface
-- `DatabaseConnection`: Database connection interface
-- `DatabaseConnectionManager`: Multi-database management
+### 2. Batch Operations
 
-### Configuration Types
+```go
+// Process documents in batches for better performance
+const batchSize = 100
+for i := 0; i < len(documents); i += batchSize {
+    batch := documents[i:min(i+batchSize, len(documents))]
+    if err := vectorStore.StoreDocuments(batch); err != nil {
+        log.Printf("Batch failed: %v", err)
+    }
+}
+```
 
-- `DatabaseConfig`: Database configuration
-- `DatabaseType`: Supported database types
-- `Document`: RAG document structure
-- `Checkpoint`: State checkpoint structure
+### 3. Indexing
 
-### Helper Functions
+```go
+// Create appropriate indexes for your queries
+queries := []string{
+    "CREATE INDEX IF NOT EXISTS idx_checkpoints_thread_id ON checkpoints(thread_id)",
+    "CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id)",
+    "CREATE INDEX IF NOT EXISTS idx_documents_metadata ON documents USING GIN(metadata)",
+}
 
-- `NewPostgresConfig()`: PostgreSQL configuration
-- `NewPgVectorConfig()`: pgvector configuration
-- `NewRedisConfig()`: Redis configuration
-- `CreateCheckpointer()`: Factory function for checkpointers
+for _, query := range queries {
+    if _, err := db.Exec(query); err != nil {
+        log.Printf("Failed to create index: %v", err)
+    }
+}
+```
 
-This comprehensive persistence layer enables GoLangGraph to work with any production database setup while providing advanced features like RAG support and vector similarity search. 
+## Conclusion
+
+The persistence package provides a comprehensive solution for data storage and retrieval in GoLangGraph applications. With support for multiple database types, advanced features like vector search, and robust error handling, it enables building production-ready AI applications with reliable data persistence. 

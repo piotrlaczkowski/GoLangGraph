@@ -241,21 +241,30 @@ func TestGraph_ExecuteWithConditionalEdge(t *testing.T) {
 		return state, nil
 	}
 
-	// Conditional function
-	condition := func(ctx context.Context, state *BaseState) (string, error) {
+	// Conditional function for node2 edge
+	conditionToNode2 := func(ctx context.Context, state *BaseState) (string, error) {
 		val, _ := state.Get("condition_value")
 		if val == "go_to_node2" {
 			return "node2", nil
 		}
-		return "node3", nil
+		return "", nil // Don't take this edge
+	}
+
+	// Conditional function for node3 edge
+	conditionToNode3 := func(ctx context.Context, state *BaseState) (string, error) {
+		val, _ := state.Get("condition_value")
+		if val == "go_to_node3" {
+			return "node3", nil
+		}
+		return "", nil // Don't take this edge
 	}
 
 	// Build graph
 	graph.AddNode("node1", "Node 1", node1)
 	graph.AddNode("node2", "Node 2", node2)
 	graph.AddNode("node3", "Node 3", node3)
-	graph.AddEdge("node1", "node2", condition)
-	graph.AddEdge("node1", "node3", condition)
+	graph.AddEdge("node1", "node2", conditionToNode2)
+	graph.AddEdge("node1", "node3", conditionToNode3)
 	graph.SetStartNode("node1")
 	graph.AddEndNode("node2")
 	graph.AddEndNode("node3")

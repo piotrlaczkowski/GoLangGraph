@@ -1,4 +1,4 @@
-package main
+package examples
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"github.com/piotrlaczkowski/GoLangGraph/pkg/persistence"
 )
 
-func main() {
+func RunDatabasePersistenceDemo() {
 	fmt.Println("=== GoLangGraph Database Persistence Demo ===")
 
 	// Demo 1: PostgreSQL Basic Connection

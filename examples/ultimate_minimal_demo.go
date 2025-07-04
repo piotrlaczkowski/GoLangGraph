@@ -1,4 +1,4 @@
-package main
+package examples
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 // Create any type of agent in just 1 line of code!
 // Run with: go run ultimate_minimal_demo.go
 
-func main() {
+func RunUltimateMinimalDemo() {
 	UltimateMinimalDemo()
 }
 
