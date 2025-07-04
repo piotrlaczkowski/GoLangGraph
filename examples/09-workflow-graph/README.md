@@ -43,16 +43,19 @@ Input → Analysis → ReAct → Decision
 The ReAct agent implements the **Reasoning and Acting** pattern:
 
 ### Reasoning Phase
+
 - Analyzes the task and context
 - Creates step-by-step plans
 - Identifies required tools and capabilities
 
 ### Acting Phase
+
 - Executes planned actions
 - Uses available tools
 - Adapts based on intermediate results
 
 ### Available Tools
+
 - **Calculator**: Mathematical operations and computations
 - **Web Search**: Information retrieval (simulated)
 - **Data Analysis**: Statistical analysis and insights
@@ -78,6 +81,7 @@ go run main.go
 Try these tasks to see different workflow paths:
 
 **Mathematical Tasks** (routes to math execution):
+
 ```
 Calculate the compound interest on $1000 at 5% for 3 years
 Solve the quadratic equation x² + 5x + 6 = 0
@@ -85,6 +89,7 @@ What is the derivative of x³ + 2x² - 5x + 1?
 ```
 
 **Research Tasks** (routes to research execution):
+
 ```
 Research the latest developments in quantum computing
 What are the current trends in artificial intelligence?
@@ -92,6 +97,7 @@ Explain the benefits of renewable energy sources
 ```
 
 **Analysis Tasks** (routes to analysis execution):
+
 ```
 Analyze the pros and cons of remote work
 Compare different machine learning algorithms
@@ -101,18 +107,21 @@ Evaluate the impact of social media on society
 ## 📊 Workflow Features
 
 ### State Management
+
 - **Persistent State**: Data flows through all nodes
 - **Context Tracking**: Maintains execution context
 - **History Recording**: Tracks all node executions
 - **Metadata**: Additional workflow information
 
 ### Dynamic Routing
+
 - **Task Classification**: Automatic task type detection
 - **Conditional Edges**: Route based on analysis results
 - **Parallel Execution**: Multiple specialized processing paths
 - **Result Synthesis**: Intelligent aggregation of outputs
 
 ### Monitoring & Debugging
+
 - **Execution Tracking**: Real-time workflow progress
 - **Performance Metrics**: Node execution times
 - **Error Handling**: Graceful failure management
@@ -199,18 +208,21 @@ After running this example, you'll understand:
 ## 🌟 Key Concepts Demonstrated
 
 ### Graph Theory in AI Workflows
+
 - **Nodes**: Processing units with specific capabilities
 - **Edges**: Connections defining possible transitions
 - **State**: Data that flows through the graph
 - **Routing**: Dynamic path selection based on conditions
 
 ### ReAct Agent Pattern
+
 - **Observation**: Understanding current state and context
 - **Thought**: Reasoning about next actions
 - **Action**: Executing planned steps with tools
 - **Reflection**: Evaluating results and planning next steps
 
 ### Advanced Workflow Patterns
+
 - **Conditional Branching**: Different paths based on analysis
 - **Parallel Processing**: Multiple simultaneous execution paths
 - **State Aggregation**: Combining results from parallel paths
@@ -227,4 +239,4 @@ This example provides a foundation for building sophisticated AI agent workflows
 5. **Distributed Execution**: Scale across multiple instances
 6. **Visual Workflow Designer**: GUI for workflow creation
 
-This represents the cutting edge of AI agent architecture, combining the power of graph-based workflows with intelligent reasoning and tool usage! 
+This represents the cutting edge of AI agent architecture, combining the power of graph-based workflows with intelligent reasoning and tool usage!

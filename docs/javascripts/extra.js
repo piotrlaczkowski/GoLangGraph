@@ -70,18 +70,18 @@ document.addEventListener('DOMContentLoaded', function() {
             opacity: 0;
             transition: opacity 0.3s ease;
         `;
-        
+
         block.style.position = 'relative';
         block.appendChild(button);
-        
+
         block.addEventListener('mouseenter', () => {
             button.style.opacity = '1';
         });
-        
+
         block.addEventListener('mouseleave', () => {
             button.style.opacity = '0';
         });
-        
+
         button.addEventListener('click', () => {
             const code = block.querySelector('code');
             if (code) {
@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 searchInput.focus();
             }
         }
-        
+
         // Press 'T' to toggle theme
         if (e.key === 't' && !e.ctrlKey && !e.metaKey) {
             const themeToggle = document.querySelector('[data-md-component="palette"]');
@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
             this.style.transform = 'scale(1.05)';
             this.style.transition = 'transform 0.3s ease';
         });
-        
+
         metric.addEventListener('mouseleave', function() {
             this.style.transform = 'scale(1)';
         });
@@ -184,15 +184,15 @@ document.addEventListener('DOMContentLoaded', function() {
         opacity: 0.8;
         transition: opacity 0.3s ease;
     `;
-    
+
     versionIndicator.addEventListener('mouseenter', () => {
         versionIndicator.style.opacity = '1';
     });
-    
+
     versionIndicator.addEventListener('mouseleave', () => {
         versionIndicator.style.opacity = '0.8';
     });
-    
+
     document.body.appendChild(versionIndicator);
 
     // Add easter egg - Konami code
@@ -208,14 +208,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (konamiCode.length > konamiSequence.length) {
             konamiCode.shift();
         }
-        
+
         if (konamiCode.join(',') === konamiSequence.join(',')) {
             // Easter egg activated!
             document.body.style.animation = 'rainbow 2s infinite';
             setTimeout(() => {
                 document.body.style.animation = '';
             }, 5000);
-            
+
             // Add rainbow animation
             const style = document.createElement('style');
             style.textContent = `
@@ -225,7 +225,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             `;
             document.head.appendChild(style);
-            
+
             konamiCode = [];
         }
     });
@@ -249,24 +249,24 @@ document.addEventListener('DOMContentLoaded', function() {
         transition: opacity 0.3s ease, transform 0.3s ease;
         z-index: 1000;
     `;
-    
+
     scrollToTopBtn.addEventListener('click', () => {
         window.scrollTo({
             top: 0,
             behavior: 'smooth'
         });
     });
-    
+
     scrollToTopBtn.addEventListener('mouseenter', () => {
         scrollToTopBtn.style.transform = 'scale(1.1)';
     });
-    
+
     scrollToTopBtn.addEventListener('mouseleave', () => {
         scrollToTopBtn.style.transform = 'scale(1)';
     });
-    
+
     document.body.appendChild(scrollToTopBtn);
-    
+
     window.addEventListener('scroll', () => {
         if (window.pageYOffset > 300) {
             scrollToTopBtn.style.opacity = '1';
@@ -277,4 +277,4 @@ document.addEventListener('DOMContentLoaded', function() {
 
     console.log('🚀 GoLangGraph Documentation loaded successfully!');
     console.log('💡 Tip: Press "S" to search, "T" to toggle theme');
-}); 
+});

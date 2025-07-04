@@ -16,8 +16,9 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
-	"github.com/piotrlaczkowski/GoLangGraph/pkg/core"
 	"github.com/sirupsen/logrus"
+
+	"github.com/piotrlaczkowski/GoLangGraph/pkg/core"
 )
 
 // DatabaseType represents supported database types

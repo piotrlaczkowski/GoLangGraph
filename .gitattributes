@@ -48,4 +48,4 @@ Dockerfile* text eol=lf
 
 # Makefiles
 Makefile text eol=lf
-*.mk text eol=lf 
+*.mk text eol=lf

@@ -74,7 +74,8 @@ Once a vulnerability is fixed:
 ## Contact
 
 For security-related questions or concerns:
+
 - Email: [security@golanggraph.dev] (replace with actual email)
 - GitHub: Create a private security advisory
 
-Thank you for helping keep GoLangGraph secure! 🔒 
+Thank you for helping keep GoLangGraph secure! 🔒

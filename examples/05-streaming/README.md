@@ -30,6 +30,7 @@ This example demonstrates **real-time streaming responses** with GoLangGraph. In
 ## 📋 Prerequisites
 
 1. **Ollama Installation**:
+
    ```bash
    # Install Ollama
    curl -fsSL https://ollama.com/install.sh | sh
@@ -44,6 +45,7 @@ This example demonstrates **real-time streaming responses** with GoLangGraph. In
 ## 🔧 Streaming Modes
 
 ### 1. Token Streaming
+
 ```go
 // Stream individual tokens
 stream := agent.StreamTokens(ctx, prompt)
@@ -53,6 +55,7 @@ for token := range stream {
 ```
 
 ### 2. Chunk Streaming
+
 ```go
 // Stream meaningful chunks
 stream := agent.StreamChunks(ctx, prompt)
@@ -62,6 +65,7 @@ for chunk := range stream {
 ```
 
 ### 3. Sentence Streaming
+
 ```go
 // Stream complete sentences
 stream := agent.StreamSentences(ctx, prompt)
@@ -73,6 +77,7 @@ for sentence := range stream {
 ## 💻 Usage
 
 ### Basic Streaming
+
 ```bash
 cd examples/05-streaming
 go run main.go
@@ -83,6 +88,7 @@ go run main.go
 ```
 
 ### Advanced Options
+
 ```bash
 # Different streaming modes
 go run main.go --mode token      # Token-by-token
@@ -113,6 +119,7 @@ go run main.go --colors          # Colored output
 ## 🎬 Example Interactions
 
 ### Real-time Chat Experience
+
 ```
 You: Explain quantum computing in simple terms
 
@@ -127,6 +134,7 @@ computers that use bits (0 or 1), quantum computers use quantum bits or
 ```
 
 ### Code Generation Streaming
+
 ```
 You: Write a Python function to calculate fibonacci numbers
 
@@ -153,6 +161,7 @@ def fibonacci(n):
 ```
 
 [Code appears progressively with syntax highlighting]
+
 ```
 
 ## ⚙️ Configuration Options
@@ -170,6 +179,7 @@ type StreamConfig struct {
 ```
 
 ### Performance Tuning
+
 ```go
 // Optimize for responsiveness
 config := &StreamConfig{
@@ -189,24 +199,28 @@ config := &StreamConfig{
 ## 🔄 Stream Types
 
 ### 1. Token Stream
+
 - **Granularity**: Individual tokens/words
 - **Latency**: Lowest possible
 - **Use Case**: Maximum responsiveness
 - **Buffering**: Minimal
 
 ### 2. Chunk Stream
+
 - **Granularity**: Meaningful text chunks
 - **Latency**: Balanced
 - **Use Case**: Good UX with readability
 - **Buffering**: Moderate
 
 ### 3. Sentence Stream
+
 - **Granularity**: Complete sentences
 - **Latency**: Higher but acceptable
 - **Use Case**: Natural reading experience
 - **Buffering**: Sentence boundaries
 
 ### 4. Paragraph Stream
+
 - **Granularity**: Complete paragraphs
 - **Latency**: Highest
 - **Use Case**: Document generation
@@ -215,6 +229,7 @@ config := &StreamConfig{
 ## 🎨 Visual Enhancements
 
 ### Typing Effect
+
 ```go
 // Simulate human typing
 func typewriterEffect(text string, delay time.Duration) {
@@ -226,6 +241,7 @@ func typewriterEffect(text string, delay time.Duration) {
 ```
 
 ### Progress Indicators
+
 ```go
 // Show streaming progress
 func showProgress(current, total int) {
@@ -235,6 +251,7 @@ func showProgress(current, total int) {
 ```
 
 ### Color Coding
+
 ```go
 // Color different message types
 const (
@@ -248,6 +265,7 @@ const (
 ## 🔧 Advanced Features
 
 ### Stream Cancellation
+
 ```go
 ctx, cancel := context.WithCancel(context.Background())
 
@@ -262,6 +280,7 @@ stream := agent.StreamResponse(ctx, prompt)
 ```
 
 ### Buffering Strategies
+
 ```go
 // Time-based buffering
 buffer := NewTimeBuffer(100 * time.Millisecond)
@@ -274,6 +293,7 @@ buffer := NewAdaptiveBuffer()
 ```
 
 ### Error Recovery
+
 ```go
 stream := agent.StreamResponse(ctx, prompt)
 for chunk := range stream {
@@ -299,11 +319,13 @@ The system tracks streaming performance:
 ## 🛠️ Implementation Details
 
 ### Stream Processing Pipeline
+
 ```
 LLM Generation → Buffer → Flow Control → Display → User
 ```
 
 ### Buffer Management
+
 ```go
 type StreamBuffer struct {
     tokens    []string
@@ -321,6 +343,7 @@ func (sb *StreamBuffer) Add(token string) {
 ```
 
 ### Display Coordination
+
 ```go
 type DisplayManager struct {
     output   io.Writer
@@ -335,24 +358,28 @@ type DisplayManager struct {
 ### Common Issues
 
 1. **Choppy Streaming**
+
    ```
    Issue: Irregular token delivery
    Solution: Adjust buffer size and flush intervals
    ```
 
 2. **High Latency**
+
    ```
    Issue: Slow time to first token
    Solution: Use faster models or optimize network
    ```
 
 3. **Terminal Issues**
+
    ```
    Issue: Display artifacts or formatting problems
    Solution: Ensure terminal supports ANSI escape codes
    ```
 
 4. **Memory Usage**
+
    ```
    Issue: High memory consumption during streaming
    Solution: Implement proper buffer cleanup
@@ -368,6 +395,7 @@ type DisplayManager struct {
 ## 🔗 Integration Examples
 
 ### Web Streaming
+
 ```go
 // Server-Sent Events (SSE)
 w.Header().Set("Content-Type", "text/event-stream")
@@ -381,6 +409,7 @@ for chunk := range stream {
 ```
 
 ### WebSocket Streaming
+
 ```go
 // WebSocket real-time streaming
 conn.WriteMessage(websocket.TextMessage, []byte("stream_start"))
@@ -392,6 +421,7 @@ for chunk := range stream {
 ```
 
 ### gRPC Streaming
+
 ```go
 // gRPC server streaming
 stream := agent.StreamResponse(ctx, prompt)
@@ -414,6 +444,7 @@ for chunk := range stream {
 ## 🚀 Next Steps
 
 After mastering streaming:
+
 1. Explore **06-persistence** for stateful streaming sessions
 2. Try **07-tools-integration** for streaming tool responses
 3. Check **08-production-ready** for production streaming setups
@@ -422,6 +453,7 @@ After mastering streaming:
 ## 🤝 Contributing
 
 Enhance this example by:
+
 - Adding new streaming modes
 - Improving visual effects
 - Contributing performance optimizations
@@ -431,4 +463,4 @@ Enhance this example by:
 
 **Happy Streaming!** 🌊
 
-This streaming example demonstrates how to create responsive, real-time applications with GoLangGraph that provide immediate feedback and engaging user experiences. 
+This streaming example demonstrates how to create responsive, real-time applications with GoLangGraph that provide immediate feedback and engaging user experiences.

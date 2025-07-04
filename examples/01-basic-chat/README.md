@@ -5,6 +5,7 @@ This example demonstrates the simplest way to create and use a chat agent with G
 ## 📋 Prerequisites
 
 1. **Ollama installed and running**:
+
    ```bash
    # Install Ollama (if not already installed)
    curl -fsSL https://ollama.ai/install.sh | sh
@@ -14,6 +15,7 @@ This example demonstrates the simplest way to create and use a chat agent with G
    ```
 
 2. **Pull the Gemma3 1B model**:
+
    ```bash
    # Pull the basic model
    ollama pull gemma3:1b
@@ -41,6 +43,7 @@ go run main.go
 ## 🔧 Key Features
 
 ### Simple Configuration
+
 ```go
 config := &agent.AgentConfig{
     Name:         "BasicChat",
@@ -53,6 +56,7 @@ config := &agent.AgentConfig{
 ```
 
 ### Ollama Provider Setup
+
 ```go
 provider, err := llm.NewOllamaProvider(&llm.ProviderConfig{
     Endpoint: "http://localhost:11434",
@@ -62,7 +66,9 @@ provider, err := llm.NewOllamaProvider(&llm.ProviderConfig{
 ```
 
 ### Interactive Chat Loop
+
 The example includes an interactive chat session where you can:
+
 - Ask questions and get responses
 - See response times and token usage
 - Exit gracefully with `/quit`
@@ -95,22 +101,26 @@ You: /quit
 You can modify the example to:
 
 1. **Change the model**:
+
    ```go
    Model: "orieg/gemma3-tools:1b", // Tool-enabled version
    ```
 
 2. **Adjust temperature** for different response styles:
+
    ```go
    Temperature: 0.1, // More focused responses
    Temperature: 0.9, // More creative responses
    ```
 
 3. **Modify the system prompt**:
+
    ```go
    SystemPrompt: "You are a Go programming expert assistant.",
    ```
 
 4. **Add conversation history**:
+
    ```go
    // The example shows how to maintain conversation context
    ```
@@ -148,6 +158,7 @@ Once you're comfortable with this basic example, try:
 ### Common Issues
 
 1. **Ollama not running**:
+
    ```bash
    # Check if Ollama is running
    curl http://localhost:11434/api/tags
@@ -157,6 +168,7 @@ Once you're comfortable with this basic example, try:
    ```
 
 2. **Model not found**:
+
    ```bash
    # Pull the required model
    ollama pull gemma3:1b
@@ -177,4 +189,4 @@ Once you're comfortable with this basic example, try:
 
 - [GoLangGraph Documentation](../../docs/)
 - [Ollama Documentation](https://ollama.ai/docs)
-- [Gemma3 Model Information](https://ollama.com/library/gemma3) 
+- [Gemma3 Model Information](https://ollama.com/library/gemma3)

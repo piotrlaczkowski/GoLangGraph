@@ -229,11 +229,11 @@
   .hero-section h1 {
     font-size: 2rem;
   }
-  
+
   .hero-section p {
     font-size: 1rem;
   }
-  
+
   .md-typeset .grid.cards {
     grid-template-columns: 1fr;
   }
@@ -372,7 +372,7 @@
   .md-nav {
     display: none !important;
   }
-  
+
   .md-content {
     margin: 0 !important;
     padding: 0 !important;

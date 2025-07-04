@@ -25,6 +25,7 @@ examples/
 1. **Install Ollama**: Download from [ollama.com](https://ollama.com)
 2. **Start Ollama**: `ollama serve`
 3. **Pull Models**:
+
    ```bash
    ollama pull gemma3:1b                    # For basic examples
    ollama pull orieg/gemma3-tools:1b        # For tool-enabled examples (recommended)
@@ -50,11 +51,13 @@ go build -o example-name *.go     # For multi-file examples
 ## 🎯 Examples Overview
 
 ### 🤖 [01-basic-chat](./01-basic-chat/) - Basic Chat Agent
+
 **Complexity: Beginner** | **Runtime: ~2 minutes**
 
 Learn the fundamentals of creating a simple chat agent.
 
 **Features:**
+
 - ✅ Basic agent creation and configuration
 - ✅ Simple conversation handling
 - ✅ Ollama integration
@@ -62,6 +65,7 @@ Learn the fundamentals of creating a simple chat agent.
 - ✅ Interactive commands
 
 **What you'll learn:**
+
 - Agent initialization and configuration
 - LLM provider integration
 - Basic conversation flow
@@ -75,11 +79,13 @@ go run *.go
 ---
 
 ### 🧠 [02-react-agent](./02-react-agent/) - ReAct Agent with Tools
+
 **Complexity: Intermediate** | **Runtime: ~5 minutes**
 
 Explore the ReAct (Reasoning and Acting) pattern with tool integration.
 
 **Features:**
+
 - ✅ ReAct pattern implementation
 - ✅ Tool integration (calculator, web search, file ops)
 - ✅ Multi-step problem solving
@@ -87,6 +93,7 @@ Explore the ReAct (Reasoning and Acting) pattern with tool integration.
 - ✅ Statistical analysis tools
 
 **What you'll learn:**
+
 - ReAct reasoning pattern
 - Tool creation and integration
 - Complex problem decomposition
@@ -100,11 +107,13 @@ go run *.go
 ---
 
 ### 👥 [03-multi-agent](./03-multi-agent/) - Multi-Agent System
+
 **Complexity: Advanced** | **Runtime: ~8 minutes**
 
 Discover how multiple specialized agents work together.
 
 **Features:**
+
 - ✅ Multiple specialized agents
 - ✅ Task coordination and workflow
 - ✅ Agent communication patterns
@@ -112,6 +121,7 @@ Discover how multiple specialized agents work together.
 - ✅ Workflow orchestration
 
 **What you'll learn:**
+
 - Multi-agent architecture
 - Task decomposition and delegation
 - Agent coordination strategies
@@ -125,11 +135,13 @@ go run *.go
 ---
 
 ### 📚 [04-rag-system](./04-rag-system/) - RAG Implementation
+
 **Complexity: Advanced** | **Runtime: ~10 minutes**
 
 Build a Retrieval-Augmented Generation system.
 
 **Features:**
+
 - ✅ Document ingestion and vectorization
 - ✅ Semantic search and retrieval
 - ✅ Context-aware generation
@@ -137,6 +149,7 @@ Build a Retrieval-Augmented Generation system.
 - ✅ Vector database integration
 
 **What you'll learn:**
+
 - RAG architecture and implementation
 - Document processing and embedding
 - Vector search and similarity
@@ -150,11 +163,13 @@ go run *.go
 ---
 
 ### 🌊 [05-streaming](./05-streaming/) - Real-time Streaming
+
 **Complexity: Intermediate** | **Runtime: ~5 minutes**
 
 Implement real-time streaming responses.
 
 **Features:**
+
 - ✅ Real-time response streaming
 - ✅ WebSocket integration
 - ✅ Progressive output display
@@ -162,6 +177,7 @@ Implement real-time streaming responses.
 - ✅ Performance optimization
 
 **What you'll learn:**
+
 - Streaming response implementation
 - Real-time communication patterns
 - Performance optimization techniques
@@ -175,11 +191,13 @@ go run *.go
 ---
 
 ### 💾 [06-persistence](./06-persistence/) - Data Persistence
+
 **Complexity: Advanced** | **Runtime: ~10 minutes**
 
 Explore data persistence and memory management.
 
 **Features:**
+
 - ✅ Conversation history storage
 - ✅ Agent memory management
 - ✅ Database integration
@@ -187,6 +205,7 @@ Explore data persistence and memory management.
 - ✅ Data retrieval and search
 
 **What you'll learn:**
+
 - Persistence strategies
 - Database integration patterns
 - Memory management techniques
@@ -204,11 +223,13 @@ go run *.go
 ---
 
 ### 🔧 [07-tools-integration](./07-tools-integration/) - Advanced Tools
+
 **Complexity: Advanced** | **Runtime: ~8 minutes**
 
 Master advanced tool integration and custom tool development.
 
 **Features:**
+
 - ✅ Custom tool development
 - ✅ External API integration
 - ✅ Tool chaining and composition
@@ -216,6 +237,7 @@ Master advanced tool integration and custom tool development.
 - ✅ Performance optimization
 
 **What you'll learn:**
+
 - Advanced tool development
 - API integration patterns
 - Security best practices
@@ -229,11 +251,13 @@ go run main.go
 ---
 
 ### 🏭 [08-production-ready](./08-production-ready/) - Production Deployment
+
 **Complexity: Expert** | **Runtime: ~15 minutes**
 
 Build production-ready applications with full enterprise features.
 
 **Features:**
+
 - ✅ Production configuration
 - ✅ Monitoring and observability
 - ✅ Error handling and recovery
@@ -242,6 +266,7 @@ Build production-ready applications with full enterprise features.
 - ✅ Docker deployment
 
 **What you'll learn:**
+
 - Production deployment strategies
 - Monitoring and observability
 - Security implementation
@@ -257,11 +282,13 @@ go run main.go
 ---
 
 ### 🔄 [09-workflow-graph](./09-workflow-graph/) - Complex Workflow Graph
+
 **Complexity: Expert** | **Runtime: ~12 minutes**
 
 Master advanced workflow orchestration with graph-based architecture, nodes, edges, and ReAct agent integration.
 
 **Features:**
+
 - ✅ Graph-based workflow architecture
 - ✅ Multi-node workflows with conditional edges
 - ✅ ReAct agent integration with tools
@@ -270,6 +297,7 @@ Master advanced workflow orchestration with graph-based architecture, nodes, edg
 - ✅ Result aggregation and synthesis
 
 **What you'll learn:**
+
 - Graph-based workflow design
 - ReAct pattern implementation
 - Conditional routing and state management
@@ -284,16 +312,19 @@ go run main.go
 ## 🎓 Learning Path
 
 ### Beginner Path
+
 1. **[01-basic-chat](./01-basic-chat/)** - Start here to understand fundamentals
 2. **[05-streaming](./05-streaming/)** - Add real-time capabilities
 3. **[06-persistence](./06-persistence/)** - Learn data management
 
 ### Intermediate Path
+
 1. **[02-react-agent](./02-react-agent/)** - Master tool integration
 2. **[04-rag-system](./04-rag-system/)** - Implement knowledge systems
 3. **[07-tools-integration](./07-tools-integration/)** - Advanced tool development
 
 ### Advanced Path
+
 1. **[03-multi-agent](./03-multi-agent/)** - Multi-agent coordination
 2. **[09-workflow-graph](./09-workflow-graph/)** - Complex workflow orchestration
 3. **[08-production-ready](./08-production-ready/)** - Production deployment
@@ -304,6 +335,7 @@ go run main.go
 All examples use consistent configuration patterns:
 
 ### Model Configuration
+
 ```go
 // Standard configuration
 ollamaConfig := &llm.ProviderConfig{
@@ -327,12 +359,15 @@ ollamaConfig := &llm.ProviderConfig{
 ```
 
 ### Agent Types
+
 - **Chat Agent**: Simple conversational agents
 - **ReAct Agent**: Reasoning and acting with tools
 - **Custom Agent**: Specialized implementations
 
 ### Tool Integration
+
 All examples demonstrate different aspects of tool integration:
+
 - Built-in tools (calculator, file operations, web search)
 - Custom tools (domain-specific functionality)
 - Tool chaining and composition
@@ -342,17 +377,20 @@ All examples demonstrate different aspects of tool integration:
 ### Common Issues
 
 1. **Ollama not running**:
+
    ```bash
    ollama serve
    ```
 
 2. **Model not found**:
+
    ```bash
    ollama pull gemma3:1b
    ollama pull orieg/gemma3-tools:1b
    ```
 
 3. **Port conflicts**:
+
    ```bash
    # Check if Ollama is running on port 11434
    curl http://localhost:11434/api/tags
@@ -364,6 +402,7 @@ All examples demonstrate different aspects of tool integration:
    - Implement proper timeout handling
 
 5. **Compilation errors**:
+
    ```bash
    # For basic-chat example with multiple files
    go run *.go
@@ -375,6 +414,7 @@ All examples demonstrate different aspects of tool integration:
    ```
 
 6. **Missing dependencies**:
+
    ```bash
    # If you get "no required module provides package" errors
    go mod init example-name
@@ -430,4 +470,4 @@ After completing these examples, you'll be ready to:
 3. **Scale to Production** - Deploy robust, production-ready solutions
 4. **Contribute to GoLangGraph** - Help improve the framework
 
-Happy coding! 🚀 
+Happy coding! 🚀

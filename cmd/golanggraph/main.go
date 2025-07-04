@@ -258,7 +258,7 @@ func init() {
 	rootCmd.AddCommand(debugCmd)
 	rootCmd.AddCommand(testCmd)
 	rootCmd.AddCommand(healthCmd)
-	
+
 	// Add nested commands
 	dockerCmd.AddCommand(dockerBuildCmd)
 	deployCmd.AddCommand(deployDockerCmd)
@@ -557,19 +557,19 @@ func runTests() {
 
 func runInit(args []string, template string) {
 	fmt.Printf("Initializing new GoLangGraph project...\n")
-	
+
 	projectName := "golanggraph-agent"
 	if len(args) > 0 {
 		projectName = args[0]
 	}
-	
+
 	fmt.Printf("Creating project: %s with template: %s\n", projectName, template)
-	
+
 	// Create project directory
 	if err := os.MkdirAll(projectName, 0755); err != nil {
 		log.Fatalf("Failed to create project directory: %v", err)
 	}
-	
+
 	// Create subdirectories
 	dirs := []string{
 		"configs",
@@ -578,13 +578,13 @@ func runInit(args []string, template string) {
 		"static",
 		"tests",
 	}
-	
+
 	for _, dir := range dirs {
 		if err := os.MkdirAll(fmt.Sprintf("%s/%s", projectName, dir), 0755); err != nil {
 			log.Fatalf("Failed to create directory %s: %v", dir, err)
 		}
 	}
-	
+
 	// Create template files based on template type
 	switch template {
 	case "basic":
@@ -596,7 +596,7 @@ func runInit(args []string, template string) {
 	default:
 		createBasicTemplate(projectName)
 	}
-	
+
 	fmt.Printf("Project %s initialized successfully!\n", projectName)
 	fmt.Printf("Next steps:\n")
 	fmt.Printf("  cd %s\n", projectName)
@@ -605,19 +605,19 @@ func runInit(args []string, template string) {
 
 func runDockerBuild(args []string, distroless bool, tag, dockerfile, platform string) {
 	fmt.Printf("Building Docker container...\n")
-	
+
 	configFile := "agent-config.yaml"
 	if len(args) > 0 {
 		configFile = args[0]
 	}
-	
+
 	fmt.Printf("Using config file: %s\n", configFile)
-	
+
 	// Determine image tag
 	if tag == "" {
 		tag = "golanggraph-agent:latest"
 	}
-	
+
 	// Choose dockerfile based on distroless flag
 	var dockerfilePath string
 	if dockerfile != "" {
@@ -629,22 +629,22 @@ func runDockerBuild(args []string, distroless bool, tag, dockerfile, platform st
 		dockerfilePath = "Dockerfile.agent"
 		createAgentDockerfile(dockerfilePath)
 	}
-	
+
 	// Build Docker command
 	var dockerCmd []string
 	dockerCmd = append(dockerCmd, "docker", "build", "-f", dockerfilePath, "-t", tag)
-	
+
 	if platform != "" {
 		dockerCmd = append(dockerCmd, "--platform", platform)
 	}
-	
+
 	dockerCmd = append(dockerCmd, ".")
-	
+
 	fmt.Printf("Running: %s\n", fmt.Sprintf("%v", dockerCmd))
 	fmt.Printf("Image tag: %s\n", tag)
 	fmt.Printf("Dockerfile: %s\n", dockerfilePath)
 	fmt.Printf("Distroless: %t\n", distroless)
-	
+
 	// Note: In a real implementation, you would execute the docker command
 	// For now, we'll just show what would be executed
 	fmt.Printf("Docker build command prepared. Execute manually or integrate with docker library.\n")
@@ -652,7 +652,7 @@ func runDockerBuild(args []string, distroless bool, tag, dockerfile, platform st
 
 func runDevServer() {
 	fmt.Println("Starting development server...")
-	
+
 	// Create development server configuration
 	config := &server.ServerConfig{
 		Host:           viper.GetString("host"),
@@ -664,67 +664,67 @@ func runDevServer() {
 		StaticDir:      "./static",
 		DevMode:        true,
 	}
-	
+
 	// Create server
 	srv := server.NewServer(config)
-	
+
 	// Initialize components
 	if err := initializeComponents(srv); err != nil {
 		log.Fatalf("Failed to initialize components: %v", err)
 	}
-	
+
 	// Start server in a goroutine
 	go func() {
 		if err := srv.Start(); err != nil {
 			log.Fatalf("Server failed to start: %v", err)
 		}
 	}()
-	
+
 	fmt.Printf("Development server started on %s:%d\n", config.Host, config.Port)
 	fmt.Printf("API endpoints: http://%s:%d/api/v1/\n", config.Host, config.Port)
 	fmt.Printf("Debug interface: http://%s:%d/debug\n", config.Host, config.Port)
 	fmt.Printf("Agent playground: http://%s:%d/playground\n", config.Host, config.Port)
-	
+
 	// Watch for file changes (hot-reload)
 	if viper.GetBool("hot-reload") {
 		fmt.Println("Hot-reload enabled - watching for changes...")
 		// Note: File watching implementation would go here
 	}
-	
+
 	// Wait for interrupt signal to gracefully shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	
+
 	fmt.Println("Shutting down development server...")
-	
+
 	// Create a deadline for shutdown
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	
+
 	if err := srv.Stop(ctx); err != nil {
 		log.Fatalf("Server forced to shutdown: %v", err)
 	}
-	
+
 	fmt.Println("Development server stopped")
 }
 
 func runValidate(args []string, strict bool) {
 	fmt.Printf("Validating configuration...\n")
-	
+
 	configFile := "agent-config.yaml"
 	if len(args) > 0 {
 		configFile = args[0]
 	}
-	
+
 	fmt.Printf("Config file: %s\n", configFile)
 	fmt.Printf("Strict mode: %t\n", strict)
-	
+
 	// Check if config file exists
 	if _, err := os.Stat(configFile); os.IsNotExist(err) {
 		log.Fatalf("Configuration file not found: %s", configFile)
 	}
-	
+
 	// Note: In a real implementation, you would:
 	// 1. Parse the configuration file
 	// 2. Validate the schema
@@ -732,26 +732,26 @@ func runValidate(args []string, strict bool) {
 	// 4. Validate graph structure
 	// 5. Check tool availability
 	// 6. Validate LLM provider configuration
-	
+
 	fmt.Printf("Configuration validation completed successfully!\n")
 }
 
 func runDeployDocker(args []string) {
 	fmt.Printf("Deploying agent using Docker...\n")
-	
+
 	configFile := "agent-config.yaml"
 	if len(args) > 0 {
 		configFile = args[0]
 	}
-	
+
 	fmt.Printf("Config file: %s\n", configFile)
-	
+
 	// Note: In a real implementation, you would:
 	// 1. Build the Docker image
 	// 2. Push to registry
 	// 3. Deploy to target environment
 	// 4. Monitor deployment status
-	
+
 	fmt.Printf("Docker deployment completed for config: %s!\n", configFile)
 }
 
@@ -779,11 +779,11 @@ database:
   username: "postgres"
   password: "password"
 `
-	
+
 	if err := os.WriteFile(fmt.Sprintf("%s/configs/agent-config.yaml", projectName), []byte(agentConfig), 0644); err != nil {
 		log.Fatalf("Failed to create agent config: %v", err)
 	}
-	
+
 	// Create docker-compose for development
 	dockerCompose := `version: '3.8'
 services:
@@ -797,7 +797,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-  
+
   redis:
     image: redis:7-alpine
     ports:
@@ -806,7 +806,7 @@ services:
 volumes:
   postgres_data:
 `
-	
+
 	if err := os.WriteFile(fmt.Sprintf("%s/docker-compose.yml", projectName), []byte(dockerCompose), 0644); err != nil {
 		log.Fatalf("Failed to create docker-compose: %v", err)
 	}
@@ -814,7 +814,7 @@ volumes:
 
 func createAdvancedTemplate(projectName string) {
 	createBasicTemplate(projectName)
-	
+
 	// Add advanced configuration
 	advancedConfig := `name: "advanced-agent"
 type: "multi-agent"
@@ -877,7 +877,7 @@ vector_store:
   password: "password"
   dimensions: 1536
 `
-	
+
 	if err := os.WriteFile(fmt.Sprintf("%s/configs/advanced-config.yaml", projectName), []byte(advancedConfig), 0644); err != nil {
 		log.Fatalf("Failed to create advanced config: %v", err)
 	}
@@ -885,7 +885,7 @@ vector_store:
 
 func createRAGTemplate(projectName string) {
 	createAdvancedTemplate(projectName)
-	
+
 	// Add RAG-specific configuration
 	ragConfig := `name: "rag-agent"
 type: "rag"
@@ -941,7 +941,7 @@ database:
   username: "postgres"
   password: "password"
 `
-	
+
 	if err := os.WriteFile(fmt.Sprintf("%s/configs/rag-config.yaml", projectName), []byte(ragConfig), 0644); err != nil {
 		log.Fatalf("Failed to create RAG config: %v", err)
 	}
@@ -1013,7 +1013,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 ENTRYPOINT ["./golanggraph-agent"]
 CMD ["serve", "--host", "0.0.0.0", "--port", "8080"]
 `
-	
+
 	if err := os.WriteFile(filepath, []byte(dockerfile), 0644); err != nil {
 		log.Fatalf("Failed to create Dockerfile: %v", err)
 	}
@@ -1069,7 +1069,7 @@ EXPOSE 8080
 ENTRYPOINT ["/golanggraph-agent"]
 CMD ["serve", "--host", "0.0.0.0", "--port", "8080"]
 `
-	
+
 	if err := os.WriteFile(filepath, []byte(dockerfile), 0644); err != nil {
 		log.Fatalf("Failed to create distroless Dockerfile: %v", err)
 	}
@@ -1077,13 +1077,13 @@ CMD ["serve", "--host", "0.0.0.0", "--port", "8080"]
 
 func runHealthCheck() {
 	fmt.Printf("Running GoLangGraph health check...\n")
-	
+
 	healthy := true
 	var issues []string
-	
+
 	// Check system resources
 	fmt.Printf("Checking system resources...\n")
-	
+
 	// Check database connectivity
 	fmt.Printf("Checking database connectivity...\n")
 	dbHost := os.Getenv("POSTGRES_HOST")
@@ -1093,7 +1093,7 @@ func runHealthCheck() {
 	fmt.Printf("  PostgreSQL: %s:5432 - ", dbHost)
 	// In a real implementation, you would test actual connectivity
 	fmt.Printf("✓ Reachable\n")
-	
+
 	redisHost := os.Getenv("REDIS_HOST")
 	if redisHost == "" {
 		redisHost = "localhost"
@@ -1101,7 +1101,7 @@ func runHealthCheck() {
 	fmt.Printf("  Redis: %s:6379 - ", redisHost)
 	// In a real implementation, you would test actual connectivity
 	fmt.Printf("✓ Reachable\n")
-	
+
 	// Check LLM providers
 	fmt.Printf("Checking LLM providers...\n")
 	if apiKey := os.Getenv("OPENAI_API_KEY"); apiKey != "" {
@@ -1110,7 +1110,7 @@ func runHealthCheck() {
 		fmt.Printf("  OpenAI: ⚠ API key not configured\n")
 		issues = append(issues, "OpenAI API key not configured")
 	}
-	
+
 	ollamaURL := os.Getenv("OLLAMA_URL")
 	if ollamaURL == "" {
 		ollamaURL = "http://localhost:11434"
@@ -1118,12 +1118,12 @@ func runHealthCheck() {
 	fmt.Printf("  Ollama: %s - ", ollamaURL)
 	// In a real implementation, you would test actual connectivity
 	fmt.Printf("✓ Reachable\n")
-	
+
 	// Check disk space
 	fmt.Printf("Checking system resources...\n")
 	fmt.Printf("  Disk space: ✓ Sufficient\n")
 	fmt.Printf("  Memory: ✓ Available\n")
-	
+
 	// Overall health status
 	fmt.Printf("\n")
 	if healthy && len(issues) == 0 {

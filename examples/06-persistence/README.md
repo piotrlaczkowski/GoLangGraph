@@ -30,6 +30,7 @@ This example demonstrates **persistent conversation management** with GoLangGrap
 ## 📋 Prerequisites
 
 1. **Ollama Installation**:
+
    ```bash
    # Install Ollama
    curl -fsSL https://ollama.com/install.sh | sh
@@ -39,6 +40,7 @@ This example demonstrates **persistent conversation management** with GoLangGrap
    ```
 
 2. **Database Setup** (Optional):
+
    ```bash
    # For PostgreSQL support
    sudo apt-get install postgresql postgresql-contrib
@@ -50,6 +52,7 @@ This example demonstrates **persistent conversation management** with GoLangGrap
 ## 🗄️ Storage Options
 
 ### 1. SQLite (Default)
+
 ```go
 // Local file-based database
 config := &PersistenceConfig{
@@ -59,6 +62,7 @@ config := &PersistenceConfig{
 ```
 
 ### 2. PostgreSQL
+
 ```go
 // Production-ready database
 config := &PersistenceConfig{
@@ -68,6 +72,7 @@ config := &PersistenceConfig{
 ```
 
 ### 3. In-Memory
+
 ```go
 // Temporary storage for testing
 config := &PersistenceConfig{
@@ -78,6 +83,7 @@ config := &PersistenceConfig{
 ## 💻 Usage
 
 ### Basic Persistence
+
 ```bash
 cd examples/06-persistence
 go run main.go
@@ -96,6 +102,7 @@ go run main.go
 ```
 
 ### Advanced Options
+
 ```bash
 # Specify database backend
 go run main.go --backend sqlite --db ./my_conversations.db
@@ -132,6 +139,7 @@ go run main.go --import conversations.json
 ## 🔍 Example Interactions
 
 ### Session Continuity
+
 ```
 # First session
 You: I'm learning about machine learning algorithms
@@ -154,6 +162,7 @@ decision trees, or neural networks?
 ```
 
 ### Multi-User Support
+
 ```
 # User A's session
 go run main.go --session userA
@@ -169,6 +178,7 @@ You: I need help with Python data analysis
 ## ⚙️ Configuration
 
 ### Persistence Settings
+
 ```go
 type PersistenceConfig struct {
     Backend          string        `json:"backend"`
@@ -181,6 +191,7 @@ type PersistenceConfig struct {
 ```
 
 ### Database Schema
+
 ```sql
 -- Conversations table
 CREATE TABLE conversations (
@@ -216,6 +227,7 @@ CREATE TABLE agent_states (
 ## 🔄 Data Models
 
 ### Conversation Model
+
 ```go
 type Conversation struct {
     ID          string            `json:"id"`
@@ -229,6 +241,7 @@ type Conversation struct {
 ```
 
 ### Message Model
+
 ```go
 type Message struct {
     ID             string            `json:"id"`
@@ -241,6 +254,7 @@ type Message struct {
 ```
 
 ### Agent State Model
+
 ```go
 type AgentState struct {
     ID             string                 `json:"id"`
@@ -255,6 +269,7 @@ type AgentState struct {
 ## 🛠️ Storage Operations
 
 ### Save Conversation
+
 ```go
 // Save entire conversation
 err := store.SaveConversation(ctx, conversation)
@@ -267,6 +282,7 @@ err := store.SaveAgentState(ctx, agentState)
 ```
 
 ### Load Conversation
+
 ```go
 // Load conversation by ID
 conversation, err := store.LoadConversation(ctx, conversationID)
@@ -279,6 +295,7 @@ messages, err := store.LoadRecentMessages(ctx, conversationID, limit)
 ```
 
 ### Search and Filter
+
 ```go
 // Search conversations by content
 results, err := store.SearchConversations(ctx, query)
@@ -293,6 +310,7 @@ stats, err := store.GetConversationStats(ctx, userID)
 ## 📊 Performance Optimization
 
 ### Indexing Strategy
+
 ```sql
 -- Optimize conversation lookups
 CREATE INDEX idx_conversations_user_id ON conversations(user_id);
@@ -307,6 +325,7 @@ CREATE INDEX idx_messages_content_fts ON messages USING gin(to_tsvector('english
 ```
 
 ### Caching Layer
+
 ```go
 // Redis cache for frequently accessed conversations
 cache := redis.NewClient(&redis.Options{
@@ -321,6 +340,7 @@ data, err := cache.Get(ctx, conversationID).Result()
 ```
 
 ### Batch Operations
+
 ```go
 // Batch save messages
 err := store.BatchSaveMessages(ctx, messages)
@@ -332,6 +352,7 @@ conversations, err := store.ExportConversations(ctx, userID)
 ## 🔐 Security Considerations
 
 ### Data Encryption
+
 ```go
 // Encrypt sensitive conversation data
 encryptedContent, err := encrypt(message.Content, encryptionKey)
@@ -339,6 +360,7 @@ message.Content = encryptedContent
 ```
 
 ### Access Control
+
 ```go
 // Verify user access to conversation
 if !store.CanAccessConversation(ctx, userID, conversationID) {
@@ -347,6 +369,7 @@ if !store.CanAccessConversation(ctx, userID, conversationID) {
 ```
 
 ### Data Retention
+
 ```go
 // Automatic cleanup of old conversations
 err := store.CleanupOldConversations(ctx, retentionPeriod)
@@ -355,6 +378,7 @@ err := store.CleanupOldConversations(ctx, retentionPeriod)
 ## 📈 Analytics and Monitoring
 
 ### Conversation Metrics
+
 ```go
 type ConversationStats struct {
     TotalConversations int           `json:"total_conversations"`
@@ -367,6 +391,7 @@ type ConversationStats struct {
 ```
 
 ### Usage Tracking
+
 ```go
 // Track conversation patterns
 err := analytics.TrackConversationStart(ctx, userID)
@@ -377,18 +402,21 @@ err := analytics.TrackConversationEnd(ctx, conversationID, duration)
 ## 🔧 Advanced Features
 
 ### Conversation Branching
+
 ```go
 // Create conversation branches for different topics
 branch, err := store.CreateConversationBranch(ctx, parentID, branchPoint)
 ```
 
 ### Conversation Merging
+
 ```go
 // Merge multiple conversations
 merged, err := store.MergeConversations(ctx, conversationIDs)
 ```
 
 ### Export Formats
+
 ```go
 // Export to different formats
 err := store.ExportToJSON(ctx, conversationID, "backup.json")
@@ -401,24 +429,28 @@ err := store.ExportToMarkdown(ctx, conversationID, "conversation.md")
 ### Common Issues
 
 1. **Database Connection Errors**
+
    ```
    Error: Failed to connect to database
    Solution: Check database credentials and connectivity
    ```
 
 2. **Large Conversation Performance**
+
    ```
    Issue: Slow loading of conversations with many messages
    Solution: Implement pagination and message limits
    ```
 
 3. **Storage Space Issues**
+
    ```
    Issue: Database growing too large
    Solution: Implement data compression and archiving
    ```
 
 4. **Concurrent Access Issues**
+
    ```
    Issue: Race conditions in multi-user scenarios
    Solution: Use proper database transactions and locking
@@ -427,6 +459,7 @@ err := store.ExportToMarkdown(ctx, conversationID, "conversation.md")
 ## 🔗 Integration Examples
 
 ### Web Application
+
 ```go
 // HTTP handlers for conversation management
 http.HandleFunc("/conversations", handleConversations)
@@ -435,6 +468,7 @@ http.HandleFunc("/conversations/{id}/export", handleExport)
 ```
 
 ### gRPC Service
+
 ```go
 // gRPC service for conversation persistence
 service ConversationService {
@@ -445,6 +479,7 @@ service ConversationService {
 ```
 
 ### Message Queue Integration
+
 ```go
 // Async processing of conversation events
 producer.Publish("conversation.created", conversationEvent)
@@ -462,6 +497,7 @@ producer.Publish("message.sent", messageEvent)
 ## 🚀 Next Steps
 
 After mastering persistence:
+
 1. Explore **07-tools-integration** for persistent tool states
 2. Try **08-production-ready** for production persistence setups
 3. Build web applications with conversation history
@@ -470,6 +506,7 @@ After mastering persistence:
 ## 🤝 Contributing
 
 Enhance this example by:
+
 - Adding new storage backends
 - Implementing advanced search features
 - Contributing performance optimizations
@@ -479,4 +516,4 @@ Enhance this example by:
 
 **Happy Persisting!** 💾
 
-This persistence example provides a solid foundation for building stateful applications with GoLangGraph that maintain conversation history and user context across sessions. 
+This persistence example provides a solid foundation for building stateful applications with GoLangGraph that maintain conversation history and user context across sessions.

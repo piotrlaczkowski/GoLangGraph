@@ -1,3 +1,9 @@
+// Copyright (c) 2024 GoLangGraph Team
+//
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+//
+// Package: GoLangGraph - A powerful Go framework for building AI agent workflows
+
 //go:build integration
 // +build integration
 
@@ -67,29 +73,29 @@ func testInitCommand(t *testing.T) {
 
 func testDockerBuild(t *testing.T) {
 	tempDir := t.TempDir()
-	
+
 	// Test regular Dockerfile creation
 	dockerfilePath := filepath.Join(tempDir, "Dockerfile.agent")
 	err := createTestDockerfile(dockerfilePath, false)
 	require.NoError(t, err)
-	
+
 	content, err := ioutil.ReadFile(dockerfilePath)
 	require.NoError(t, err)
-	
+
 	dockerfileContent := string(content)
 	assert.Contains(t, dockerfileContent, "FROM golang:1.21-alpine AS builder")
 	assert.Contains(t, dockerfileContent, "FROM alpine:latest")
 	assert.Contains(t, dockerfileContent, "HEALTHCHECK")
 	assert.Contains(t, dockerfileContent, "USER golanggraph")
-	
+
 	// Test distroless Dockerfile creation
 	distrolessPath := filepath.Join(tempDir, "Dockerfile.distroless")
 	err = createTestDockerfile(distrolessPath, true)
 	require.NoError(t, err)
-	
+
 	distrolessContent, err := ioutil.ReadFile(distrolessPath)
 	require.NoError(t, err)
-	
+
 	distrolessStr := string(distrolessContent)
 	assert.Contains(t, distrolessStr, "FROM gcr.io/distroless/static:nonroot")
 	assert.Contains(t, distrolessStr, "USER nonroot:nonroot")
@@ -98,7 +104,7 @@ func testDockerBuild(t *testing.T) {
 
 func testValidateCommand(t *testing.T) {
 	tempDir := t.TempDir()
-	
+
 	// Create a test configuration file
 	configPath := filepath.Join(tempDir, "test-config.yaml")
 	configContent := `
@@ -122,15 +128,15 @@ database:
   username: "postgres"
   password: "password"
 `
-	
+
 	err := ioutil.WriteFile(configPath, []byte(configContent), 0644)
 	require.NoError(t, err)
-	
+
 	// Test validation
 	isValid, errors := validateConfig(configPath)
 	assert.True(t, isValid, "Configuration should be valid")
 	assert.Empty(t, errors, "No validation errors expected")
-	
+
 	// Test with invalid configuration
 	invalidConfigPath := filepath.Join(tempDir, "invalid-config.yaml")
 	invalidContent := `
@@ -138,10 +144,10 @@ name: ""
 type: "invalid-type"
 model: ""
 `
-	
+
 	err = ioutil.WriteFile(invalidConfigPath, []byte(invalidContent), 0644)
 	require.NoError(t, err)
-	
+
 	isValid, errors = validateConfig(invalidConfigPath)
 	assert.False(t, isValid, "Configuration should be invalid")
 	assert.NotEmpty(t, errors, "Validation errors expected")
@@ -155,34 +161,34 @@ func testDevMode(t *testing.T) {
 		DevMode:  true,
 		LogLevel: "debug",
 	}
-	
+
 	srv := server.NewServer(config)
-	
+
 	// Start server in background
 	go func() {
 		srv.Start()
 	}()
-	
+
 	// Give server time to start
 	time.Sleep(100 * time.Millisecond)
-	
+
 	// Test dev mode endpoints
 	baseURL := fmt.Sprintf("http://localhost:%d", config.Port)
-	
+
 	// Test debug dashboard
 	resp, err := http.Get(baseURL + "/debug/")
 	if err == nil {
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 		resp.Body.Close()
 	}
-	
+
 	// Test playground
 	resp, err = http.Get(baseURL + "/playground/")
 	if err == nil {
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 		resp.Body.Close()
 	}
-	
+
 	// Cleanup
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -196,7 +202,7 @@ func createProjectStructure(projectPath, template string) error {
 	if err := os.MkdirAll(projectPath, 0755); err != nil {
 		return err
 	}
-	
+
 	// Create subdirectories
 	dirs := []string{
 		"configs",
@@ -205,13 +211,13 @@ func createProjectStructure(projectPath, template string) error {
 		"static",
 		"tests",
 	}
-	
+
 	for _, dir := range dirs {
 		if err := os.MkdirAll(filepath.Join(projectPath, dir), 0755); err != nil {
 			return err
 		}
 	}
-	
+
 	// Create configuration files based on template
 	switch template {
 	case "basic":
@@ -249,12 +255,12 @@ database:
   username: "postgres"
   password: "password"
 `
-	
+
 	configPath := filepath.Join(projectPath, "configs", "agent-config.yaml")
 	if err := ioutil.WriteFile(configPath, []byte(agentConfig), 0644); err != nil {
 		return err
 	}
-	
+
 	// Create docker-compose for development
 	dockerCompose := `version: '3.8'
 services:
@@ -268,7 +274,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-  
+
   redis:
     image: redis:7-alpine
     ports:
@@ -277,7 +283,7 @@ services:
 volumes:
   postgres_data:
 `
-	
+
 	dockerComposePath := filepath.Join(projectPath, "docker-compose.yml")
 	return ioutil.WriteFile(dockerComposePath, []byte(dockerCompose), 0644)
 }
@@ -286,7 +292,7 @@ func createAdvancedTemplate(projectPath string) error {
 	if err := createBasicTemplate(projectPath); err != nil {
 		return err
 	}
-	
+
 	// Add advanced configuration
 	advancedConfig := `name: "advanced-agent"
 type: "multi-agent"
@@ -349,7 +355,7 @@ vector_store:
   password: "password"
   dimensions: 1536
 `
-	
+
 	configPath := filepath.Join(projectPath, "configs", "advanced-config.yaml")
 	return ioutil.WriteFile(configPath, []byte(advancedConfig), 0644)
 }
@@ -358,7 +364,7 @@ func createRAGTemplate(projectPath string) error {
 	if err := createAdvancedTemplate(projectPath); err != nil {
 		return err
 	}
-	
+
 	// Add RAG-specific configuration
 	ragConfig := `name: "rag-agent"
 type: "rag"
@@ -414,14 +420,14 @@ database:
   username: "postgres"
   password: "password"
 `
-	
+
 	configPath := filepath.Join(projectPath, "configs", "rag-config.yaml")
 	return ioutil.WriteFile(configPath, []byte(ragConfig), 0644)
 }
 
 func createTestDockerfile(filepath string, distroless bool) error {
 	var dockerfile string
-	
+
 	if distroless {
 		dockerfile = `# Distroless Dockerfile for GoLangGraph Agent
 FROM golang:1.21-alpine AS builder
@@ -536,49 +542,49 @@ ENTRYPOINT ["./golanggraph-agent"]
 CMD ["serve", "--host", "0.0.0.0", "--port", "8080"]
 `
 	}
-	
+
 	return ioutil.WriteFile(filepath, []byte(dockerfile), 0644)
 }
 
 func validateConfig(configPath string) (bool, []string) {
 	var errors []string
-	
+
 	// Check if file exists
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		errors = append(errors, "Configuration file does not exist")
 		return false, errors
 	}
-	
+
 	// Read file content
 	content, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		errors = append(errors, "Failed to read configuration file")
 		return false, errors
 	}
-	
+
 	configStr := string(content)
-	
+
 	// Basic validation checks
 	if !strings.Contains(configStr, "name:") {
 		errors = append(errors, "Missing 'name' field")
 	}
-	
+
 	if !strings.Contains(configStr, "type:") {
 		errors = append(errors, "Missing 'type' field")
 	}
-	
+
 	if !strings.Contains(configStr, "model:") {
 		errors = append(errors, "Missing 'model' field")
 	}
-	
+
 	if strings.Contains(configStr, "name: \"\"") {
 		errors = append(errors, "Name cannot be empty")
 	}
-	
+
 	if strings.Contains(configStr, "type: \"invalid-type\"") {
 		errors = append(errors, "Invalid agent type")
 	}
-	
+
 	return len(errors) == 0, errors
 }
 
@@ -587,14 +593,14 @@ func TestDockerContainerIntegration(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
 	}
-	
+
 	t.Run("TestDockerfileGeneration", testDockerfileGeneration)
 	t.Run("TestConfigurationValidation", testConfigurationValidation)
 }
 
 func testDockerfileGeneration(t *testing.T) {
 	tempDir := t.TempDir()
-	
+
 	// Test both regular and distroless Dockerfiles
 	testCases := []struct {
 		name       string
@@ -612,16 +618,16 @@ func testDockerfileGeneration(t *testing.T) {
 			expected:   []string{"FROM gcr.io/distroless/static:nonroot", "USER nonroot:nonroot"},
 		},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			dockerfilePath := filepath.Join(tempDir, fmt.Sprintf("Dockerfile.%s", tc.name))
 			err := createTestDockerfile(dockerfilePath, tc.distroless)
 			require.NoError(t, err)
-			
+
 			content, err := ioutil.ReadFile(dockerfilePath)
 			require.NoError(t, err)
-			
+
 			dockerfileContent := string(content)
 			for _, expected := range tc.expected {
 				assert.Contains(t, dockerfileContent, expected, "Dockerfile should contain %s", expected)
@@ -632,7 +638,7 @@ func testDockerfileGeneration(t *testing.T) {
 
 func testConfigurationValidation(t *testing.T) {
 	tempDir := t.TempDir()
-	
+
 	testCases := []struct {
 		name        string
 		config      string
@@ -668,16 +674,16 @@ provider: "openai"`,
 			expectedErr: "Name cannot be empty",
 		},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			configPath := filepath.Join(tempDir, "config.yaml")
 			err := ioutil.WriteFile(configPath, []byte(tc.config), 0644)
 			require.NoError(t, err)
-			
+
 			isValid, errors := validateConfig(configPath)
 			assert.Equal(t, tc.shouldValid, isValid, "Validation result should match expected")
-			
+
 			if !tc.shouldValid {
 				assert.Contains(t, strings.Join(errors, ", "), tc.expectedErr)
 			}

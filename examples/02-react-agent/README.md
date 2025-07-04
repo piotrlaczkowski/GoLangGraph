@@ -5,6 +5,7 @@ This example demonstrates the ReAct (Reasoning and Acting) pattern with GoLangGr
 ## 📋 Prerequisites
 
 1. **Ollama installed and running**:
+
    ```bash
    # Install Ollama (if not already installed)
    curl -fsSL https://ollama.ai/install.sh | sh
@@ -14,6 +15,7 @@ This example demonstrates the ReAct (Reasoning and Acting) pattern with GoLangGr
    ```
 
 2. **Pull the tool-enabled Gemma3 model**:
+
    ```bash
    # Pull the tool-enabled model for better performance
    ollama pull orieg/gemma3-tools:1b
@@ -42,13 +44,16 @@ go run main.go
 ## 🔧 Key Features
 
 ### ReAct Pattern
+
 The ReAct pattern follows this cycle:
+
 1. **Thought**: Reason about the problem
 2. **Action**: Choose a tool to use
 3. **Observation**: Observe the result
 4. **Repeat**: Continue until the task is complete
 
 ### Available Tools
+
 - 🧮 **Calculator**: Mathematical operations
 - 🔍 **Web Search**: Information retrieval (simulated)
 - 📁 **File Operations**: Read and write files
@@ -114,6 +119,7 @@ You: /quit
 ## 🛠️ Customization Options
 
 ### 1. Configure Available Tools
+
 ```go
 // Add custom tools
 toolRegistry.RegisterTool(tools.NewEmailTool())
@@ -124,6 +130,7 @@ agentConfig.Tools = []string{"calculator", "email", "database"}
 ```
 
 ### 2. Adjust Reasoning Parameters
+
 ```go
 agentConfig.MaxIterations = 5    // Maximum reasoning steps
 agentConfig.Temperature = 0.1    // More focused reasoning
@@ -131,6 +138,7 @@ agentConfig.MaxTokens = 1000     // Longer reasoning chains
 ```
 
 ### 3. Custom System Prompt
+
 ```go
 agentConfig.SystemPrompt = `You are an expert problem solver. 
 Use the ReAct pattern: Think, Act, Observe, and repeat until you have a complete solution.
@@ -163,24 +171,28 @@ After running this example, you'll understand:
 The example includes several pre-built scenarios:
 
 ### Mathematical Problem Solving
+
 ```
 "Calculate the compound interest on $1000 invested at 5% annual rate for 3 years, 
 then convert the result to euros using current exchange rates."
 ```
 
 ### Research and Analysis
+
 ```
 "Research the population of Tokyo and calculate how many football fields would be 
 needed to house everyone if each person needs 10 square meters."
 ```
 
 ### File Operations
+
 ```
 "Read the data from data.csv, calculate the average of the numbers, 
 and write a summary report to results.txt."
 ```
 
 ### Multi-step Reasoning
+
 ```
 "Plan a trip itinerary: find flights from NYC to London, check the weather forecast, 
 and calculate the total cost including accommodation."
@@ -199,12 +211,14 @@ Once you're comfortable with ReAct agents, try:
 ### Common Issues
 
 1. **Tool not found errors**:
+
    ```bash
    # Make sure tools are properly registered
    toolRegistry.RegisterTool(tools.NewCalculatorTool())
    ```
 
 2. **Infinite reasoning loops**:
+
    ```go
    // Set reasonable max iterations
    agentConfig.MaxIterations = 10
@@ -226,4 +240,4 @@ Once you're comfortable with ReAct agents, try:
 
 - [ReAct Paper](https://arxiv.org/abs/2210.03629) - Original research paper
 - [GoLangGraph Tools Documentation](../../docs/tools.md)
-- [Ollama Tools Integration](https://ollama.com/orieg/gemma3-tools) 
+- [Ollama Tools Integration](https://ollama.com/orieg/gemma3-tools)

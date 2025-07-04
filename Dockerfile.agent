@@ -1,11 +1,11 @@
 # Production Dockerfile for GoLangGraph Agent
-FROM golang:1.21-alpine AS builder
+FROM golang:1.23.4-alpine AS builder
 
 # Set working directory
 WORKDIR /app
 
 # Install dependencies
-RUN apk add --no-cache git ca-certificates tzdata
+RUN apk add --no-cache git=2.47.1-r0 ca-certificates=20241010-r0 tzdata=2024b-r1
 
 # Copy go mod files
 COPY go.mod go.sum ./
@@ -25,13 +25,11 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
     ./cmd/golanggraph
 
 # Production stage
-FROM alpine:latest
+FROM alpine:3.20.3
 
-# Install ca-certificates for HTTPS requests
-RUN apk --no-cache add ca-certificates tzdata
-
-# Create non-root user
-RUN addgroup -g 1001 -S golanggraph && \
+# Install ca-certificates for HTTPS requests and create non-root user
+RUN apk --no-cache add ca-certificates=20241010-r0 tzdata=2024b-r1 && \
+    addgroup -g 1001 -S golanggraph && \
     adduser -u 1001 -S golanggraph -G golanggraph
 
 WORKDIR /app
@@ -43,11 +41,9 @@ COPY --from=builder /app/golanggraph-agent .
 COPY configs/ ./configs/
 COPY static/ ./static/
 
-# Create necessary directories
-RUN mkdir -p ./logs ./data
-
-# Change ownership to non-root user
-RUN chown -R golanggraph:golanggraph /app
+# Create necessary directories and change ownership to non-root user
+RUN mkdir -p ./logs ./data && \
+    chown -R golanggraph:golanggraph /app
 
 # Switch to non-root user
 USER golanggraph

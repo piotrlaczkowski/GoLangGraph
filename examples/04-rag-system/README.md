@@ -28,6 +28,7 @@ Query → Embedding → Vector Search → Context Retrieval → LLM Generation �
 ## 📋 Prerequisites
 
 1. **Ollama Installation**:
+
    ```bash
    # Install Ollama
    curl -fsSL https://ollama.com/install.sh | sh
@@ -44,11 +45,13 @@ Query → Embedding → Vector Search → Context Retrieval → LLM Generation �
 The RAG system supports multiple configurations:
 
 ### Basic Configuration
+
 - **Chunk Size**: 500 tokens with 50 token overlap
 - **Retrieval Count**: Top 3 most relevant chunks
 - **Similarity Threshold**: 0.7 minimum relevance score
 
 ### Advanced Configuration
+
 - **Hybrid Search**: Combines vector and keyword search
 - **Reranking**: Secondary relevance scoring
 - **Context Compression**: Removes redundant information
@@ -56,6 +59,7 @@ The RAG system supports multiple configurations:
 ## 💻 Usage
 
 ### Basic RAG Query
+
 ```bash
 cd examples/04-rag-system
 go run main.go
@@ -67,6 +71,7 @@ go run main.go
 ```
 
 ### Command Line Options
+
 ```bash
 # Process specific documents
 go run main.go --docs ./path/to/documents
@@ -101,6 +106,7 @@ go run main.go --debug
 ## 🔍 Example Interactions
 
 ### Document Analysis
+
 ```
 You: What are the main topics covered in the documents?
 
@@ -115,6 +121,7 @@ Sources: technical_doc.txt (lines 1-50), sample1.txt (lines 25-75)
 ```
 
 ### Specific Information Retrieval
+
 ```
 You: How do I implement a microservices architecture?
 
@@ -133,6 +140,7 @@ Sources: technical_doc.txt (lines 120-180), sample2.md (lines 45-90)
 ## ⚙️ Advanced Features
 
 ### 1. Custom Embedding Models
+
 ```go
 // Use different embedding models
 config := &RAGConfig{
@@ -142,6 +150,7 @@ config := &RAGConfig{
 ```
 
 ### 2. Hybrid Search
+
 ```go
 // Combine vector and keyword search
 retriever := NewHybridRetriever(
@@ -153,6 +162,7 @@ retriever := NewHybridRetriever(
 ```
 
 ### 3. Context Compression
+
 ```go
 // Compress retrieved context
 compressor := NewContextCompressor()
@@ -172,18 +182,21 @@ The system tracks several metrics:
 ## 🛠️ Customization Options
 
 ### Document Processors
+
 - **TextProcessor**: Plain text files
 - **MarkdownProcessor**: Markdown with structure preservation
 - **PDFProcessor**: PDF extraction (requires additional dependencies)
 - **JSONProcessor**: Structured data processing
 
 ### Chunking Strategies
+
 - **FixedSizeChunker**: Fixed token count chunks
 - **SentenceChunker**: Sentence boundary preservation
 - **SemanticChunker**: Topic-based segmentation
 - **HierarchicalChunker**: Document structure awareness
 
 ### Retrieval Methods
+
 - **VectorRetriever**: Pure semantic search
 - **BM25Retriever**: Keyword-based search
 - **HybridRetriever**: Combined approach
@@ -194,24 +207,28 @@ The system tracks several metrics:
 ### Common Issues
 
 1. **No Documents Found**
+
    ```
    Error: No documents found in directory
    Solution: Ensure documents are in the correct folder and format
    ```
 
 2. **Embedding Model Not Available**
+
    ```
    Error: Failed to load embedding model
    Solution: Pull the embedding model with: ollama pull nomic-embed-text
    ```
 
 3. **Low Relevance Scores**
+
    ```
    Issue: Retrieved documents seem irrelevant
    Solution: Lower similarity threshold or improve document quality
    ```
 
 4. **Memory Issues**
+
    ```
    Issue: Out of memory with large document sets
    Solution: Reduce chunk size or implement disk-based vector store
@@ -227,6 +244,7 @@ The system tracks several metrics:
 ## 🔗 Integration Examples
 
 ### With Persistence
+
 ```go
 // Save vector store to disk
 vectorStore.SaveToDisk("./vector_index.db")
@@ -236,6 +254,7 @@ vectorStore.LoadFromDisk("./vector_index.db")
 ```
 
 ### With External APIs
+
 ```go
 // Use external embedding service
 embeddingService := NewOpenAIEmbeddings(apiKey)
@@ -243,6 +262,7 @@ ragSystem.SetEmbeddingService(embeddingService)
 ```
 
 ### With Multiple Models
+
 ```go
 // Use different models for different tasks
 ragConfig := &RAGConfig{
@@ -263,6 +283,7 @@ ragConfig := &RAGConfig{
 ## 🚀 Next Steps
 
 After mastering this example:
+
 1. Explore **05-streaming** for real-time responses
 2. Try **06-persistence** for production-ready storage
 3. Check **07-tools-integration** for enhanced capabilities
@@ -271,6 +292,7 @@ After mastering this example:
 ## 🤝 Contributing
 
 Improve this example by:
+
 - Adding new document processors
 - Implementing better chunking strategies
 - Contributing evaluation metrics
@@ -280,4 +302,4 @@ Improve this example by:
 
 **Happy Building!** 🎉
 
-This RAG system provides a solid foundation for building intelligent document-based question-answering systems with GoLangGraph. 
+This RAG system provides a solid foundation for building intelligent document-based question-answering systems with GoLangGraph.

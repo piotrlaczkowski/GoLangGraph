@@ -33,6 +33,7 @@
 <td width="50%">
 
 ### 🏗️ **Core Engine**
+
 - 🔄 **Graph-Based Execution** - Build workflows as directed graphs
 - ⚡ **Conditional Routing** - Dynamic paths based on runtime conditions  
 - 🧠 **State Management** - Persistent state across executions
@@ -42,6 +43,7 @@
 <td width="50%">
 
 ### 🤖 **AI Integration**
+
 - 🌐 **Multi-LLM Support** - OpenAI, Ollama, Gemini providers
 - 🔧 **Rich Tooling** - Built-in tools and custom extensions
 - 📊 **RAG Support** - Vector databases and retrieval systems
@@ -53,6 +55,7 @@
 <td width="50%">
 
 ### 💾 **Persistence & Data**
+
 - 🗄️ **Database Integration** - PostgreSQL, Redis, Vector DBs
 - 💾 **Checkpointing** - Save and restore workflow states
 - 🔍 **Vector Search** - Semantic search capabilities
@@ -62,6 +65,7 @@
 <td width="50%">
 
 ### 🚀 **Production Ready**
+
 - 🔒 **Security** - Input validation, SQL injection prevention
 - 📊 **Observability** - Comprehensive logging and metrics
 - 🐳 **Docker Support** - Containerized deployment
@@ -698,7 +702,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 | 📚 **Documentation** | [GoDoc](https://godoc.org/github.com/piotrlaczkowski/GoLangGraph) |
 | 🐛 **Issues** | [GitHub Issues](https://github.com/piotrlaczkowski/GoLangGraph/issues) |
 | 💬 **Discussions** | [GitHub Discussions](https://github.com/piotrlaczkowski/GoLangGraph/discussions) |
-| 📧 **Email** | support@golanggraph.dev |
+| 📧 **Email** | <support@golanggraph.dev> |
 
 </div>
 
@@ -715,6 +719,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 <td width="50%">
 
 ### 🚀 **Near Term**
+
 - [ ] **v1.1**: 🔍 Enhanced RAG capabilities
 - [ ] **v1.2**: 🎭 Multi-modal support (images, audio)
 - [ ] **v1.3**: 🌐 Distributed execution
@@ -723,6 +728,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 <td width="50%">
 
 ### 🔮 **Future**
+
 - [ ] **v1.4**: 🎨 Visual workflow editor
 - [ ] **v1.5**: 📊 Advanced monitoring and analytics
 - [ ] **v2.0**: ☁️ Cloud-native deployment options

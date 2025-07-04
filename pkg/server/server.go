@@ -176,7 +176,7 @@ func (s *Server) setupRoutes() {
 		debug.HandleFunc("/logs", s.handleDebugLogs).Methods("GET")
 		debug.HandleFunc("/metrics", s.handleDebugMetrics).Methods("GET")
 		debug.HandleFunc("/reload", s.handleDebugReload).Methods("POST")
-		
+
 		playground := s.router.PathPrefix("/playground").Subrouter()
 		playground.HandleFunc("/", s.handlePlaygroundDashboard).Methods("GET")
 		playground.HandleFunc("/test", s.handlePlaygroundTest).Methods("POST")
@@ -907,7 +907,7 @@ func (s *Server) handleDebugDashboard(w http.ResponseWriter, r *http.Request) {
 </html>
 `
 	w.Header().Set("Content-Type", "text/html")
-	w.Write([]byte(dashboardHTML))
+	_, _ = w.Write([]byte(dashboardHTML))
 }
 
 func (s *Server) handleDebugAgents(w http.ResponseWriter, r *http.Request) {
@@ -960,10 +960,10 @@ func (s *Server) handleDebugMetrics(w http.ResponseWriter, r *http.Request) {
 	// In a real implementation, you would collect actual metrics
 	s.writeJSON(w, http.StatusOK, map[string]interface{}{
 		"metrics": map[string]interface{}{
-			"requests_total":      0,
-			"agents_active":       len(s.agentManager.ListAgents()),
+			"requests_total":        0,
+			"agents_active":         len(s.agentManager.ListAgents()),
 			"websocket_connections": len(s.wsConnections),
-			"memory_usage":        "N/A",
+			"memory_usage":          "N/A",
 		},
 	})
 }
@@ -971,7 +971,7 @@ func (s *Server) handleDebugMetrics(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleDebugReload(w http.ResponseWriter, r *http.Request) {
 	// In a real implementation, you would reload configuration
 	s.writeJSON(w, http.StatusOK, map[string]interface{}{
-		"message": "Configuration reloaded successfully",
+		"message":   "Configuration reloaded successfully",
 		"timestamp": time.Now().Format(time.RFC3339),
 	})
 }
@@ -995,7 +995,7 @@ func (s *Server) handlePlaygroundDashboard(w http.ResponseWriter, r *http.Reques
 <body>
     <div class="container">
         <h1>GoLangGraph Playground</h1>
-        
+
         <div class="panel">
             <h3>Test Agent</h3>
             <textarea id="input" placeholder="Enter your message here..."></textarea>
@@ -1003,7 +1003,7 @@ func (s *Server) handlePlaygroundDashboard(w http.ResponseWriter, r *http.Reques
             <button onclick="testAgent()">Test Agent</button>
             <div id="output" class="output"></div>
         </div>
-        
+
         <div class="panel">
             <h3>Available Agents</h3>
             <div id="agents">Loading...</div>
@@ -1014,7 +1014,7 @@ func (s *Server) handlePlaygroundDashboard(w http.ResponseWriter, r *http.Reques
         async function testAgent() {
             const input = document.getElementById('input').value;
             const output = document.getElementById('output');
-            
+
             try {
                 const response = await fetch('/playground/test', {
                     method: 'POST',
@@ -1027,14 +1027,14 @@ func (s *Server) handlePlaygroundDashboard(w http.ResponseWriter, r *http.Reques
                 output.innerHTML = '<pre>Error: ' + error.message + '</pre>';
             }
         }
-        
+
         // Load agents
         fetch('/api/v1/agents')
             .then(r => r.json())
             .then(data => {
                 const agentsDiv = document.getElementById('agents');
                 if (data.agents && data.agents.length > 0) {
-                    agentsDiv.innerHTML = data.agents.map(agent => 
+                    agentsDiv.innerHTML = data.agents.map(agent =>
                         '<div>• ' + agent + '</div>'
                     ).join('');
                 } else {
@@ -1046,7 +1046,7 @@ func (s *Server) handlePlaygroundDashboard(w http.ResponseWriter, r *http.Reques
 </html>
 `
 	w.Header().Set("Content-Type", "text/html")
-	w.Write([]byte(playgroundHTML))
+	_, _ = w.Write([]byte(playgroundHTML))
 }
 
 func (s *Server) handlePlaygroundTest(w http.ResponseWriter, r *http.Request) {

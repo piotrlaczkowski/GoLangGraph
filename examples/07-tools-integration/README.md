@@ -32,6 +32,7 @@ This example demonstrates **advanced tool integration** with GoLangGraph. Learn 
 ## 📋 Prerequisites
 
 1. **Ollama Installation**:
+
    ```bash
    # Install Ollama
    curl -fsSL https://ollama.com/install.sh | sh
@@ -42,6 +43,7 @@ This example demonstrates **advanced tool integration** with GoLangGraph. Learn 
    ```
 
 2. **External Dependencies** (Optional):
+
    ```bash
    # For image processing
    sudo apt-get install imagemagick
@@ -56,6 +58,7 @@ This example demonstrates **advanced tool integration** with GoLangGraph. Learn 
 ## 🔧 Tool Categories
 
 ### 1. File System Tools
+
 ```go
 // File operations
 tools.RegisterTool("file_read", NewFileReadTool())
@@ -65,6 +68,7 @@ tools.RegisterTool("file_search", NewFileSearchTool())
 ```
 
 ### 2. Web Tools
+
 ```go
 // Web operations
 tools.RegisterTool("web_scrape", NewWebScrapeTool())
@@ -73,6 +77,7 @@ tools.RegisterTool("url_analyze", NewURLAnalyzeTool())
 ```
 
 ### 3. Data Tools
+
 ```go
 // Data processing
 tools.RegisterTool("json_parse", NewJSONParseTool())
@@ -81,6 +86,7 @@ tools.RegisterTool("data_transform", NewDataTransformTool())
 ```
 
 ### 4. System Tools
+
 ```go
 // System operations
 tools.RegisterTool("shell_execute", NewShellExecuteTool())
@@ -91,6 +97,7 @@ tools.RegisterTool("system_info", NewSystemInfoTool())
 ## 💻 Usage
 
 ### Basic Tool Integration
+
 ```bash
 cd examples/07-tools-integration
 go run main.go
@@ -104,6 +111,7 @@ go run main.go
 ```
 
 ### Advanced Tool Workflows
+
 ```bash
 # Complex multi-tool workflow
 > Download the content from https://example.com, extract the title, 
@@ -138,6 +146,7 @@ go run main.go
 ## 🔍 Example Interactions
 
 ### File System Operations
+
 ```
 You: List all Python files in the current directory and show their sizes
 
@@ -155,6 +164,7 @@ Total: 6.8 KB across 3 files
 ```
 
 ### Web Scraping and Analysis
+
 ```
 You: Get the latest news headlines from https://news.ycombinator.com
 
@@ -173,6 +183,7 @@ Latest Hacker News Headlines:
 ```
 
 ### API Integration
+
 ```
 You: Check the weather in New York and create a summary report
 
@@ -194,6 +205,7 @@ Report saved to: weather_report_2024-01-15.txt
 ## ⚙️ Tool Development
 
 ### Custom Tool Template
+
 ```go
 type CustomTool struct {
     name        string
@@ -261,6 +273,7 @@ func (t *CustomTool) SetConfig(config map[string]interface{}) error {
 ```
 
 ### Tool Registration
+
 ```go
 // Register tools with the agent
 func RegisterAllTools(registry *tools.ToolRegistry) error {
@@ -288,6 +301,7 @@ func RegisterAllTools(registry *tools.ToolRegistry) error {
 ## 🔐 Security Considerations
 
 ### Sandboxed Execution
+
 ```go
 type SandboxConfig struct {
     AllowedPaths    []string      `json:"allowed_paths"`
@@ -309,6 +323,7 @@ func (t *ShellExecuteTool) Execute(ctx context.Context, input string) (string, e
 ```
 
 ### Input Validation
+
 ```go
 func (t *FileReadTool) Validate(args string) error {
     var params struct {
@@ -334,6 +349,7 @@ func (t *FileReadTool) Validate(args string) error {
 ```
 
 ### Rate Limiting
+
 ```go
 type RateLimiter struct {
     requests map[string][]time.Time
@@ -370,6 +386,7 @@ func (rl *RateLimiter) Allow(toolName string) bool {
 ## 📊 Tool Monitoring
 
 ### Performance Metrics
+
 ```go
 type ToolMetrics struct {
     Name           string        `json:"name"`
@@ -399,6 +416,7 @@ func (tm *ToolMonitor) RecordExecution(toolName string, duration time.Duration, 
 ```
 
 ### Usage Analytics
+
 ```go
 type ToolAnalytics struct {
     MostUsedTools    []string          `json:"most_used_tools"`
@@ -420,6 +438,7 @@ func (ta *ToolAnalytics) GenerateReport() *AnalyticsReport {
 ## 🔄 Tool Orchestration
 
 ### Workflow Engine
+
 ```go
 type WorkflowStep struct {
     ToolName string                 `json:"tool_name"`
@@ -451,6 +470,7 @@ func (we *WorkflowEngine) ExecuteWorkflow(ctx context.Context, workflow *Workflo
 ```
 
 ### Tool Dependencies
+
 ```go
 type ToolDependency struct {
     ToolName     string   `json:"tool_name"`
@@ -473,6 +493,7 @@ func (td *ToolDependencyManager) ResolveDependencies(toolName string) ([]string,
 ## 🧪 Testing Tools
 
 ### Tool Testing Framework
+
 ```go
 type ToolTest struct {
     Name           string                 `json:"name"`
@@ -506,6 +527,7 @@ func (tf *ToolTestFramework) RunTests(tests []ToolTest) *TestResults {
 ```
 
 ### Mock Tools for Testing
+
 ```go
 type MockTool struct {
     name           string
@@ -536,6 +558,7 @@ func (mt *MockTool) Execute(ctx context.Context, input string) (string, error) {
 ## 🔗 Integration Examples
 
 ### External API Integration
+
 ```go
 type APITool struct {
     name     string
@@ -561,6 +584,7 @@ func (at *APITool) Execute(ctx context.Context, input string) (string, error) {
 ```
 
 ### Database Integration
+
 ```go
 type DatabaseTool struct {
     name string
@@ -592,6 +616,7 @@ func (dt *DatabaseTool) Execute(ctx context.Context, input string) (string, erro
 ## 🚀 Next Steps
 
 After mastering tool integration:
+
 1. Explore **08-production-ready** for production tool deployment
 2. Build custom tools for your specific use cases
 3. Create tool marketplaces and sharing platforms
@@ -600,6 +625,7 @@ After mastering tool integration:
 ## 🤝 Contributing
 
 Enhance this example by:
+
 - Adding new tool categories
 - Improving security implementations
 - Contributing performance optimizations
@@ -609,4 +635,4 @@ Enhance this example by:
 
 **Happy Tool Building!** 🔧
 
-This tools integration example provides a comprehensive foundation for building sophisticated tool ecosystems with GoLangGraph that extend agent capabilities with real-world functionality. 
+This tools integration example provides a comprehensive foundation for building sophisticated tool ecosystems with GoLangGraph that extend agent capabilities with real-world functionality.

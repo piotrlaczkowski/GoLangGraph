@@ -5,6 +5,7 @@ This example demonstrates how to create and coordinate multiple AI agents workin
 ## 📋 Prerequisites
 
 1. **Ollama installed and running**:
+
    ```bash
    # Install Ollama (if not already installed)
    curl -fsSL https://ollama.ai/install.sh | sh
@@ -14,6 +15,7 @@ This example demonstrates how to create and coordinate multiple AI agents workin
    ```
 
 2. **Pull the required models**:
+
    ```bash
    # Pull the tool-enabled model for better performance
    ollama pull orieg/gemma3-tools:1b
@@ -42,6 +44,7 @@ go run main.go
 ## 🔧 Key Features
 
 ### Agent Roles
+
 The system includes several specialized agents:
 
 - 🧮 **Analyst Agent**: Data analysis and mathematical computations
@@ -155,6 +158,7 @@ You: /quit
 ## 🛠️ Customization Options
 
 ### 1. Configure Agent Roles
+
 ```go
 // Create specialized agents
 analystAgent := CreateAnalystAgent("DataExpert", analysisTools)
@@ -168,6 +172,7 @@ agentPool.AddAgent(writerAgent)
 ```
 
 ### 2. Define Workflows
+
 ```go
 // Sequential workflow
 workflow := NewSequentialWorkflow()
@@ -182,6 +187,7 @@ parallelWorkflow.AddStep("synthesis", "writer")
 ```
 
 ### 3. Custom Communication Patterns
+
 ```go
 // Direct agent communication
 agentPool.EnableDirectCommunication(true)
@@ -222,24 +228,28 @@ After running this example, you'll understand:
 The example includes several pre-built multi-agent scenarios:
 
 ### Business Analysis Workflow
+
 ```
 "Analyze our Q3 financial data, research industry benchmarks, 
 and create a board presentation with recommendations."
 ```
 
 ### Content Creation Pipeline
+
 ```
 "Research the latest AI trends, write a technical blog post, 
 and create social media summaries for different platforms."
 ```
 
 ### Customer Support Automation
+
 ```
 "Analyze customer feedback, identify common issues, 
 and draft response templates for the support team."
 ```
 
 ### Product Development Workflow
+
 ```
 "Research competitor features, analyze user feedback, 
 and create a product roadmap with priority rankings."
@@ -258,6 +268,7 @@ Once you're comfortable with multi-agent systems, try:
 ### Common Issues
 
 1. **Agent communication failures**:
+
    ```go
    // Enable debug logging
    agentPool.SetLogLevel(logrus.DebugLevel)
@@ -267,6 +278,7 @@ Once you're comfortable with multi-agent systems, try:
    ```
 
 2. **Workflow deadlocks**:
+
    ```go
    // Set timeouts for workflows
    workflow.SetTimeout(60 * time.Second)
@@ -276,6 +288,7 @@ Once you're comfortable with multi-agent systems, try:
    ```
 
 3. **Resource contention**:
+
    ```go
    // Limit concurrent agents
    agentPool.SetMaxConcurrentAgents(3)
@@ -297,4 +310,4 @@ Once you're comfortable with multi-agent systems, try:
 - [Multi-Agent Systems Theory](https://en.wikipedia.org/wiki/Multi-agent_system)
 - [GoLangGraph Agent Documentation](../../docs/agents.md)
 - [Workflow Patterns](../../docs/workflows.md)
-- [Agent Communication Protocols](../../docs/communication.md) 
+- [Agent Communication Protocols](../../docs/communication.md)

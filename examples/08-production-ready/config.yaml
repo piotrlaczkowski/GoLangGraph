@@ -15,4 +15,4 @@ logging:
 
 metrics:
   enabled: true
-  path: "/metrics" 
+  path: "/metrics"

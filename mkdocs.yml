@@ -13,7 +13,7 @@ theme:
   name: material
   logo: logo.png
   favicon: logo.png
-  
+
   palette:
     # Palette toggle for automatic mode
     - media: "(prefers-color-scheme)"

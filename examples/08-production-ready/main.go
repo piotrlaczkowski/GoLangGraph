@@ -2,6 +2,12 @@
 //
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
+// Package: GoLangGraph - A powerful Go framework for building AI agent workflows
+
+// Copyright (c) 2024 GoLangGraph Team
+//
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+//
 // Package: GoLangGraph - Production-Ready Example
 
 package main
@@ -595,45 +601,45 @@ func (p *ProductionAgent) indexHandler(w http.ResponseWriter, r *http.Request) {
     <div class="container">
         <h1>🚀 GoLangGraph Production Agent</h1>
         <p>Welcome to the production-ready GoLangGraph agent API.</p>
-        
+
         <h2>API Endpoints</h2>
-        
+
         <div class="endpoint">
             <span class="method">POST</span> /api/v1/chat
             <p>Send a chat message to the agent</p>
             <pre>{"message": "Hello", "session_id": "optional"}</pre>
         </div>
-        
+
         <div class="endpoint">
             <span class="method">GET</span> /api/v1/sessions
             <p>List all active sessions</p>
         </div>
-        
+
         <div class="endpoint">
             <span class="method">GET</span> /api/v1/sessions/{id}
             <p>Get session messages</p>
         </div>
-        
+
         <div class="endpoint">
             <span class="method">DELETE</span> /api/v1/sessions/{id}
             <p>Delete a session</p>
         </div>
-        
+
         <div class="endpoint">
             <span class="method">GET</span> /health
             <p>Health check endpoint</p>
         </div>
-        
+
         <div class="endpoint">
             <span class="method">GET</span> /metrics
             <p>Prometheus metrics endpoint</p>
         </div>
-        
+
         <div class="endpoint">
             <span class="method">WebSocket</span> /ws
             <p>WebSocket connection for real-time chat</p>
         </div>
-        
+
         <h2>Example Usage</h2>
         <pre>
 # Send a chat message

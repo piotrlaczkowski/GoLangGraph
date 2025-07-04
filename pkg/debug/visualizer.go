@@ -230,11 +230,11 @@ func (gv *GraphVisualizer) GenerateMermaidDiagram(topology *GraphTopology) strin
 
 		// Add styling for special nodes
 		if node.IsStartNode {
-			builder.WriteString(fmt.Sprintf("    classDef startNode fill:#90EE90\n"))
+			builder.WriteString("    classDef startNode fill:#90EE90\n")
 			builder.WriteString(fmt.Sprintf("    class %s startNode\n", node.ID))
 		}
 		if node.IsEndNode {
-			builder.WriteString(fmt.Sprintf("    classDef endNode fill:#FFB6C1\n"))
+			builder.WriteString("    classDef endNode fill:#FFB6C1\n")
 			builder.WriteString(fmt.Sprintf("    class %s endNode\n", node.ID))
 		}
 	}

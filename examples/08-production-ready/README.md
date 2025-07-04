@@ -43,6 +43,7 @@ This example demonstrates how to build **production-grade applications** with Go
 ## 📋 Prerequisites
 
 1. **Container Runtime**:
+
    ```bash
    # Docker
    curl -fsSL https://get.docker.com | sh
@@ -53,6 +54,7 @@ This example demonstrates how to build **production-grade applications** with Go
    ```
 
 2. **Kubernetes** (Optional):
+
    ```bash
    # kubectl
    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
@@ -63,6 +65,7 @@ This example demonstrates how to build **production-grade applications** with Go
    ```
 
 3. **Monitoring Stack** (Optional):
+
    ```bash
    # Prometheus & Grafana via Docker Compose
    # Included in deployment configuration
@@ -71,6 +74,7 @@ This example demonstrates how to build **production-grade applications** with Go
 ## 🐳 Quick Start with Docker
 
 ### Development Environment
+
 ```bash
 cd examples/08-production-ready
 
@@ -85,6 +89,7 @@ curl http://localhost:8080/health
 ```
 
 ### Production Environment
+
 ```bash
 # Build production images
 docker-compose -f docker-compose.prod.yml build
@@ -142,6 +147,7 @@ open http://localhost:3000  # admin/admin
 ## ⚙️ Configuration Management
 
 ### Environment Configuration
+
 ```yaml
 # configs/production.yaml
 server:
@@ -183,6 +189,7 @@ security:
 ```
 
 ### Secrets Management
+
 ```go
 type SecretManager interface {
     GetSecret(ctx context.Context, key string) (string, error)
@@ -211,6 +218,7 @@ type AWSSecretManager struct {
 ## 🔐 Security Implementation
 
 ### Authentication & Authorization
+
 ```go
 // JWT Authentication
 type AuthService struct {
@@ -253,6 +261,7 @@ func (rs *RBACService) CheckPermission(userRoles []string, resource, action stri
 ```
 
 ### Input Validation & Sanitization
+
 ```go
 type Validator struct {
     validate *validator.Validate
@@ -286,6 +295,7 @@ func ValidationMiddleware(v *Validator) gin.HandlerFunc {
 ```
 
 ### Rate Limiting
+
 ```go
 type RateLimiter struct {
     store   cache.Store
@@ -319,6 +329,7 @@ func (rl *RateLimiter) Allow(ctx context.Context, key string) (bool, error) {
 ## 📊 Monitoring & Observability
 
 ### Metrics Collection
+
 ```go
 // Prometheus metrics
 var (
@@ -366,6 +377,7 @@ func MetricsMiddleware() gin.HandlerFunc {
 ```
 
 ### Structured Logging
+
 ```go
 type Logger struct {
     logger *logrus.Logger
@@ -407,6 +419,7 @@ func (l *Logger) Error(msg string, err error) {
 ```
 
 ### Distributed Tracing
+
 ```go
 // OpenTelemetry setup
 func InitTracing(serviceName, jaegerEndpoint string) (*trace.TracerProvider, error) {
@@ -491,6 +504,7 @@ func (cb *CircuitBreaker) Execute(fn func() (interface{}, error)) (interface{}, 
 ## 🗄️ Database Management
 
 ### Connection Pooling
+
 ```go
 type DatabaseConfig struct {
     Host            string        `yaml:"host"`
@@ -521,6 +535,7 @@ func NewDatabase(config *DatabaseConfig) (*sql.DB, error) {
 ```
 
 ### Database Migrations
+
 ```go
 type Migration struct {
     Version     int
@@ -559,6 +574,7 @@ func (m *Migrator) Migrate() error {
 ## 🚀 Deployment Strategies
 
 ### Docker Multi-stage Build
+
 ```dockerfile
 # Build stage
 FROM golang:1.21-alpine AS builder
@@ -584,6 +600,7 @@ CMD ["./server"]
 ```
 
 ### Kubernetes Deployment
+
 ```yaml
 # deployments/kubernetes/deployment.yaml
 apiVersion: apps/v1
@@ -638,6 +655,7 @@ spec:
 ```
 
 ### Helm Chart
+
 ```yaml
 # deployments/helm/values.yaml
 replicaCount: 3
@@ -683,6 +701,7 @@ monitoring:
 ## 📈 Performance Optimization
 
 ### Caching Strategy
+
 ```go
 type CacheService struct {
     redis  *redis.Client
@@ -720,6 +739,7 @@ func (cs *CacheService) Get(ctx context.Context, key string) (interface{}, error
 ```
 
 ### Connection Pooling
+
 ```go
 type PoolManager struct {
     llmPool    *sync.Pool
@@ -820,6 +840,7 @@ func (h *HealthChecker) HealthHandler(c *gin.Context) {
 ## 📊 Monitoring Dashboards
 
 ### Grafana Dashboard Configuration
+
 ```json
 {
   "dashboard": {
@@ -861,6 +882,7 @@ func (h *HealthChecker) HealthHandler(c *gin.Context) {
 ```
 
 ### Alert Rules
+
 ```yaml
 # monitoring/alerts/rules.yaml
 groups:
@@ -896,49 +918,51 @@ groups:
 ## 🔧 Automation & CI/CD
 
 ### Makefile
+
 ```makefile
 .PHONY: build test deploy clean
 
 # Build
 build:
-	go build -o bin/server cmd/server/main.go
-	go build -o bin/worker cmd/worker/main.go
+ go build -o bin/server cmd/server/main.go
+ go build -o bin/worker cmd/worker/main.go
 
 # Test
 test:
-	go test -v ./...
-	go test -race ./...
-	go test -cover ./...
+ go test -v ./...
+ go test -race ./...
+ go test -cover ./...
 
 # Docker
 docker-build:
-	docker build -t golanggraph:latest .
+ docker build -t golanggraph:latest .
 
 docker-push:
-	docker tag golanggraph:latest registry.example.com/golanggraph:latest
-	docker push registry.example.com/golanggraph:latest
+ docker tag golanggraph:latest registry.example.com/golanggraph:latest
+ docker push registry.example.com/golanggraph:latest
 
 # Deploy
 deploy-dev:
-	docker-compose -f docker-compose.dev.yml up -d
+ docker-compose -f docker-compose.dev.yml up -d
 
 deploy-prod:
-	kubectl apply -f deployments/kubernetes/
-	helm upgrade --install golanggraph deployments/helm/
+ kubectl apply -f deployments/kubernetes/
+ helm upgrade --install golanggraph deployments/helm/
 
 # Utilities
 clean:
-	rm -rf bin/
-	docker system prune -f
+ rm -rf bin/
+ docker system prune -f
 
 migrate:
-	go run cmd/migrator/main.go
+ go run cmd/migrator/main.go
 
 logs:
-	kubectl logs -f deployment/golanggraph-api
+ kubectl logs -f deployment/golanggraph-api
 ```
 
 ### GitHub Actions
+
 ```yaml
 # .github/workflows/ci-cd.yml
 name: CI/CD Pipeline
@@ -985,6 +1009,7 @@ jobs:
 ## 🚀 Getting Started
 
 ### Local Development
+
 ```bash
 # Clone and setup
 git clone <repository>
@@ -1007,6 +1032,7 @@ make run-dev
 ```
 
 ### Production Deployment
+
 ```bash
 # Build and push images
 make docker-build docker-push
@@ -1022,6 +1048,7 @@ kubectl logs -f deployment/golanggraph-api
 ## 📚 Best Practices
 
 ### Code Organization
+
 - **Clean Architecture**: Separate concerns with clear boundaries
 - **Dependency Injection**: Use interfaces for testability
 - **Error Handling**: Structured error handling with context
@@ -1029,6 +1056,7 @@ kubectl logs -f deployment/golanggraph-api
 - **Testing**: Comprehensive unit, integration, and e2e tests
 
 ### Security
+
 - **Input Validation**: Validate all inputs at API boundaries
 - **Authentication**: Strong authentication with JWT tokens
 - **Authorization**: Role-based access control (RBAC)
@@ -1036,6 +1064,7 @@ kubectl logs -f deployment/golanggraph-api
 - **Secrets**: Use dedicated secret management systems
 
 ### Performance
+
 - **Caching**: Multi-layer caching strategy
 - **Connection Pooling**: Efficient resource utilization
 - **Circuit Breakers**: Fault tolerance and graceful degradation
@@ -1045,6 +1074,7 @@ kubectl logs -f deployment/golanggraph-api
 ## 🤝 Contributing
 
 This production-ready example serves as a template for enterprise applications. Contribute by:
+
 - Improving security implementations
 - Adding new monitoring capabilities
 - Enhancing deployment strategies
@@ -1054,4 +1084,4 @@ This production-ready example serves as a template for enterprise applications. 
 
 **Ready for Production!** 🚀
 
-This example provides a comprehensive foundation for deploying GoLangGraph applications in production environments with enterprise-grade reliability, security, and scalability. 
+This example provides a comprehensive foundation for deploying GoLangGraph applications in production environments with enterprise-grade reliability, security, and scalability.

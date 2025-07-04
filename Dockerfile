@@ -1,11 +1,11 @@
 # Build stage
-FROM golang:1.21-alpine AS builder
+FROM golang:1.23.4-alpine AS builder
 
 # Set working directory
 WORKDIR /app
 
 # Install git and ca-certificates (needed for fetching dependencies)
-RUN apk add --no-cache git ca-certificates tzdata
+RUN apk add --no-cache git=2.47.1-r0 ca-certificates=20241010-r0 tzdata=2024b-r1
 
 # Copy go mod files
 COPY go.mod go.sum ./
@@ -25,13 +25,11 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
     ./cmd/golanggraph
 
 # Final stage
-FROM alpine:latest
+FROM alpine:3.20.3
 
-# Install ca-certificates for HTTPS requests
-RUN apk --no-cache add ca-certificates tzdata
-
-# Create non-root user
-RUN addgroup -g 1001 -S golanggraph && \
+# Install ca-certificates for HTTPS requests and create non-root user
+RUN apk --no-cache add ca-certificates=20241010-r0 tzdata=2024b-r1 && \
+    addgroup -g 1001 -S golanggraph && \
     adduser -u 1001 -S golanggraph -G golanggraph
 
 WORKDIR /app
@@ -39,11 +37,9 @@ WORKDIR /app
 # Copy the binary from builder stage
 COPY --from=builder /app/golanggraph .
 
-# Create directories for optional files
-RUN mkdir -p ./configs ./docs
-
-# Change ownership to non-root user
-RUN chown -R golanggraph:golanggraph /app
+# Create directories for optional files and change ownership to non-root user
+RUN mkdir -p ./configs ./docs && \
+    chown -R golanggraph:golanggraph /app
 
 # Switch to non-root user
 USER golanggraph

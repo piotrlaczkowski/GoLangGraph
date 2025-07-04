@@ -73,7 +73,7 @@ jobs:
         else
           pip install mkdocs mkdocs-material mkdocs-mermaid2-plugin
         fi
-    
+
     - name: Install Go dependencies
       run: |
         go mod download
@@ -105,7 +105,7 @@ jobs:
           mkdir -p site
           echo "<html><head><title>GoLangGraph Docs</title></head><body><h1>GoLangGraph Documentation</h1><p>Documentation site is under construction.</p></body></html>" > site/index.html
         fi
-    
+
     - name: Test documentation links
       run: |
         # Install link checker

@@ -18,12 +18,14 @@ Welcome to GoLangGraph development! This guide will help you set up your develop
 ## 🚀 Quick Setup
 
 1. **Clone the repository**:
+
    ```bash
    git clone https://github.com/piotrlaczkowski/GoLangGraph.git
    cd GoLangGraph
    ```
 
 2. **Initialize Go workspace**:
+
    ```bash
    go work init
    go work use .
@@ -31,16 +33,19 @@ Welcome to GoLangGraph development! This guide will help you set up your develop
    ```
 
 3. **Install dependencies**:
+
    ```bash
    make install
    ```
 
 4. **Run tests**:
+
    ```bash
    make test
    ```
 
 5. **Build the project**:
+
    ```bash
    make build
    ```
@@ -65,6 +70,7 @@ GoLangGraph/
 ## 🧪 Testing Strategy
 
 ### Unit Tests
+
 ```bash
 # Run all unit tests
 make test
@@ -80,6 +86,7 @@ make test-race
 ```
 
 ### Integration Tests
+
 ```bash
 # Start dependencies and run integration tests
 make test-integration
@@ -89,6 +96,7 @@ make test-local
 ```
 
 ### Example Tests
+
 ```bash
 # Test all examples
 make test-examples
@@ -97,13 +105,16 @@ make test-examples
 ## 🔧 Development Workflow
 
 ### 1. **Branch Naming Convention**
+
 - `feature/description` - New features
 - `fix/description` - Bug fixes
 - `docs/description` - Documentation updates
 - `refactor/description` - Code refactoring
 
 ### 2. **Commit Messages**
+
 Follow [Conventional Commits](https://www.conventionalcommits.org/):
+
 ```
 type(scope): description
 
@@ -113,6 +124,7 @@ docs(readme): update installation instructions
 ```
 
 ### 3. **Code Quality**
+
 ```bash
 # Run linter
 make lint
@@ -128,7 +140,9 @@ make quality
 ```
 
 ### 4. **Pre-commit Hooks**
+
 Install pre-commit hooks:
+
 ```bash
 pip install pre-commit
 pre-commit install
@@ -137,6 +151,7 @@ pre-commit install
 ## 🐳 Docker Development
 
 ### Start Services
+
 ```bash
 # Start PostgreSQL and Redis
 make docker-up
@@ -149,6 +164,7 @@ make docker-down
 ```
 
 ### Local Ollama Setup
+
 ```bash
 # Setup Ollama with required models
 make ollama-setup
@@ -160,17 +176,20 @@ make ollama-start
 ## 📦 Adding Dependencies
 
 1. **Add to main module**:
+
    ```bash
    go get github.com/new/dependency
    go mod tidy
    ```
 
 2. **Update workspace**:
+
    ```bash
    go work sync
    ```
 
 3. **Test compatibility**:
+
    ```bash
    make test-all
    ```
@@ -178,12 +197,14 @@ make ollama-start
 ## 🔍 Debugging
 
 ### Enable Debug Logging
+
 ```bash
 export LOG_LEVEL=debug
 export GOLANGGRAPH_DEBUG=true
 ```
 
 ### Performance Profiling
+
 ```bash
 # CPU profiling
 go test -cpuprofile=cpu.prof -bench=.
@@ -198,6 +219,7 @@ go tool pprof cpu.prof
 ## 📚 Documentation
 
 ### Generate Documentation
+
 ```bash
 # Start documentation server
 make docs-serve
@@ -210,6 +232,7 @@ make docs-deploy
 ```
 
 ### API Documentation
+
 ```bash
 # Generate Go docs
 godoc -http=:6060
@@ -218,11 +241,13 @@ godoc -http=:6060
 ## 🚢 Release Process
 
 1. **Update version**:
+
    ```bash
    git tag v1.x.x
    ```
 
 2. **Push tag**:
+
    ```bash
    git push origin v1.x.x
    ```
@@ -238,6 +263,7 @@ godoc -http=:6060
 ### Common Issues
 
 **Go workspace issues**:
+
 ```bash
 # Reinitialize workspace
 rm go.work
@@ -245,12 +271,14 @@ make workspace-init
 ```
 
 **Docker permission issues**:
+
 ```bash
 # Add user to docker group (Linux)
 sudo usermod -aG docker $USER
 ```
 
 **Module resolution issues**:
+
 ```bash
 # Clean and rebuild
 make clean
@@ -269,4 +297,4 @@ make install
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines.
 
-Happy coding! 🚀 
+Happy coding! 🚀
