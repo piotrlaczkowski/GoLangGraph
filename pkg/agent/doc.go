@@ -1,3 +1,9 @@
+// Copyright (c) 2024 GoLangGraph Team
+//
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+//
+// Package: GoLangGraph - A powerful Go framework for building AI agent workflows
+
 // Package agent provides intelligent agent implementations for building AI-powered workflows.
 //
 // The agent package implements various types of AI agents that can interact with Large Language Models (LLMs),

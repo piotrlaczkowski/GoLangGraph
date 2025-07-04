@@ -220,7 +220,7 @@ security: ## Run security scan
 		gosec $(PKG_PATH); \
 	else \
 		echo "$(YELLOW)gosec not found. Installing...$(NC)"; \
-		go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest; \
+		go install github.com/securego/gosec/v2/cmd/gosec@latest; \
 		gosec $(PKG_PATH); \
 	fi
 
@@ -496,4 +496,4 @@ dev-clean: clean docker-down ## Clean everything including Docker containers
 	@echo "$(GREEN)Development environment cleaned!$(NC)"
 
 # Default target
-.DEFAULT_GOAL := help 
+.DEFAULT_GOAL := help

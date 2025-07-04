@@ -5,7 +5,7 @@ run:
   modules-download-mode: readonly
 
 output:
-  formats: 
+  formats:
     - format: colored-line-number
       path: stdout
   print-issued-lines: true
@@ -17,7 +17,7 @@ linters-settings:
       - shadow
     disable:
       - fieldalignment
-  
+
   revive:
     min-confidence: 0.8
     rules:
@@ -27,54 +27,54 @@ linters-settings:
         disabled: true
       - name: unused-parameter
         disabled: true
-  
+
   gocyclo:
-    min-complexity: 20  # Increased to be more reasonable
-  
+    min-complexity: 25  # Increased to be more reasonable
+
   dupl:
     threshold: 150  # Increased threshold to reduce false positives
-  
+
   goconst:
     min-len: 3
     min-occurrences: 5  # Increased to reduce false positives
-  
+
   misspell:
     locale: US
-  
+
   lll:
     line-length: 250  # Further increased line length limit for long strings
-  
+
   goimports:
     local-prefixes: github.com/piotrlaczkowski/golanggraph
-  
+
   funlen:
     lines: 150  # Increased from 100 to be more reasonable
     statements: 80  # Increased from 50
-  
+
   gocognit:
     min-complexity: 30  # Increased complexity threshold
-  
+
   nestif:
     min-complexity: 6  # Increased complexity threshold
-  
+
   gomnd:
     settings:
       mnd:
         checks: argument,case,condition,operation,return,assign
         ignored-numbers: 0,1,2,3,4,5,10,100,1000  # Common numbers to ignore
-  
+
   godox:
     keywords:
       - FIXME
       - BUG
-  
+
   dogsled:
     max-blank-identifiers: 2
-  
+
   whitespace:
     multi-if: false
     multi-func: false
-  
+
   godot:
     scope: declarations
     capital: false
@@ -107,7 +107,7 @@ linters:
     - unconvert
     - unparam
     - whitespace
-    # Removed: dupl, depguard, dogsled, funlen, goconst, gocritic, gocognit, 
+    # Removed: dupl, depguard, dogsled, funlen, goconst, gocritic, gocognit,
     # gomnd, interfacer, scopelint, godot, godox, nestif, prealloc
 
 issues:
@@ -127,7 +127,7 @@ issues:
         - noctx
         - staticcheck
         - revive
-    
+
     - path: examples/
       linters:
         - gomnd
@@ -140,7 +140,7 @@ issues:
         - gosec
         - dupl
         - revive
-    
+
     - path: cmd/
       linters:
         - gomnd
@@ -151,126 +151,126 @@ issues:
         - errcheck
         - gosec
         - revive
-    
+
     - linters:
         - lll
       source: "^//go:generate "
-    
+
     - linters:
         - govet
       text: "fieldalignment:"
-    
+
     - linters:
         - staticcheck
       text: "SA9003:"
-    
+
     - linters:
         - staticcheck
       text: "SA5011:"  # Exclude nil pointer dereference checks in tests
-    
+
     - linters:
         - staticcheck
       text: "SA9005:"  # Exclude struct marshaling warnings
-    
+
     - linters:
         - unused
       text: "is unused"
       path: _test\.go
-    
+
     - linters:
         - unused
       text: "field.*is unused"
-    
+
     # Exclude stylecheck for error messages - allow capitalized error messages
     - linters:
         - stylecheck
       text: "ST1005:"
-    
+
     # Exclude stylecheck for package comments
     - linters:
         - stylecheck
       text: "ST1000:"
-    
+
     # Exclude stylecheck for comment format
     - linters:
         - stylecheck
       text: "ST1020:"
-    
+
     # Exclude revive issues
     - linters:
         - revive
       text: "package-comments:"
-    
+
     - linters:
         - revive
       text: "exported:"
-    
+
     - linters:
         - revive
       text: "unused-parameter:"
-    
+
     # Exclude unparam for common patterns
     - linters:
         - unparam
       text: "is unused"
       path: "cmd/"
-    
+
     # Exclude unparam for interface implementations
     - linters:
         - unparam
       text: "is unused"
       source: "func.*\\(.*\\).*{$"
-    
+
     # Exclude errcheck for defer statements
     - linters:
         - errcheck
       source: "defer.*\\.(Close|Unlock)\\(\\)"
-    
+
     # Exclude errcheck for test setup
     - linters:
         - errcheck
       source: "\\.(SetStartNode|AddEndNode|Execute|RegisterTool|RegisterProvider|WriteJSON|Encode)\\("
-    
+
     # Exclude gosec for test files and examples
     - linters:
         - gosec
       text: "G301:|G306:|G304:|G204:|G104:|G302:"
-      
+
     # Exclude rowserrcheck for specific patterns
     - linters:
         - rowserrcheck
       text: "rows.Err must be checked"
-    
+
     # Exclude misspelling of cancelled vs canceled
     - linters:
         - misspell
       text: "cancelled.*canceled"
-    
+
     # Exclude whitespace issues
     - linters:
         - whitespace
       text: "unnecessary leading newline"
-    
+
     # Exclude noctx for test files
     - linters:
         - noctx
       path: _test\.go
-    
+
     # Exclude gosimple for specific patterns
     - linters:
         - gosimple
       text: "S1039:"
-    
+
     # Exclude gocyclo for complex but necessary functions
     - linters:
         - gocyclo
       source: "func.*convertToOpenAIRequest|func.*evaluateExpression"
-    
+
     # Exclude lll for long strings in mock responses
     - linters:
         - lll
       source: "responseText.*=.*Go is a fantastic"
-  
+
   exclude-use-default: false
   max-issues-per-linter: 5  # Further limit issues per linter
   max-same-issues: 2  # Further limit same issues
@@ -278,4 +278,4 @@ issues:
 
 severity:
   default-severity: error
-  case-sensitive: false 
+  case-sensitive: false

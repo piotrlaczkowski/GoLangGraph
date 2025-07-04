@@ -17,7 +17,7 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:15-alpine
@@ -32,7 +32,7 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-      
+
       redis:
         image: redis:7-alpine
         options: >-
@@ -42,16 +42,16 @@ jobs:
           --health-retries 5
         ports:
           - 6379:6379
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
-    
+
     - name: Cache Go modules
       uses: actions/cache@v4
       with:
@@ -61,12 +61,12 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
-    
+
     - name: Install dependencies
       run: |
         go mod download
         go mod tidy
-    
+
     - name: Run tests
       run: |
         go test -v -race -coverprofile=coverage.out -covermode=atomic ./pkg/...
@@ -78,7 +78,7 @@ jobs:
         POSTGRES_PASSWORD: testpass
         REDIS_HOST: localhost
         REDIS_PORT: 6379
-    
+
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
       with:
@@ -92,16 +92,16 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
-    
+
     - name: Cache Go modules
       uses: actions/cache@v4
       with:
@@ -111,12 +111,12 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
-    
+
     - name: Install dependencies
       run: |
         go mod download
         go mod tidy
-    
+
     - name: Run golangci-lint
       uses: golangci/golangci-lint-action@v4
       with:
@@ -126,21 +126,21 @@ jobs:
   security:
     name: Security Scan
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
-    
+
     - name: Run Gosec Security Scanner
       run: |
-        go install github.com/securecodewarrior/gosec/cmd/gosec@latest
+        go install github.com/securego/gosec/v2/cmd/gosec@latest
         gosec -no-fail -fmt sarif -out results.sarif ./...
-    
+
     - name: Upload SARIF file
       uses: github/codeql-action/upload-sarif@v3
       with:
@@ -149,16 +149,16 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
-    
+
     - name: Cache Go modules
       uses: actions/cache@v4
       with:
@@ -168,21 +168,21 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
-    
+
     - name: Install dependencies
       run: |
         go mod download
         go mod tidy
-    
+
     - name: Build main binary
       run: |
         CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o bin/golanggraph ./cmd/golanggraph
-    
+
     - name: Build examples
       run: |
         mkdir -p bin/examples
         go build -o bin/examples/examples ./cmd/examples
-    
+
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -193,7 +193,7 @@ jobs:
     name: Integration Tests
     runs-on: ubuntu-latest
     needs: [test, lint, build]
-    
+
     services:
       postgres:
         image: postgres:15-alpine
@@ -208,7 +208,7 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-      
+
       redis:
         image: redis:7-alpine
         options: >-
@@ -218,22 +218,22 @@ jobs:
           --health-retries 5
         ports:
           - 6379:6379
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
-    
+
     - name: Download build artifacts
       uses: actions/download-artifact@v4
       with:
         name: build-artifacts
         path: bin/
-    
+
     - name: Cache Go modules
       uses: actions/cache@v4
       with:
@@ -243,17 +243,17 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
-    
+
     - name: Install dependencies
       run: |
         go mod download
         go mod tidy
-    
+
     - name: Make binaries executable
       run: |
         chmod +x bin/golanggraph
         chmod +x bin/examples/examples
-    
+
     - name: Run integration tests
       run: |
         mkdir -p test-results
@@ -271,7 +271,7 @@ jobs:
     - name: Test binary execution
       run: |
         ./bin/golanggraph --help || echo "Binary help command executed"
-    
+
     - name: Upload integration test results
       uses: actions/upload-artifact@v4
       if: always()
@@ -285,16 +285,16 @@ jobs:
   benchmark:
     name: Benchmark
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
-    
+
     - name: Cache Go modules
       uses: actions/cache@v4
       with:
@@ -304,18 +304,18 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
-    
+
     - name: Install dependencies
       run: |
         go mod download
         go mod tidy
-    
+
     - name: Run benchmarks
       run: |
         go test -v -bench=. -benchmem ./pkg/... > benchmark.txt
-    
+
     - name: Upload benchmark results
       uses: actions/upload-artifact@v4
       with:
         name: benchmark-results
-        path: benchmark.txt 
+        path: benchmark.txt
