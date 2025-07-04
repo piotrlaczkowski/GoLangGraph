@@ -297,7 +297,7 @@ func (p *OpenAIProvider) convertFromOpenAIResponse(resp openai.ChatCompletionRes
 		choices[i] = Choice{
 			Index:        choice.Index,
 			Message:      message,
-			FinishReason: choice.FinishReason,
+			FinishReason: string(choice.FinishReason),
 		}
 	}
 
@@ -344,7 +344,7 @@ func (p *OpenAIProvider) convertFromOpenAIStreamResponse(resp openai.ChatComplet
 		choices[i] = Choice{
 			Index:        choice.Index,
 			Delta:        delta,
-			FinishReason: choice.FinishReason,
+			FinishReason: string(choice.FinishReason),
 		}
 	}
 

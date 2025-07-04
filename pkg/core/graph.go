@@ -365,6 +365,22 @@ func (g *Graph) getNextNode(ctx context.Context, currentNodeID string) (string, 
 	g.mu.RLock()
 	defer g.mu.RUnlock()
 
+	// Check for conditional edges first
+	if conditionalEdge, exists := g.GetConditionalEdge(currentNodeID); exists {
+		nextNode, err := conditionalEdge.Condition(ctx, g.currentState)
+		if err != nil {
+			return "", fmt.Errorf("conditional edge evaluation failed: %w", err)
+		}
+
+		// Map the condition result to actual node
+		if targetNode, exists := conditionalEdge.Routes[nextNode]; exists {
+			return targetNode, nil
+		}
+
+		// If no mapping found, use the result directly
+		return nextNode, nil
+	}
+
 	// Find all outgoing edges from the current node
 	var outgoingEdges []*Edge
 	for _, edge := range g.Edges {

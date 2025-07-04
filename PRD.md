@@ -20,3 +20,7 @@ Make sure that we:
 - can handle agents collaboration and advanced agets swarms configurations and communication protocols with tasks delegation etc 
 
 to do all that you can check the github langgraph code implementation and reimplement everything in GoLang (so that we are really sure we have full functionality) [LangGraph GitHub](https://github.com/langchain-ai/langgraph)
+
+- we should be able to handle streaming, async, long running tasks etc
+
+- we should enrich the current implementation with all the core functionalities of langchain [LangChain](https://github.com/langchain-ai/langchain) so that we can build agents with good abstraction and easy formatting etc... (and so that the code required to create fatafull react agent with memory persistance or a RAG is minimal and very easy with this package)
