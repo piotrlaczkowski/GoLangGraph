@@ -2,7 +2,7 @@ module github.com/piotrlaczkowski/GoLangGraph
 
 go 1.23.0
 
-toolchain go1.23.4
+toolchain go1.23.10
 
 require (
 	github.com/go-redis/redis/v8 v8.11.5

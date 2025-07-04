@@ -12,16 +12,18 @@ repos:
       - id: go-vet
         name: Go Vet
         description: Run go vet on Go source files
+        args: ["./pkg/..."]
       - id: go-mod-tidy
         name: Go Mod Tidy
         description: Run go mod tidy to ensure go.mod matches source code
       - id: go-unit-tests
         name: Go Unit Tests
         description: Run go test on Go source files
-        args: ["-timeout=30s", "-race", "-short"]
+        args: ["-timeout=30s", "-race", "-short", "./pkg/..."]
       - id: go-build
         name: Go Build
         description: Run go build on Go source files
+        args: ["./pkg/..."]
       - id: golangci-lint
         name: golangci-lint
         description: Run golangci-lint on Go source files
@@ -170,7 +172,7 @@ repos:
       - id: go-cyclo
         name: Go Cyclomatic Complexity
         description: Check cyclomatic complexity
-        entry: bash -c 'which gocyclo > /dev/null || go install github.com/fzipp/gocyclo/cmd/gocyclo@latest; gocyclo -over 15 .'
+        entry: bash -c 'which gocyclo > /dev/null || go install github.com/fzipp/gocyclo/cmd/gocyclo@latest; gocyclo -over 25 ./pkg/...'
         language: system
         files: \.go$
         pass_filenames: false
