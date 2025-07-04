@@ -8,8 +8,6 @@ The goal of this project is to provide fully functional implementation of LangGr
 - be able to define multiple collaborating agents and handle it's logic
 - all other langgraph functionalities, with well defined USer/agent messages, messages history etc
 
-TODO:
-
 Make sure that we:
 
 - handle all the react agent 
@@ -24,3 +22,10 @@ to do all that you can check the github langgraph code implementation and reimpl
 - we should be able to handle streaming, async, long running tasks etc
 
 - we should enrich the current implementation with all the core functionalities of langchain [LangChain](https://github.com/langchain-ai/langchain) so that we can build agents with good abstraction and easy formatting etc... (and so that the code required to create fatafull react agent with memory persistance or a RAG is minimal and very easy with this package)
+
+
+TODO:
+
+Let's implement complete test suite for this package to be sure everything works correctly and add CI/CD for GitHub (tests, documentation, package publishing etc). Add option for local end-to-end tests with all the agents using ollama and gemma3:1B model that I can easily run locally using makefile. Improve the makefile to manage everything easily. Also make sure the cli is working correctly with all the functionality (provided by LangGraph-cli and mode)
+
+Let's implement nice GitHub pages documentation (we can use mkdocs material for the best UX experiance or maybe a nice GoLang equivalent if exists if not mkdocs material has a very nice GUI).

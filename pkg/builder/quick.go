@@ -392,7 +392,7 @@ func (qb *QuickBuilder) Server(port ...int) *server.Server {
 	srv.SetAgentManager(agentManager)
 
 	// Create and set session manager
-	sessionManager := persistence.NewSessionManager(nil, nil)
+	sessionManager := persistence.NewSessionManager(nil)
 	srv.SetSessionManager(sessionManager)
 
 	return srv

@@ -259,7 +259,7 @@ func initializeComponents(srv *server.Server) error {
 	toolRegistry.RegisterTool(tools.NewTimeTool())
 
 	// Initialize session manager (using memory for now)
-	sessionManager := persistence.NewSessionManager(nil, nil)
+	sessionManager := persistence.NewSessionManager(nil)
 
 	// Initialize agent manager
 	agentManager := server.NewAgentManager(llmManager, toolRegistry)
