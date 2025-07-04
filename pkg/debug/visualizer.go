@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -39,6 +40,7 @@ type GraphVisualizer struct {
 	executionHistory []ExecutionStep
 	subscribers      []VisualizationSubscriber
 	checkpointer     persistence.Checkpointer
+	mu               sync.RWMutex // Added mutex for thread safety
 }
 
 // ExecutionStep represents a single step in graph execution
@@ -111,11 +113,16 @@ func NewGraphVisualizer(config *VisualizerConfig, checkpointer persistence.Check
 
 // Subscribe adds a visualization subscriber
 func (gv *GraphVisualizer) Subscribe(subscriber VisualizationSubscriber) {
+	gv.mu.Lock()
+	defer gv.mu.Unlock()
 	gv.subscribers = append(gv.subscribers, subscriber)
 }
 
 // RecordStep records an execution step
 func (gv *GraphVisualizer) RecordStep(step *ExecutionStep) {
+	gv.mu.Lock()
+	defer gv.mu.Unlock()
+
 	// Add to history
 	gv.executionHistory = append(gv.executionHistory, *step)
 
@@ -152,8 +159,14 @@ func (gv *GraphVisualizer) RecordStep(step *ExecutionStep) {
 
 // GetExecutionHistory returns the execution history
 func (gv *GraphVisualizer) GetExecutionHistory(threadID string) []ExecutionStep {
+	gv.mu.RLock()
+	defer gv.mu.RUnlock()
+
 	if threadID == "" {
-		return gv.executionHistory
+		// Return a copy to avoid race conditions
+		result := make([]ExecutionStep, len(gv.executionHistory))
+		copy(result, gv.executionHistory)
+		return result
 	}
 
 	var filtered []ExecutionStep

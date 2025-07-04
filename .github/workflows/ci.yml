@@ -80,7 +80,7 @@ jobs:
         REDIS_PORT: 6379
     
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         file: ./coverage.out
         flags: unittests
@@ -172,16 +172,17 @@ jobs:
         go mod download
         go mod tidy
     
-    - name: Build binary
+    - name: Build main binary
       run: |
         CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o bin/golanggraph ./cmd/golanggraph
     
     - name: Build examples
       run: |
-        go build -o bin/examples/ ./examples/...
+        mkdir -p bin/examples
+        go build -o bin/examples/examples ./cmd/examples
     
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: build-artifacts
         path: bin/
@@ -258,7 +259,7 @@ jobs:
     
     - name: Test examples
       run: |
-        go run examples/database_persistence_demo.go
+        go run ./cmd/examples
       env:
         POSTGRES_HOST: localhost
         POSTGRES_PORT: 5432
@@ -301,7 +302,7 @@ jobs:
         go test -v -bench=. -benchmem ./pkg/... > benchmark.txt
     
     - name: Upload benchmark results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: benchmark-results
         path: benchmark.txt 

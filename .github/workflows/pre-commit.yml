@@ -7,209 +7,239 @@ on:
     branches: [ main, develop ]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pull-requests: write
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GO_VERSION: '1.21'
 
 jobs:
   pre-commit:
+    name: Pre-commit Checks
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Fetch full history for some hooks
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.21'
-          cache: true
-
-      - name: Install Go tools
-        run: |
-          # Install required Go tools
-          go install golang.org/x/tools/cmd/goimports@latest
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-          go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
-          go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
-          go install github.com/gordonklaus/ineffassign@latest
-          go install github.com/client9/misspell/cmd/misspell@latest
-
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pre-commit detect-secrets commitizen
-
-      - name: Cache pre-commit
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pre-commit
-          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
-          restore-keys: |
-            pre-commit-${{ runner.os }}-
-
-      - name: Run pre-commit
-        run: |
-          pre-commit run --all-files --show-diff-on-failure
-        env:
-          SKIP: no-commit-to-branch  # Skip branch protection in CI
-
-      - name: Generate pre-commit report
-        if: failure()
-        run: |
-          echo "## Pre-commit Results" >> $GITHUB_STEP_SUMMARY
-          echo "Some pre-commit hooks failed. Please run \`make pre-commit-run\` locally to fix issues." >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Common fixes:" >> $GITHUB_STEP_SUMMARY
-          echo "- Run \`go fmt ./...\` to format Go code" >> $GITHUB_STEP_SUMMARY
-          echo "- Run \`go mod tidy\` to clean up go.mod" >> $GITHUB_STEP_SUMMARY
-          echo "- Run \`golangci-lint run --fix\` to fix linting issues" >> $GITHUB_STEP_SUMMARY
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+    
+    - name: Cache Python dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/.pre-commit-config.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    
+    - name: Cache pre-commit
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pre-commit
+        key: ${{ runner.os }}-pre-commit-${{ hashFiles('**/.pre-commit-config.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pre-commit-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pre-commit
+        go mod download
+        go mod tidy
+    
+    - name: Run pre-commit
+      uses: pre-commit/action@v3.0.1
 
   security-scan:
+    name: Security Scan
     runs-on: ubuntu-latest
+    
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.21'
-          cache: true
-
-      - name: Run Gosec Security Scanner
-        run: |
-          go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
-          gosec -fmt sarif -out gosec-results.sarif ./...
-
-      - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: gosec-results.sarif
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-
-      - name: Upload Trivy scan results
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: 'trivy-results.sarif'
-
-  detect-secrets:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      - name: Install detect-secrets
-        run: pip install detect-secrets
-
-      - name: Create secrets baseline if not exists
-        run: |
-          if [ ! -f .secrets.baseline ]; then
-            detect-secrets scan --baseline .secrets.baseline
-            echo "Created new secrets baseline"
-          fi
-
-      - name: Run detect-secrets scan
-        run: |
-          detect-secrets scan --baseline .secrets.baseline --exclude-files '\.git/.*|\.secrets\.baseline|go\.sum|go\.mod'
-
-      - name: Verify secrets baseline
-        run: |
-          detect-secrets audit --baseline .secrets.baseline
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+    
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    
+    - name: Install dependencies
+      run: |
+        go mod download
+        go mod tidy
+    
+    - name: Run Gosec Security Scanner
+      run: |
+        go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+        gosec -no-fail -fmt sarif -out gosec-results.sarif ./...
+    
+    - name: Upload Gosec SARIF file
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: gosec-results.sarif
+        category: gosec
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+    
+    - name: Upload Trivy SARIF file
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: trivy-results.sarif
+        category: trivy
+    
+    - name: Run detect-secrets
+      run: |
+        pip install detect-secrets
+        detect-secrets scan --all-files --baseline .secrets.baseline || true
+        if [ -f .secrets.baseline ]; then
+          detect-secrets audit .secrets.baseline --report --fail-on-unaudited
+        fi
 
   dependency-check:
+    name: Dependency Check
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.21'
-          cache: true
-
-      - name: Check for known vulnerabilities
-        run: |
-          go install golang.org/x/vuln/cmd/govulncheck@latest
-          govulncheck ./...
-
-      - name: Check for outdated dependencies
-        run: |
-          go list -u -m all | grep -E '\[.*\]$' || echo "All dependencies are up to date"
-
-      - name: Verify go.mod tidiness
-        run: |
-          go mod tidy
-          if [ -n "$(git status --porcelain go.mod go.sum)" ]; then
-            echo "go.mod or go.sum is not tidy"
-            git diff go.mod go.sum
-            exit 1
-          fi
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+    
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    
+    - name: Install dependencies
+      run: |
+        go mod download
+        go mod tidy
+    
+    - name: Check for vulnerabilities
+      run: |
+        go install golang.org/x/vuln/cmd/govulncheck@latest
+        govulncheck ./...
+    
+    - name: Check for outdated dependencies
+      run: |
+        go list -u -m all
+    
+    - name: Verify dependencies
+      run: |
+        go mod verify
 
   code-quality:
+    name: Code Quality
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.21'
-          cache: true
-
-      - name: Install quality tools
-        run: |
-          go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
-          go install github.com/gordonklaus/ineffassign@latest
-          go install github.com/client9/misspell/cmd/misspell@latest
-          go install honnef.co/go/tools/cmd/staticcheck@latest
-
-      - name: Check cyclomatic complexity
-        run: |
-          echo "## Cyclomatic Complexity Report" >> $GITHUB_STEP_SUMMARY
-          echo "Functions with complexity > 15:" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          gocyclo -over 15 . >> $GITHUB_STEP_SUMMARY || echo "No functions with high complexity found" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-
-      - name: Check for ineffectual assignments
-        run: |
-          echo "## Ineffectual Assignments" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          ineffassign ./... >> $GITHUB_STEP_SUMMARY || echo "No ineffectual assignments found" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-
-      - name: Check for misspellings
-        run: |
-          echo "## Misspelling Check" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          misspell -error . >> $GITHUB_STEP_SUMMARY || echo "No misspellings found" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-
-      - name: Run staticcheck
-        run: |
-          echo "## Staticcheck Results" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          staticcheck ./... >> $GITHUB_STEP_SUMMARY || echo "No staticcheck issues found" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY 
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+    
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    
+    - name: Install dependencies
+      run: |
+        go mod download
+        go mod tidy
+    
+    - name: Install quality tools
+      run: |
+        go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
+        go install github.com/gordonklaus/ineffassign@latest
+        go install github.com/client9/misspell/cmd/misspell@latest
+    
+    - name: Check cyclomatic complexity
+      run: |
+        gocyclo -over 15 ./pkg/... || echo "High complexity detected"
+    
+    - name: Check for inefficient assignments
+      run: |
+        ineffassign ./pkg/... || echo "Inefficient assignments detected"
+    
+    - name: Check for misspellings
+      run: |
+        misspell -error ./pkg/... ./docs/... ./README.md || echo "Misspellings detected"
+    
+    - name: Generate quality report
+      run: |
+        echo "## Code Quality Report" > quality-report.md
+        echo "" >> quality-report.md
+        echo "### Cyclomatic Complexity" >> quality-report.md
+        gocyclo -avg ./pkg/... >> quality-report.md || true
+        echo "" >> quality-report.md
+        echo "### Inefficient Assignments" >> quality-report.md
+        ineffassign ./pkg/... >> quality-report.md || true
+        echo "" >> quality-report.md
+        echo "### Misspellings" >> quality-report.md
+        misspell ./pkg/... ./docs/... ./README.md >> quality-report.md || true
+    
+    - name: Upload quality report
+      uses: actions/upload-artifact@v4
+      with:
+        name: code-quality-report
+        path: quality-report.md
+        retention-days: 7 

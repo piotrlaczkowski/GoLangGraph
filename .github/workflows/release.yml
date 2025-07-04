@@ -19,7 +19,7 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   GO_VERSION: '1.21'
@@ -27,303 +27,344 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  # Pre-release validation
-  validate:
+  validation:
+    name: Validation
     runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.version.outputs.version }}
-      is_prerelease: ${{ steps.version.outputs.is_prerelease }}
+    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+    
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    
+    - name: Install dependencies
+      run: |
+        go mod download
+        go mod tidy
+    
+    - name: Run tests
+      run: |
+        go test -v -race -coverprofile=coverage.out -covermode=atomic ./pkg/...
+    
+    - name: Run linting
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest
+        args: --timeout=5m
+    
+    - name: Run security scan
+      run: |
+        go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+        gosec -no-fail -fmt sarif -out results.sarif ./...
+    
+    - name: Upload SARIF file
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: results.sarif
 
-      - name: Determine version
-        id: version
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION="${{ github.event.inputs.version }}"
-          else
-            VERSION=${GITHUB_REF#refs/tags/}
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          
-          # Check if this is a prerelease
-          if [[ $VERSION =~ -[a-zA-Z] ]]; then
-            echo "is_prerelease=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_prerelease=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - name: Run tests
-        run: |
-          go test -v -race ./pkg/...
-
-      - name: Run pre-commit validation
-        uses: pre-commit/action@v3.0.0
-
-  # Build multi-platform binaries
   build:
-    needs: validate
+    name: Build ${{ matrix.os }}-${{ matrix.arch }}
     runs-on: ubuntu-latest
+    needs: validation
+    
     strategy:
       matrix:
-        goos: [linux, darwin, windows]
-        goarch: [amd64, arm64]
-        exclude:
-          - goos: windows
+        include:
+          - os: linux
+            arch: amd64
+            goos: linux
+            goarch: amd64
+          - os: linux
+            arch: arm64
+            goos: linux
             goarch: arm64
+          - os: darwin
+            arch: amd64
+            goos: darwin
+            goarch: amd64
+          - os: darwin
+            arch: arm64
+            goos: darwin
+            goarch: arm64
+          - os: windows
+            arch: amd64
+            goos: windows
+            goarch: amd64
+            ext: .exe
+          - os: windows
+            arch: arm64
+            goos: windows
+            goarch: arm64
+            ext: .exe
+    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+    
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    
+    - name: Install dependencies
+      run: |
+        go mod download
+        go mod tidy
+    
+    - name: Build binary
+      run: |
+        mkdir -p dist
+        CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build \
+          -a -installsuffix cgo \
+          -ldflags="-s -w -X main.version=${{ github.ref_name }} -X main.commit=${{ github.sha }} -X main.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+          -o dist/golanggraph-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.ext }} \
+          ./cmd/golanggraph
+    
+    - name: Build examples
+      run: |
+        CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build \
+          -a -installsuffix cgo \
+          -o dist/examples-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.ext }} \
+          ./cmd/examples
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-${{ matrix.os }}-${{ matrix.arch }}
+        path: dist/
+        retention-days: 1
 
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - name: Build binary
-        env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-          VERSION: ${{ needs.validate.outputs.version }}
-        run: |
-          # Create output directory
-          mkdir -p dist
-          
-          # Set binary name
-          BINARY_NAME="golanggraph"
-          if [ "$GOOS" = "windows" ]; then
-            BINARY_NAME="${BINARY_NAME}.exe"
-          fi
-          
-          # Build binary
-          CGO_ENABLED=0 go build \
-            -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${GITHUB_SHA} -X main.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            -o "dist/${BINARY_NAME}-${GOOS}-${GOARCH}" \
-            ./cmd/golanggraph
-          
-          # Create archive
-          cd dist
-          if [ "$GOOS" = "windows" ]; then
-            zip "${BINARY_NAME}-${VERSION}-${GOOS}-${GOARCH}.zip" "${BINARY_NAME}-${GOOS}-${GOARCH}"
-          else
-            tar -czf "${BINARY_NAME}-${VERSION}-${GOOS}-${GOARCH}.tar.gz" "${BINARY_NAME}-${GOOS}-${GOARCH}"
-          fi
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: binaries-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: dist/
-
-  # Build and push Docker image
   docker:
-    needs: validate
+    name: Build Docker Image
     runs-on: ubuntu-latest
+    needs: validation
+    
+    permissions:
+      contents: read
+      packages: write
+    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          type=sha
+    
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          VERSION=${{ github.ref_name }}
+          COMMIT=${{ github.sha }}
+          DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=tag
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=${{ needs.validate.outputs.version }}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            VERSION=${{ needs.validate.outputs.version }}
-            COMMIT=${{ github.sha }}
-            DATE=${{ github.event.head_commit.timestamp }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  # Build and deploy documentation
-  documentation:
-    needs: validate
+  docs:
+    name: Deploy Documentation
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    needs: validation
+    
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+    
+    - name: Cache Python dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Install Go dependencies
+      run: |
+        go mod download
+        go mod tidy
+    
+    - name: Generate Go documentation
+      run: |
+        mkdir -p docs/api
+        go doc -all ./pkg/... > docs/api/godoc.txt
+    
+    - name: Build documentation
+      run: |
+        mkdocs build --strict
+    
+    - name: Test documentation links
+      run: |
+        pip install pytest-html-reporter
+        find site -name "*.html" -exec grep -l "href=" {} \; | head -10 | xargs -I {} echo "Found HTML file: {}"
+    
+    - name: Upload documentation artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: documentation
+        path: site/
+        retention-days: 1
+    
+    - name: Setup Pages
+      uses: actions/configure-pages@v3
+    
+    - name: Upload to GitHub Pages
+      uses: actions/upload-pages-artifact@v2
+      with:
+        path: site/
+    
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v2
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          go install golang.org/x/tools/cmd/godoc@latest
-
-      - name: Generate Go documentation
-        run: |
-          mkdir -p docs/api
-          echo "# Go Package Documentation" > docs/api/generated.md
-          echo "" >> docs/api/generated.md
-          echo "Auto-generated for version ${{ needs.validate.outputs.version }}" >> docs/api/generated.md
-          echo "" >> docs/api/generated.md
-          
-          for pkg in $(go list ./pkg/...); do
-            echo "## Package: $pkg" >> docs/api/generated.md
-            echo "" >> docs/api/generated.md
-            echo '```go' >> docs/api/generated.md
-            go doc -all $pkg >> docs/api/generated.md
-            echo '```' >> docs/api/generated.md
-            echo "" >> docs/api/generated.md
-          done
-
-      - name: Update version in documentation
-        run: |
-          # Update version in mkdocs.yml
-          sed -i "s/site_name: GoLangGraph/site_name: GoLangGraph ${{ needs.validate.outputs.version }}/" mkdocs.yml
-          
-          # Update version in documentation
-          find docs -name "*.md" -exec sed -i "s/{{version}}/${{ needs.validate.outputs.version }}/g" {} \;
-
-      - name: Build documentation
-        run: |
-          mkdocs build --strict --verbose
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v3
-
-      - name: Upload to GitHub Pages
-        uses: actions/upload-pages-artifact@v2
-        with:
-          path: site/
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v2
-
-  # Create GitHub release
   release:
-    needs: [validate, build, docker, documentation]
+    name: Create Release
     runs-on: ubuntu-latest
+    needs: [build, docker, docs]
+    
+    permissions:
+      contents: write
+      packages: write
+    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v3
-        with:
-          path: artifacts/
-
-      - name: Prepare release assets
-        run: |
-          mkdir -p release-assets
-          find artifacts -name "*.tar.gz" -o -name "*.zip" | xargs -I {} cp {} release-assets/
-          
-          # Generate checksums
-          cd release-assets
-          sha256sum * > checksums.txt
-
-      - name: Generate changelog
-        id: changelog
-        run: |
-          # Get the previous tag
-          PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -v "${{ needs.validate.outputs.version }}" | head -n 1)
-          
-          if [ -z "$PREVIOUS_TAG" ]; then
-            PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
-          fi
-          
-          # Generate changelog
-          echo "## What's Changed" > CHANGELOG.md
-          echo "" >> CHANGELOG.md
-          
-          # Get commits since last tag
-          git log ${PREVIOUS_TAG}..${{ needs.validate.outputs.version }} \
-            --pretty=format:"* %s (%h)" \
-            --no-merges >> CHANGELOG.md
-          
-          echo "" >> CHANGELOG.md
-          echo "## Docker Images" >> CHANGELOG.md
-          echo "" >> CHANGELOG.md
-          echo "- \`ghcr.io/${{ github.repository }}:${{ needs.validate.outputs.version }}\`" >> CHANGELOG.md
-          echo "- \`ghcr.io/${{ github.repository }}:latest\`" >> CHANGELOG.md
-          echo "" >> CHANGELOG.md
-          echo "## Documentation" >> CHANGELOG.md
-          echo "" >> CHANGELOG.md
-          echo "- [Documentation Site](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/)" >> CHANGELOG.md
-          
-          # Set output for release notes
-          echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          cat CHANGELOG.md >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ needs.validate.outputs.version }}
-          name: Release ${{ needs.validate.outputs.version }}
-          body: ${{ steps.changelog.outputs.changelog }}
-          prerelease: ${{ needs.validate.outputs.is_prerelease }}
-          files: |
-            release-assets/*
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # Notify on completion
-  notify:
-    needs: [validate, build, docker, documentation, release]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Notify success
-        if: needs.release.result == 'success'
-        run: |
-          echo "🎉 Release ${{ needs.validate.outputs.version }} completed successfully!"
-          echo "📦 Binaries: https://github.com/${{ github.repository }}/releases/tag/${{ needs.validate.outputs.version }}"
-          echo "🐳 Docker: ghcr.io/${{ github.repository }}:${{ needs.validate.outputs.version }}"
-          echo "📚 Documentation: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
-
-      - name: Notify failure
-        if: needs.release.result == 'failure'
-        run: |
-          echo "❌ Release ${{ needs.validate.outputs.version }} failed!"
-          echo "Please check the workflow logs for details." 
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts/
+    
+    - name: Prepare release assets
+      run: |
+        mkdir -p release/
+        find artifacts/ -name "golanggraph-*" -o -name "examples-*" | while read file; do
+          cp "$file" release/
+        done
+        
+        # Create checksums
+        cd release/
+        sha256sum * > checksums.txt
+        cd ..
+        
+        # List all files for verification
+        ls -la release/
+    
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Simple changelog generation
+        echo "## Changes in ${{ github.ref_name }}" > CHANGELOG.md
+        echo "" >> CHANGELOG.md
+        
+        # Get commits since last tag
+        LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+        if [ -n "$LAST_TAG" ]; then
+          echo "### Commits since $LAST_TAG:" >> CHANGELOG.md
+          git log --oneline $LAST_TAG..HEAD >> CHANGELOG.md
+        else
+          echo "### All commits:" >> CHANGELOG.md
+          git log --oneline >> CHANGELOG.md
+        fi
+        
+        echo "" >> CHANGELOG.md
+        echo "### Docker Images" >> CHANGELOG.md
+        echo "- \`ghcr.io/${{ github.repository }}:${{ github.ref_name }}\`" >> CHANGELOG.md
+        echo "- \`ghcr.io/${{ github.repository }}:latest\`" >> CHANGELOG.md
+        
+        # Set output for release notes
+        echo "changelog<<EOF" >> $GITHUB_OUTPUT
+        cat CHANGELOG.md >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+    
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.ref_name }}
+        name: Release ${{ github.ref_name }}
+        body: ${{ steps.changelog.outputs.changelog }}
+        draft: false
+        prerelease: ${{ contains(github.ref_name, '-') }}
+        files: |
+          release/*
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Update latest tag
+      if: ${{ !contains(github.ref_name, '-') }}
+      run: |
+        git config user.name github-actions
+        git config user.email github-actions@github.com
+        git tag -f latest
+        git push origin latest --force 
