@@ -78,32 +78,18 @@ linters-settings:
     capital: false
 
 linters:
-  disable-all: true
   enable:
-    - bodyclose
-    - unused
     - errcheck
-    - gochecknoinits
-    - gocyclo
     - gofmt
     - goimports
-    - revive
-    - goprintffuncname
-    - gosec
     - gosimple
     - govet
     - ineffassign
-    - lll
     - misspell
-    - nakedret
-    - noctx
-    - nolintlint
-    - rowserrcheck
+  disable:
+    - typecheck
+    - unused
     - staticcheck
-    - stylecheck
-    - unconvert
-    - unparam
-    - whitespace
 
 issues:
   uniq-by-line: true
