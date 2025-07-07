@@ -1,0 +1,403 @@
+name: "basic-multi-agent"
+version: "1.0.0"
+description: "Basic multi-agent configuration with three different agent types"
+
+agents:
+  chat-agent:
+    id: "chat-agent"
+    name: "Chat Assistant"
+    type: "chat"
+    model: "gpt-3.5-turbo"
+    provider: "openai"
+    system_prompt: "You are a friendly chat assistant that helps users with general questions and conversations."
+    temperature: 0.7
+    max_tokens: 1000
+    max_iterations: 5
+    tools:
+      - "calculator"
+      - "web_search"
+    enable_streaming: false
+    timeout: "30s"
+    metadata:
+      role: "general-assistant"
+      priority: "normal"
+
+  react-agent:
+    id: "react-agent"
+    name: "ReAct Reasoning Agent"
+    type: "react"
+    model: "gpt-4"
+    provider: "openai"
+    system_prompt: "You are a reasoning agent that thinks step by step and uses tools to solve complex problems."
+    temperature: 0.3
+    max_tokens: 2000
+    max_iterations: 10
+    tools:
+      - "calculator"
+      - "web_search"
+      - "file_read"
+      - "shell"
+    enable_streaming: true
+    timeout: "60s"
+    metadata:
+      role: "problem-solver"
+      priority: "high"
+
+  tool-agent:
+    id: "tool-agent"
+    name: "Tool Specialist"
+    type: "tool"
+    model: "gpt-3.5-turbo"
+    provider: "openai"
+    system_prompt: "You are a tool specialist that excels at using various tools to accomplish specific tasks."
+    temperature: 0.5
+    max_tokens: 1500
+    max_iterations: 8
+    tools:
+      - "file_read"
+      - "file_write"
+      - "http"
+      - "calculator"
+      - "time"
+    enable_streaming: false
+    timeout: "45s"
+    metadata:
+      role: "tool-specialist"
+      priority: "normal"
+
+routing:
+  type: "path"
+  default_agent: "chat-agent"
+  rules:
+    - id: "chat-route"
+      pattern: "/chat"
+      agent_id: "chat-agent"
+      method: "POST"
+      priority: 100
+      conditions: []
+      metadata:
+        description: "Route general chat requests"
+    
+    - id: "reasoning-route"
+      pattern: "/reason"
+      agent_id: "react-agent"
+      method: "POST"
+      priority: 90
+      conditions: []
+      metadata:
+        description: "Route complex reasoning tasks"
+    
+    - id: "tools-route"
+      pattern: "/tools"
+      agent_id: "tool-agent"
+      method: "POST"
+      priority: 80
+      conditions: []
+      metadata:
+        description: "Route tool-specific tasks"
+
+  middleware:
+    - type: "cors"
+      enabled: true
+      config:
+        allowed_origins: ["*"]
+        allowed_methods: ["GET", "POST", "OPTIONS"]
+    
+    - type: "logging"
+      enabled: true
+      config:
+        level: "info"
+        format: "json"
+    
+    - type: "rate_limit"
+      enabled: true
+      config:
+        requests_per_minute: 60
+        burst_limit: 10
+
+deployment:
+  type: "docker"
+  environment: "development"
+  replicas: 1
+  
+  resources:
+    cpu: "1000m"
+    memory: "1Gi"
+    storage: "10Gi"
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+      storage: "5Gi"
+    limits:
+      cpu: "2000m"
+      memory: "2Gi"
+      storage: "20Gi"
+  
+  networking:
+    type: "ClusterIP"
+    ports:
+      - name: "http"
+        port: 8080
+        target_port: 8080
+        protocol: "TCP"
+        agent_id: ""
+      - name: "metrics"
+        port: 9090
+        target_port: 9090
+        protocol: "TCP"
+        agent_id: ""
+    
+    ingress:
+      enabled: true
+      class_name: "nginx"
+      hosts:
+        - "multi-agent.example.com"
+      rules:
+        - host: "multi-agent.example.com"
+          paths:
+            - path: "/chat"
+              path_type: "Prefix"
+              service_name: "golanggraph-multi-agent"
+              service_port: 8080
+              agent_id: "chat-agent"
+            - path: "/reason"
+              path_type: "Prefix"
+              service_name: "golanggraph-multi-agent"
+              service_port: 8080
+              agent_id: "react-agent"
+            - path: "/tools"
+              path_type: "Prefix"
+              service_name: "golanggraph-multi-agent"
+              service_port: 8080
+              agent_id: "tool-agent"
+      annotations:
+        nginx.ingress.kubernetes.io/rewrite-target: "/"
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  
+  scaling:
+    enabled: true
+    min_replicas: 1
+    max_replicas: 5
+    target_cpu_percent: 70
+    target_memory_percent: 80
+    scale_up_cooldown: "5m"
+    scale_down_cooldown: "10m"
+  
+  health_check:
+    enabled: true
+    path: "/health"
+    port: 8080
+    initial_delay_seconds: 30
+    period_seconds: 10
+    timeout_seconds: 5
+    success_threshold: 1
+    failure_threshold: 3
+    http_headers:
+      - name: "User-Agent"
+        value: "HealthChecker/1.0"
+    
+    agent_specific:
+      react-agent:
+        enabled: true
+        path: "/health/react"
+        timeout_seconds: 10
+        failure_threshold: 5
+      
+      tool-agent:
+        enabled: true
+        path: "/health/tools"
+        timeout_seconds: 8
+        failure_threshold: 4
+  
+  secrets:
+    openai_api_key: "${OPENAI_API_KEY}"
+    ollama_url: "${OLLAMA_URL}"
+  
+  config_maps:
+    log_level: "info"
+    debug_mode: "false"
+  
+  volumes:
+    - name: "config-volume"
+      type: "configmap"
+      source: "golanggraph-config"
+      mount_path: "/app/configs"
+      read_only: true
+      agent_id: ""
+    
+    - name: "data-volume"
+      type: "persistentvolume"
+      source: "golanggraph-data-pvc"
+      mount_path: "/app/data"
+      read_only: false
+      agent_id: ""
+  
+  metadata:
+    project: "golanggraph"
+    environment: "development"
+    version: "1.0.0"
+
+shared:
+  database:
+    type: "postgres"
+    host: "postgres"
+    port: 5432
+    database: "golanggraph"
+    username: "postgres"
+    password: "${POSTGRES_PASSWORD}"
+    ssl_mode: "disable"
+    max_conns: 10
+    max_idle_conns: 5
+    max_lifetime: "1h"
+  
+  cache:
+    type: "redis"
+    host: "redis"
+    port: 6379
+    password: "${REDIS_PASSWORD}"
+    database: 0
+    ttl: "1h"
+    max_retries: 3
+  
+  logging:
+    level: "info"
+    format: "json"
+    output: ["stdout"]
+    structured: true
+    fields:
+      service: "golanggraph-multi-agent"
+      version: "1.0.0"
+  
+  monitoring:
+    enabled: true
+    metrics:
+      enabled: true
+      path: "/metrics"
+      port: 9090
+      namespace: "golanggraph"
+      subsystem: "multi_agent"
+    
+    tracing:
+      enabled: false
+      endpoint: "http://jaeger:14268"
+      service_name: "golanggraph-multi-agent"
+      sample_rate: 0.1
+    
+    alerting:
+      enabled: true
+      webhooks:
+        - url: "http://alertmanager:9093/api/v1/alerts"
+          method: "POST"
+          timeout: "10s"
+      
+      rules:
+        - name: "high_error_rate"
+          description: "Alert when error rate is high"
+          metric: "error_rate"
+          condition: "greater_than"
+          threshold: 0.05
+          duration: "5m"
+          labels:
+            severity: "warning"
+            team: "platform"
+  
+  security:
+    authentication:
+      type: "apikey"
+      enabled: false
+      required: false
+      config:
+        header_name: "X-API-Key"
+        query_param: "api_key"
+    
+    authorization:
+      type: "rbac"
+      enabled: false
+      config:
+        admin_roles: ["admin"]
+        user_roles: ["user"]
+    
+    encryption:
+      at_rest:
+        enabled: false
+        algorithm: "AES-256"
+        provider: "vault"
+      
+      in_transit:
+        enabled: true
+        min_tls: "1.2"
+        ciphers: ["TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"]
+    
+    rate_limit:
+      enabled: true
+      global:
+        requests: 1000
+        period: "1m"
+        burst: 100
+      
+      per_user:
+        requests: 100
+        period: "1m"
+        burst: 20
+      
+      per_ip:
+        requests: 200
+        period: "1m"
+        burst: 50
+      
+      burst_limit: 200
+      window_size: "1m"
+    
+    cors:
+      enabled: true
+      allowed_origins: ["*"]
+      allowed_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+      allowed_headers: ["*"]
+      exposed_headers: ["X-Request-ID"]
+      allow_credentials: false
+      max_age: 86400
+    
+    headers:
+      X-Frame-Options: "DENY"
+      X-Content-Type-Options: "nosniff"
+      X-XSS-Protection: "1; mode=block"
+  
+  environment:
+    NODE_ENV: "development"
+    LOG_LEVEL: "info"
+    DEBUG: "false"
+  
+  secrets:
+    openai_api_key: "${OPENAI_API_KEY}"
+    postgres_password: "${POSTGRES_PASSWORD}"
+    redis_password: "${REDIS_PASSWORD}"
+  
+  llm_providers:
+    openai:
+      type: "openai"
+      api_key: "${OPENAI_API_KEY}"
+      endpoint: "https://api.openai.com/v1"
+      model: "gpt-3.5-turbo"
+      timeout: "30s"
+      max_retries: 3
+      config:
+        organization: ""
+        base_url: ""
+    
+    ollama:
+      type: "ollama"
+      api_key: ""
+      endpoint: "${OLLAMA_URL}"
+      model: "llama2"
+      timeout: "60s"
+      max_retries: 2
+      config:
+        temperature: 0.7
+        max_tokens: 2000
+
+metadata:
+  project: "golanggraph-basic-multi-agent"
+  created_by: "golanggraph-cli"
+  created_at: "2024-01-01T00:00:00Z"
+  documentation: "https://docs.golanggraph.com/multi-agent"
+  repository: "https://github.com/example/golanggraph-multi-agent"
