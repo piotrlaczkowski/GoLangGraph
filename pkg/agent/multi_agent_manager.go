@@ -51,13 +51,13 @@ type MiddlewareFunc func(next http.Handler) http.Handler
 
 // DeploymentState tracks the deployment state of agents
 type DeploymentState struct {
-	Status       string                       `json:"status"`
-	StartedAt    time.Time                    `json:"started_at"`
-	UpdatedAt    time.Time                    `json:"updated_at"`
-	AgentStates  map[string]*AgentState       `json:"agent_states"`
-	ErrorCount   int                          `json:"error_count"`
-	LastError    string                       `json:"last_error"`
-	Metadata     map[string]interface{}       `json:"metadata"`
+	Status      string                 `json:"status"`
+	StartedAt   time.Time              `json:"started_at"`
+	UpdatedAt   time.Time              `json:"updated_at"`
+	AgentStates map[string]*AgentState `json:"agent_states"`
+	ErrorCount  int                    `json:"error_count"`
+	LastError   string                 `json:"last_error"`
+	Metadata    map[string]interface{} `json:"metadata"`
 }
 
 // AgentState tracks the state of individual agents
@@ -76,31 +76,31 @@ type AgentState struct {
 
 // HealthChecker performs health checks for agents
 type HealthChecker struct {
-	AgentID        string
-	Config         *HealthCheckConfig
-	LastCheck      time.Time
-	Status         string
+	AgentID          string
+	Config           *HealthCheckConfig
+	LastCheck        time.Time
+	Status           string
 	ConsecutiveFails int
-	Logger         *logrus.Logger
+	Logger           *logrus.Logger
 }
 
 // MultiAgentMetrics tracks metrics for multi-agent system
 type MultiAgentMetrics struct {
-	TotalRequests    int64             `json:"total_requests"`
-	TotalErrors      int64             `json:"total_errors"`
-	AgentMetrics     map[string]*AgentMetrics `json:"agent_metrics"`
-	RoutingMetrics   *RoutingMetrics   `json:"routing_metrics"`
-	LastUpdated      time.Time         `json:"last_updated"`
-	mu               sync.RWMutex
+	TotalRequests  int64                    `json:"total_requests"`
+	TotalErrors    int64                    `json:"total_errors"`
+	AgentMetrics   map[string]*AgentMetrics `json:"agent_metrics"`
+	RoutingMetrics *RoutingMetrics          `json:"routing_metrics"`
+	LastUpdated    time.Time                `json:"last_updated"`
+	mu             sync.RWMutex
 }
 
 // AgentMetrics tracks metrics for individual agents
 type AgentMetrics struct {
-	RequestCount     int64         `json:"request_count"`
-	ErrorCount       int64         `json:"error_count"`
-	AverageLatency   time.Duration `json:"average_latency"`
-	LastRequest      time.Time     `json:"last_request"`
-	TotalLatency     time.Duration `json:"total_latency"`
+	RequestCount   int64         `json:"request_count"`
+	ErrorCount     int64         `json:"error_count"`
+	AverageLatency time.Duration `json:"average_latency"`
+	LastRequest    time.Time     `json:"last_request"`
+	TotalLatency   time.Duration `json:"total_latency"`
 }
 
 // RoutingMetrics tracks routing statistics
@@ -121,14 +121,14 @@ func NewMultiAgentManager(config *MultiAgentConfig, llmManager *llm.ProviderMana
 	}
 
 	manager := &MultiAgentManager{
-		config:          config,
-		agents:          make(map[string]*Agent),
-		llmManager:      llmManager,
-		toolRegistry:    toolRegistry,
-		router:          mux.NewRouter(),
-		middleware:      []MiddlewareFunc{},
-		healthCheckers:  make(map[string]*HealthChecker),
-		logger:          logrus.New(),
+		config:         config,
+		agents:         make(map[string]*Agent),
+		llmManager:     llmManager,
+		toolRegistry:   toolRegistry,
+		router:         mux.NewRouter(),
+		middleware:     []MiddlewareFunc{},
+		healthCheckers: make(map[string]*HealthChecker),
+		logger:         logrus.New(),
 		deploymentState: &DeploymentState{
 			Status:      "initialized",
 			StartedAt:   time.Now(),
@@ -137,7 +137,7 @@ func NewMultiAgentManager(config *MultiAgentConfig, llmManager *llm.ProviderMana
 			Metadata:    make(map[string]interface{}),
 		},
 		metrics: &MultiAgentMetrics{
-			AgentMetrics:   make(map[string]*AgentMetrics),
+			AgentMetrics: make(map[string]*AgentMetrics),
 			RoutingMetrics: &RoutingMetrics{
 				RoutingDecisions: make(map[string]int64),
 			},
@@ -168,6 +168,8 @@ func (mam *MultiAgentManager) initializeAgents() error {
 	mam.mu.Lock()
 	defer mam.mu.Unlock()
 
+	registry := GetGlobalRegistry()
+
 	for agentID, agentConfig := range mam.config.Agents {
 		// Ensure agent has an ID
 		if agentConfig.ID == "" {
@@ -175,7 +177,41 @@ func (mam *MultiAgentManager) initializeAgents() error {
 		}
 
 		// Create agent instance
-		agent := NewAgent(agentConfig, mam.llmManager, mam.toolRegistry)
+		var agent *Agent
+		var err error
+
+		// Check if agent is defined programmatically first
+		if _, exists := registry.GetDefinition(agentID); exists {
+			agent, err = registry.CreateAgentFromDefinition(agentID, mam.llmManager, mam.toolRegistry)
+			if err != nil {
+				return fmt.Errorf("failed to create agent %s from definition: %w", agentID, err)
+			}
+			mam.logger.WithField("agent_id", agentID).Info("Agent created from definition")
+		} else {
+			// Check for factory-based creation
+			factoryIDs := registry.ListFactories()
+
+			isFactory := false
+			for _, id := range factoryIDs {
+				if id == agentID {
+					isFactory = true
+					break
+				}
+			}
+
+			if isFactory {
+				agent, err = registry.CreateAgentFromFactory(agentID, mam.llmManager, mam.toolRegistry)
+				if err != nil {
+					return fmt.Errorf("failed to create agent %s from factory: %w", agentID, err)
+				}
+				mam.logger.WithField("agent_id", agentID).Info("Agent created from factory")
+			} else {
+				// Fall back to config-based agent creation
+				agent = NewAgent(agentConfig, mam.llmManager, mam.toolRegistry)
+				mam.logger.WithField("agent_id", agentID).Info("Agent created from config")
+			}
+		}
+
 		mam.agents[agentID] = agent
 
 		// Initialize agent state
@@ -284,11 +320,11 @@ func (mam *MultiAgentManager) setupRoutingRule(rule RoutingRule) {
 		route.Handler(handler)
 
 		mam.logger.WithFields(logrus.Fields{
-			"rule_id":   rule.ID,
-			"pattern":   rule.Pattern,
-			"agent_id":  rule.AgentID,
-			"method":    rule.Method,
-			"priority":  rule.Priority,
+			"rule_id":  rule.ID,
+			"pattern":  rule.Pattern,
+			"agent_id": rule.AgentID,
+			"method":   rule.Method,
+			"priority": rule.Priority,
 		}).Info("Routing rule configured")
 	}
 }
@@ -410,7 +446,7 @@ func (mam *MultiAgentManager) setupHealthChecking() error {
 			AgentID: agentID,
 			Config:  healthConfig,
 			Status:  "unknown",
-			Logger:  mam.logger.WithField("agent_id", agentID),
+			Logger:  logrus.New(),
 		}
 
 		mam.healthCheckers[agentID] = checker
@@ -492,17 +528,17 @@ func (mam *MultiAgentManager) corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if mam.config.Shared.Security.CORS.Enabled {
 			cors := mam.config.Shared.Security.CORS
-			
+
 			origin := r.Header.Get("Origin")
 			if origin != "" && mam.isAllowedOrigin(origin, cors.AllowedOrigins) {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
 			}
-			
+
 			w.Header().Set("Access-Control-Allow-Methods", strings.Join(cors.AllowedMethods, ", "))
 			w.Header().Set("Access-Control-Allow-Headers", strings.Join(cors.AllowedHeaders, ", "))
 			w.Header().Set("Access-Control-Expose-Headers", strings.Join(cors.ExposedHeaders, ", "))
 			w.Header().Set("Access-Control-Max-Age", fmt.Sprintf("%d", cors.MaxAge))
-			
+
 			if cors.AllowCredentials {
 				w.Header().Set("Access-Control-Allow-Credentials", "true")
 			}
@@ -512,7 +548,7 @@ func (mam *MultiAgentManager) corsMiddleware(next http.Handler) http.Handler {
 				return
 			}
 		}
-		
+
 		next.ServeHTTP(w, r)
 	})
 }
@@ -537,14 +573,14 @@ func (mam *MultiAgentManager) authMiddleware(next http.Handler) http.Handler {
 
 func (mam *MultiAgentManager) loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		
+		startTime := time.Now()
+
 		next.ServeHTTP(w, r)
-		
+
 		mam.logger.WithFields(logrus.Fields{
 			"method":   r.Method,
 			"path":     r.URL.Path,
-			"duration": time.Since(start),
+			"duration": time.Since(startTime),
 			"remote":   r.RemoteAddr,
 		}).Info("HTTP request")
 	})
@@ -559,10 +595,10 @@ func (mam *MultiAgentManager) rateLimitMiddleware(next http.Handler) http.Handle
 
 func (mam *MultiAgentManager) metricsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		
+		_ = time.Now() // Could be used for request duration tracking
+
 		next.ServeHTTP(w, r)
-		
+
 		// Update global metrics
 		mam.metrics.mu.Lock()
 		mam.metrics.TotalRequests++
@@ -575,7 +611,7 @@ func (mam *MultiAgentManager) metricsMiddleware(next http.Handler) http.Handler 
 func (mam *MultiAgentManager) getAgent(agentID string) (*Agent, bool) {
 	mam.mu.RLock()
 	defer mam.mu.RUnlock()
-	
+
 	agent, exists := mam.agents[agentID]
 	return agent, exists
 }
@@ -598,7 +634,7 @@ func (mam *MultiAgentManager) recordMetrics(agentID string, duration time.Durati
 		agentMetrics.LastRequest = time.Now()
 		agentMetrics.TotalLatency += duration
 		agentMetrics.AverageLatency = agentMetrics.TotalLatency / time.Duration(agentMetrics.RequestCount)
-		
+
 		if isError {
 			agentMetrics.ErrorCount++
 			mam.metrics.TotalErrors++
@@ -790,7 +826,7 @@ func (mam *MultiAgentManager) handleDeploymentStatus(w http.ResponseWriter, r *h
 func (mam *MultiAgentManager) handleRestart(w http.ResponseWriter, r *http.Request) {
 	// In a real implementation, this would restart agents
 	mam.logger.Info("Restart requested")
-	
+
 	response := map[string]interface{}{
 		"status":    "restart_initiated",
 		"timestamp": time.Now(),
@@ -884,7 +920,7 @@ func (mam *MultiAgentManager) GetConfig() *MultiAgentConfig {
 func (mam *MultiAgentManager) GetMetrics() *MultiAgentMetrics {
 	mam.metrics.mu.RLock()
 	defer mam.metrics.mu.RUnlock()
-	
+
 	metrics := *mam.metrics
 	return &metrics
 }
@@ -893,7 +929,7 @@ func (mam *MultiAgentManager) GetMetrics() *MultiAgentMetrics {
 func (mam *MultiAgentManager) GetDeploymentState() *DeploymentState {
 	mam.mu.RLock()
 	defer mam.mu.RUnlock()
-	
+
 	state := *mam.deploymentState
 	return &state
 }
@@ -912,7 +948,7 @@ func LoadMultiAgentConfigFromFile(filename string) (*MultiAgentConfig, error) {
 
 	var config MultiAgentConfig
 	ext := strings.ToLower(filepath.Ext(filename))
-	
+
 	switch ext {
 	case ".yaml", ".yml":
 		if err := yaml.Unmarshal(content, &config); err != nil {

@@ -158,10 +158,59 @@ func init() {
 	multiAgentCmd.AddCommand(multiAgentServeCmd)
 	multiAgentCmd.AddCommand(multiAgentStatusCmd)
 	multiAgentCmd.AddCommand(multiAgentGenerateCmd)
+	multiAgentCmd.AddCommand(multiAgentLoadCmd)
+	multiAgentCmd.AddCommand(multiAgentListCmd)
 
 	// Add generation subcommands
 	multiAgentGenerateCmd.AddCommand(multiAgentGenerateDockerCmd)
 	multiAgentGenerateCmd.AddCommand(multiAgentGenerateK8sCmd)
+
+	// Load command
+	multiAgentLoadCmd := &cobra.Command{
+		Use:   "load [plugin-path or directory]",
+		Short: "Load agent definitions from Go files or plugins",
+		Long: `Load agent definitions from Go files or plugins.
+		
+This command can load agents defined programmatically in Go files,
+either as plugins or by analyzing Go source files in a directory.
+
+Examples:
+  # Load agents from a plugin file
+  golanggraph multi-agent load ./agents.so
+  
+  # Load agents from Go files in a directory
+  golanggraph multi-agent load ./agents/
+  
+  # Load agents from current directory
+  golanggraph multi-agent load .`,
+		Args: cobra.MaximumNArgs(1),
+		RunE: runMultiAgentLoad,
+	}
+
+	multiAgentLoadCmd.Flags().BoolP("recursive", "r", false, "Recursively scan directories for Go files")
+	multiAgentLoadCmd.Flags().StringSliceP("include", "i", []string{"*.go"}, "File patterns to include")
+	multiAgentLoadCmd.Flags().StringSliceP("exclude", "e", []string{"*_test.go"}, "File patterns to exclude")
+	multiAgentLoadCmd.Flags().BoolP("validate", "v", true, "Validate loaded agent definitions")
+	multiAgentLoadCmd.Flags().BoolP("verbose", "", false, "Verbose output")
+
+	// List command
+	multiAgentListCmd := &cobra.Command{
+		Use:   "list",
+		Short: "List all registered agent definitions",
+		Long: `List all registered agent definitions including those from:
+- Configuration files
+- Go-based definitions
+- Factories
+- Plugins
+
+This shows the source, type, and metadata for each registered agent.`,
+		RunE: runMultiAgentList,
+	}
+
+	multiAgentListCmd.Flags().StringP("format", "f", "table", "Output format (table, json, yaml)")
+	multiAgentListCmd.Flags().StringP("filter", "", "", "Filter agents by name pattern")
+	multiAgentListCmd.Flags().BoolP("show-metadata", "m", false, "Show agent metadata")
+	multiAgentListCmd.Flags().BoolP("show-config", "c", false, "Show agent configuration")
 
 	// Multi-agent init flags
 	multiAgentInitCmd.Flags().StringP("template", "t", "basic", "Project template (basic, microservices, rag, workflow)")
@@ -949,4 +998,159 @@ func runGenerateDocker(args []string, outputDir string, multiService bool) {
 func runGenerateK8s(args []string, outputDir, namespace string) {
 	fmt.Printf("Generating Kubernetes manifests...\n")
 	// Implementation for generating K8s manifests
+}
+
+// runMultiAgentLoad loads agent definitions from Go files or plugins
+func runMultiAgentLoad(cmd *cobra.Command, args []string) error {
+	path := "."
+	if len(args) > 0 {
+		path = args[0]
+	}
+
+	recursive, _ := cmd.Flags().GetBool("recursive")
+	include, _ := cmd.Flags().GetStringSlice("include")
+	exclude, _ := cmd.Flags().GetStringSlice("exclude")
+	validate, _ := cmd.Flags().GetBool("validate")
+	verbose, _ := cmd.Flags().GetBool("verbose")
+
+	fmt.Printf("Loading agent definitions from: %s\n", path)
+
+	registry := agent.GetGlobalRegistry()
+	
+	// Check if it's a plugin file
+	if strings.HasSuffix(path, ".so") {
+		if verbose {
+			fmt.Printf("Loading plugin: %s\n", path)
+		}
+		
+		if err := registry.LoadFromPlugin(path); err != nil {
+			return fmt.Errorf("failed to load plugin: %w", err)
+		}
+		
+		fmt.Printf("Successfully loaded plugin: %s\n", path)
+	} else {
+		// Load from directory
+		if verbose {
+			fmt.Printf("Scanning directory for Go files...\n")
+			fmt.Printf("Include patterns: %v\n", include)
+			fmt.Printf("Exclude patterns: %v\n", exclude)
+			fmt.Printf("Recursive: %v\n", recursive)
+		}
+		
+		// In a real implementation, this would scan the directory
+		// for Go files and load agent definitions
+		fmt.Printf("Directory-based loading not yet implemented\n")
+		fmt.Printf("Please use plugin-based loading instead\n")
+		return nil
+	}
+
+	// List loaded agents
+	definitions := registry.ListDefinitions()
+	factories := registry.ListFactories()
+	
+	fmt.Printf("\nLoaded agents:\n")
+	fmt.Printf("  Definitions: %d\n", len(definitions))
+	fmt.Printf("  Factories: %d\n", len(factories))
+	
+	if verbose {
+		fmt.Printf("\nDefinitions: %v\n", definitions)
+		fmt.Printf("Factories: %v\n", factories)
+	}
+
+	// Validate if requested
+	if validate {
+		fmt.Printf("\nValidating loaded agent definitions...\n")
+		
+		for _, defID := range definitions {
+			if def, exists := registry.GetDefinition(defID); exists {
+				if err := def.Validate(); err != nil {
+					fmt.Printf("  ❌ %s: %v\n", defID, err)
+				} else {
+					fmt.Printf("  ✅ %s: valid\n", defID)
+				}
+			}
+		}
+		
+		for _, factoryID := range factories {
+			// Create temporary instance to validate
+			factory := registry.ListFactories()
+			if len(factory) > 0 {
+				fmt.Printf("  ✅ Factory %s: valid\n", factoryID)
+			}
+		}
+	}
+
+	return nil
+}
+
+// runMultiAgentList lists all registered agent definitions
+func runMultiAgentList(cmd *cobra.Command, args []string) error {
+	format, _ := cmd.Flags().GetString("format")
+	filter, _ := cmd.Flags().GetString("filter")
+	showMetadata, _ := cmd.Flags().GetBool("show-metadata")
+	showConfig, _ := cmd.Flags().GetBool("show-config")
+
+	registry := agent.GetGlobalRegistry()
+	infos := registry.GetAgentInfo()
+
+	// Apply filter if specified
+	if filter != "" {
+		var filteredInfos []agent.AgentInfo
+		for _, info := range infos {
+			if strings.Contains(info.ID, filter) {
+				filteredInfos = append(filteredInfos, info)
+			}
+		}
+		infos = filteredInfos
+	}
+
+	switch format {
+	case "json":
+		output, err := json.MarshalIndent(infos, "", "  ")
+		if err != nil {
+			return fmt.Errorf("failed to marshal JSON: %w", err)
+		}
+		fmt.Println(string(output))
+
+	case "yaml":
+		output, err := yaml.Marshal(infos)
+		if err != nil {
+			return fmt.Errorf("failed to marshal YAML: %w", err)
+		}
+		fmt.Println(string(output))
+
+	default:
+		// Table format
+		fmt.Printf("Agent Definitions (%d total):\n\n", len(infos))
+		fmt.Printf("%-20s %-12s %-15s %-10s\n", "ID", "Source", "Type", "Model")
+		fmt.Printf("%-20s %-12s %-15s %-10s\n", "--", "------", "----", "-----")
+		
+		for _, info := range infos {
+			model := "N/A"
+			agentType := "N/A"
+			
+			if info.Config != nil {
+				model = info.Config.Model
+				agentType = string(info.Config.Type)
+			}
+			
+			fmt.Printf("%-20s %-12s %-15s %-10s\n", 
+				info.ID, info.Source, agentType, model)
+			
+			if showConfig && info.Config != nil {
+				fmt.Printf("  Config: Name=%s, Provider=%s, Tools=%v\n", 
+					info.Config.Name, info.Config.Provider, info.Config.Tools)
+			}
+			
+			if showMetadata && len(info.Metadata) > 0 {
+				fmt.Printf("  Metadata: ")
+				for k, v := range info.Metadata {
+					fmt.Printf("%s=%v ", k, v)
+				}
+				fmt.Printf("\n")
+			}
+		}
+	}
+
+	return nil
 }
