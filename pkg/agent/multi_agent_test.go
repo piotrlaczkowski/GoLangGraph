@@ -83,10 +83,25 @@ func NewTestAdvancedAgentDefinition(name string) *TestAdvancedAgentDefinition {
 		Tools:        []string{"advanced-tool"},
 	}
 
-	return &TestAdvancedAgentDefinition{
+	def := &TestAdvancedAgentDefinition{
 		AdvancedAgentDefinition: NewAdvancedAgentDefinition(config),
 		graphBuilt:              false,
 	}
+
+	// Set a custom graph builder to ensure BuildGraph is called
+	def.AdvancedAgentDefinition.WithGraphBuilder(func() (*core.Graph, error) {
+		def.graphBuilt = true
+		// Return a simple graph instead of recursing
+		graph := core.NewGraph("test-graph")
+		graph.AddNode("test", "Test Node", func(ctx context.Context, state *core.BaseState) (*core.BaseState, error) {
+			return state, nil
+		})
+		graph.SetStartNode("test")
+		graph.AddEndNode("test")
+		return graph, nil
+	})
+
+	return def
 }
 
 func (taad *TestAdvancedAgentDefinition) BuildGraph() (*core.Graph, error) {
@@ -240,7 +255,7 @@ func TestAgentDefinitionBuilder(t *testing.T) {
 	assert.Equal(t, "1.0", metadata["version"])
 }
 
-func TestAdvancedAgentDefinition(t *testing.T) {
+func TestAdvancedAgentDefinitionCreation(t *testing.T) {
 	// Create mock LLM manager and tool registry
 	llmManager := llm.NewProviderManager()
 	toolRegistry := tools.NewToolRegistry()
@@ -270,7 +285,7 @@ func TestMultiAgentConfig(t *testing.T) {
 			"agent1": {
 				ID:           "agent1",
 				Name:         "Agent 1",
-				Type:         ChatAgent,
+				Type:         AgentTypeChat,
 				Model:        "gpt-3.5-turbo",
 				Provider:     "openai",
 				SystemPrompt: "You are agent 1",
@@ -281,7 +296,7 @@ func TestMultiAgentConfig(t *testing.T) {
 			"agent2": {
 				ID:           "agent2",
 				Name:         "Agent 2",
-				Type:         ReactAgent,
+				Type:         AgentTypeReAct,
 				Model:        "gpt-4",
 				Provider:     "openai",
 				SystemPrompt: "You are agent 2",
@@ -290,7 +305,7 @@ func TestMultiAgentConfig(t *testing.T) {
 				Tools:        []string{"tool2"},
 			},
 		},
-		Routing: RoutingConfig{
+		Routing: &RoutingConfig{
 			Type: "path",
 			Rules: []RoutingRule{
 				{
@@ -336,7 +351,7 @@ func TestMultiAgentManager(t *testing.T) {
 			"chat-agent": {
 				ID:           "chat-agent",
 				Name:         "Chat Agent",
-				Type:         ChatAgent,
+				Type:         AgentTypeChat,
 				Model:        "gpt-3.5-turbo",
 				Provider:     "openai",
 				SystemPrompt: "You are a chat agent",
@@ -347,7 +362,7 @@ func TestMultiAgentManager(t *testing.T) {
 			"react-agent": {
 				ID:           "react-agent",
 				Name:         "React Agent",
-				Type:         ReactAgent,
+				Type:         AgentTypeReAct,
 				Model:        "gpt-4",
 				Provider:     "openai",
 				SystemPrompt: "You are a react agent",
@@ -356,7 +371,7 @@ func TestMultiAgentManager(t *testing.T) {
 				Tools:        []string{},
 			},
 		},
-		Routing: RoutingConfig{
+		Routing: &RoutingConfig{
 			Type: "path",
 			Rules: []RoutingRule{
 				{
@@ -418,8 +433,8 @@ func TestMultiAgentManagerWithDefinitions(t *testing.T) {
 	// Register test agent definitions
 	registry := GetGlobalRegistry()
 
-	testDef1 := NewTestAgentDefinition("definition-agent", ChatAgent)
-	testDef2 := NewTestAgentDefinition("factory-agent", ReactAgent)
+	testDef1 := NewTestAgentDefinition("definition-agent", AgentTypeChat)
+	testDef2 := NewTestAgentDefinition("factory-agent", AgentTypeReAct)
 
 	err := registry.RegisterDefinition("definition-agent", testDef1)
 	assert.NoError(t, err)
@@ -439,7 +454,7 @@ func TestMultiAgentManagerWithDefinitions(t *testing.T) {
 			"definition-agent": {
 				ID:           "definition-agent",
 				Name:         "Definition Agent",
-				Type:         ChatAgent,
+				Type:         AgentTypeChat,
 				Model:        "gpt-3.5-turbo",
 				Provider:     "openai",
 				SystemPrompt: "You are a definition agent",
@@ -450,7 +465,7 @@ func TestMultiAgentManagerWithDefinitions(t *testing.T) {
 			"factory-agent": {
 				ID:           "factory-agent",
 				Name:         "Factory Agent",
-				Type:         ReactAgent,
+				Type:         AgentTypeReAct,
 				Model:        "gpt-4",
 				Provider:     "openai",
 				SystemPrompt: "You are a factory agent",
@@ -461,7 +476,7 @@ func TestMultiAgentManagerWithDefinitions(t *testing.T) {
 			"config-agent": {
 				ID:           "config-agent",
 				Name:         "Config Agent",
-				Type:         ToolAgent,
+				Type:         AgentTypeTool,
 				Model:        "gpt-3.5-turbo",
 				Provider:     "openai",
 				SystemPrompt: "You are a config agent",
@@ -470,7 +485,7 @@ func TestMultiAgentManagerWithDefinitions(t *testing.T) {
 				Tools:        []string{},
 			},
 		},
-		Routing: RoutingConfig{
+		Routing: &RoutingConfig{
 			Type: "path",
 			Rules: []RoutingRule{
 				{
@@ -529,16 +544,16 @@ func TestMultiAgentRoutingHTTP(t *testing.T) {
 			"echo-agent": {
 				ID:           "echo-agent",
 				Name:         "Echo Agent",
-				Type:         ChatAgent,
-				Model:        "gpt-3.5-turbo",
-				Provider:     "openai",
+				Type:         AgentTypeChat,
+				Model:        "mock-model",
+				Provider:     "mock",
 				SystemPrompt: "You are an echo agent",
 				Temperature:  0.7,
 				MaxTokens:    1000,
 				Tools:        []string{},
 			},
 		},
-		Routing: RoutingConfig{
+		Routing: &RoutingConfig{
 			Type: "path",
 			Rules: []RoutingRule{
 				{
@@ -556,6 +571,11 @@ func TestMultiAgentRoutingHTTP(t *testing.T) {
 	// Create managers
 	llmManager := llm.NewProviderManager()
 	toolRegistry := tools.NewToolRegistry()
+
+	// Register mock provider for testing
+	mockProvider := &mockProvider{response: "Hello, World!"}
+	err := llmManager.RegisterProvider("mock", mockProvider)
+	assert.NoError(t, err)
 
 	// Create multi-agent manager
 	manager, err := NewMultiAgentManager(config, llmManager, toolRegistry)
@@ -604,7 +624,7 @@ func TestMultiAgentConfigValidation(t *testing.T) {
 					"agent1": {
 						ID:           "agent1",
 						Name:         "Agent 1",
-						Type:         ChatAgent,
+						Type:         AgentTypeChat,
 						Model:        "gpt-3.5-turbo",
 						Provider:     "openai",
 						SystemPrompt: "You are agent 1",
@@ -613,7 +633,7 @@ func TestMultiAgentConfigValidation(t *testing.T) {
 						Tools:        []string{},
 					},
 				},
-				Routing: RoutingConfig{
+				Routing: &RoutingConfig{
 					Type: "path",
 					Rules: []RoutingRule{
 						{
@@ -646,7 +666,7 @@ func TestMultiAgentConfigValidation(t *testing.T) {
 				Agents:      map[string]*AgentConfig{},
 			},
 			expectError: true,
-			errorMsg:    "at least one agent is required",
+			errorMsg:    "at least one agent must be defined",
 		},
 		{
 			name: "invalid agent",
@@ -662,7 +682,7 @@ func TestMultiAgentConfigValidation(t *testing.T) {
 				},
 			},
 			expectError: true,
-			errorMsg:    "agent agent1 validation failed",
+			errorMsg:    "agent agent1: name is required",
 		},
 	}
 
@@ -690,7 +710,7 @@ func TestMultiAgentManagerLifecycle(t *testing.T) {
 			"test-agent": {
 				ID:           "test-agent",
 				Name:         "Test Agent",
-				Type:         ChatAgent,
+				Type:         AgentTypeChat,
 				Model:        "gpt-3.5-turbo",
 				Provider:     "openai",
 				SystemPrompt: "You are a test agent",
@@ -699,7 +719,7 @@ func TestMultiAgentManagerLifecycle(t *testing.T) {
 				Tools:        []string{},
 			},
 		},
-		Routing: RoutingConfig{
+		Routing: &RoutingConfig{
 			Type: "path",
 			Rules: []RoutingRule{
 				{
@@ -744,13 +764,13 @@ func TestMultiAgentManagerLifecycle(t *testing.T) {
 
 func TestGlobalRegistry(t *testing.T) {
 	// Test global registry functions
-	testDef := NewTestAgentDefinition("global-test", ChatAgent)
+	testDef := NewTestAgentDefinition("global-test", AgentTypeChat)
 
 	err := RegisterAgent("global-test", testDef)
 	assert.NoError(t, err)
 
 	factory := func() AgentDefinition {
-		return NewTestAgentDefinition("global-factory", ReactAgent)
+		return NewTestAgentDefinition("global-factory", AgentTypeReAct)
 	}
 
 	err = RegisterAgentFactory("global-factory", factory)
@@ -772,12 +792,12 @@ func TestAgentInfo(t *testing.T) {
 	registry := NewAgentRegistry()
 
 	// Register test agents
-	testDef := NewTestAgentDefinition("info-test", ChatAgent)
+	testDef := NewTestAgentDefinition("info-test", AgentTypeChat)
 	err := registry.RegisterDefinition("info-test", testDef)
 	assert.NoError(t, err)
 
 	factory := func() AgentDefinition {
-		return NewTestAgentDefinition("info-factory", ReactAgent)
+		return NewTestAgentDefinition("info-factory", AgentTypeReAct)
 	}
 	err = registry.RegisterFactory("info-factory", factory)
 	assert.NoError(t, err)
@@ -814,7 +834,7 @@ func TestMultiAgentConfigSerialization(t *testing.T) {
 			"agent1": {
 				ID:           "agent1",
 				Name:         "Agent 1",
-				Type:         ChatAgent,
+				Type:         AgentTypeChat,
 				Model:        "gpt-3.5-turbo",
 				Provider:     "openai",
 				SystemPrompt: "You are agent 1",
@@ -823,7 +843,7 @@ func TestMultiAgentConfigSerialization(t *testing.T) {
 				Tools:        []string{"tool1"},
 			},
 		},
-		Routing: RoutingConfig{
+		Routing: &RoutingConfig{
 			Type: "path",
 			Rules: []RoutingRule{
 				{
@@ -862,7 +882,7 @@ func BenchmarkAgentRegistration(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testDef := NewTestAgentDefinition(fmt.Sprintf("bench-agent-%d", i), ChatAgent)
+		testDef := NewTestAgentDefinition(fmt.Sprintf("bench-agent-%d", i), AgentTypeChat)
 		registry.RegisterDefinition(fmt.Sprintf("bench-agent-%d", i), testDef)
 	}
 }
@@ -874,7 +894,7 @@ func BenchmarkAgentCreation(b *testing.B) {
 
 	// Pre-register agents
 	for i := 0; i < 100; i++ {
-		testDef := NewTestAgentDefinition(fmt.Sprintf("bench-agent-%d", i), ChatAgent)
+		testDef := NewTestAgentDefinition(fmt.Sprintf("bench-agent-%d", i), AgentTypeChat)
 		registry.RegisterDefinition(fmt.Sprintf("bench-agent-%d", i), testDef)
 	}
 
@@ -898,7 +918,7 @@ func BenchmarkMultiAgentRouting(b *testing.B) {
 			"bench-agent": {
 				ID:           "bench-agent",
 				Name:         "Benchmark Agent",
-				Type:         ChatAgent,
+				Type:         AgentTypeChat,
 				Model:        "gpt-3.5-turbo",
 				Provider:     "openai",
 				SystemPrompt: "You are a benchmark agent",
@@ -907,7 +927,7 @@ func BenchmarkMultiAgentRouting(b *testing.B) {
 				Tools:        []string{},
 			},
 		},
-		Routing: RoutingConfig{
+		Routing: &RoutingConfig{
 			Type: "path",
 			Rules: []RoutingRule{
 				{

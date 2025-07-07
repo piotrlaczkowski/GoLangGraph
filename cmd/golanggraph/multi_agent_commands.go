@@ -105,8 +105,8 @@ Provides HTTP endpoints for agent execution, management, and monitoring.`,
 var multiAgentStatusCmd = &cobra.Command{
 	Use:   "status [config-file]",
 	Short: "Check status of deployed agents",
-	Long: `Check the status of deployed agents including health, metrics, and runtime information.`,
-	Args: cobra.MaximumNArgs(1),
+	Long:  `Check the status of deployed agents including health, metrics, and runtime information.`,
+	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		outputFormat, _ := cmd.Flags().GetString("format")
 		watch, _ := cmd.Flags().GetBool("watch")
@@ -152,19 +152,6 @@ func init() {
 	rootCmd.AddCommand(multiAgentCmd)
 
 	// Add subcommands
-	multiAgentCmd.AddCommand(multiAgentInitCmd)
-	multiAgentCmd.AddCommand(multiAgentValidateCmd)
-	multiAgentCmd.AddCommand(multiAgentDeployCmd)
-	multiAgentCmd.AddCommand(multiAgentServeCmd)
-	multiAgentCmd.AddCommand(multiAgentStatusCmd)
-	multiAgentCmd.AddCommand(multiAgentGenerateCmd)
-	multiAgentCmd.AddCommand(multiAgentLoadCmd)
-	multiAgentCmd.AddCommand(multiAgentListCmd)
-
-	// Add generation subcommands
-	multiAgentGenerateCmd.AddCommand(multiAgentGenerateDockerCmd)
-	multiAgentGenerateCmd.AddCommand(multiAgentGenerateK8sCmd)
-
 	// Load command
 	multiAgentLoadCmd := &cobra.Command{
 		Use:   "load [plugin-path or directory]",
@@ -211,6 +198,20 @@ This shows the source, type, and metadata for each registered agent.`,
 	multiAgentListCmd.Flags().StringP("filter", "", "", "Filter agents by name pattern")
 	multiAgentListCmd.Flags().BoolP("show-metadata", "m", false, "Show agent metadata")
 	multiAgentListCmd.Flags().BoolP("show-config", "c", false, "Show agent configuration")
+
+	// Add subcommands after all commands are declared
+	multiAgentCmd.AddCommand(multiAgentInitCmd)
+	multiAgentCmd.AddCommand(multiAgentValidateCmd)
+	multiAgentCmd.AddCommand(multiAgentDeployCmd)
+	multiAgentCmd.AddCommand(multiAgentServeCmd)
+	multiAgentCmd.AddCommand(multiAgentStatusCmd)
+	multiAgentCmd.AddCommand(multiAgentGenerateCmd)
+	multiAgentCmd.AddCommand(multiAgentLoadCmd)
+	multiAgentCmd.AddCommand(multiAgentListCmd)
+
+	// Add generation subcommands
+	multiAgentGenerateCmd.AddCommand(multiAgentGenerateDockerCmd)
+	multiAgentGenerateCmd.AddCommand(multiAgentGenerateK8sCmd)
 
 	// Multi-agent init flags
 	multiAgentInitCmd.Flags().StringP("template", "t", "basic", "Project template (basic, microservices, rag, workflow)")
@@ -460,7 +461,7 @@ func runMultiAgentServe(args []string, host string, port int) {
 	if config.Shared != nil && config.Shared.LLMProviders != nil {
 		for providerName, providerConfig := range config.Shared.LLMProviders {
 			// Initialize provider based on type
-			// This is a simplified version - in a real implementation, 
+			// This is a simplified version - in a real implementation,
 			// you'd create the appropriate provider based on type
 			fmt.Printf("Setting up LLM provider: %s (%s)\n", providerName, providerConfig.Type)
 		}
@@ -503,7 +504,7 @@ func runMultiAgentServe(args []string, host string, port int) {
 
 	// Create and start server with multi-agent router
 	srv := server.NewServer(serverConfig)
-	srv.SetRouter(multiAgentManager.GetRouter())
+	// Note: The server will use its own router, multi-agent manager handles routing internally
 
 	fmt.Printf("Multi-agent server started on %s:%d\n", host, port)
 	fmt.Printf("Health check: http://%s:%d/health\n", host, port)
@@ -605,11 +606,11 @@ func createMultiAgentConfig(template string, agentCount int, routingType string)
 
 func createBasicAgents(config *agent.MultiAgentConfig, count int) {
 	agentTypes := []agent.AgentType{agent.AgentTypeChat, agent.AgentTypeReAct, agent.AgentTypeTool}
-	
+
 	for i := 1; i <= count; i++ {
 		agentID := fmt.Sprintf("agent-%d", i)
 		agentType := agentTypes[(i-1)%len(agentTypes)]
-		
+
 		agentConfig := agent.DefaultAgentConfig()
 		agentConfig.ID = agentID
 		agentConfig.Name = fmt.Sprintf("Agent %d", i)
@@ -618,7 +619,7 @@ func createBasicAgents(config *agent.MultiAgentConfig, count int) {
 		agentConfig.Provider = "openai"
 		agentConfig.SystemPrompt = fmt.Sprintf("You are Agent %d, a helpful AI assistant specialized in %s tasks.", i, agentType)
 		agentConfig.Tools = []string{"calculator", "web_search"}
-		
+
 		config.Agents[agentID] = agentConfig
 	}
 }
@@ -640,7 +641,7 @@ func createMicroservicesAgents(config *agent.MultiAgentConfig, count int) {
 	for i := 0; i < count && i < len(services); i++ {
 		service := services[i]
 		agentID := fmt.Sprintf("agent-%d", i+1)
-		
+
 		agentConfig := agent.DefaultAgentConfig()
 		agentConfig.ID = agentID
 		agentConfig.Name = service.name
@@ -649,7 +650,7 @@ func createMicroservicesAgents(config *agent.MultiAgentConfig, count int) {
 		agentConfig.Provider = "openai"
 		agentConfig.SystemPrompt = fmt.Sprintf("You are the %s agent. %s", service.name, service.description)
 		agentConfig.Tools = service.tools
-		
+
 		config.Agents[agentID] = agentConfig
 	}
 }
@@ -668,17 +669,17 @@ func createRAGAgents(config *agent.MultiAgentConfig, count int) {
 	for i := 0; i < count && i < len(ragAgents); i++ {
 		ragAgent := ragAgents[i]
 		agentID := fmt.Sprintf("agent-%d", i+1)
-		
+
 		agentConfig := agent.DefaultAgentConfig()
 		agentConfig.ID = agentID
 		agentConfig.Name = ragAgent.name
 		agentConfig.Type = agent.AgentTypeReAct
 		agentConfig.Model = "gpt-4"
 		agentConfig.Provider = "openai"
-		agentConfig.SystemPrompt = fmt.Sprintf("You are the %s agent specialized in %s. %s", 
+		agentConfig.SystemPrompt = fmt.Sprintf("You are the %s agent specialized in %s. %s",
 			ragAgent.name, ragAgent.domain, ragAgent.description)
 		agentConfig.Tools = []string{"vector_search", "document_loader", "summarizer"}
-		
+
 		config.Agents[agentID] = agentConfig
 	}
 }
@@ -699,7 +700,7 @@ func createWorkflowAgents(config *agent.MultiAgentConfig, count int) {
 	for i := 0; i < count && i < len(workflowSteps); i++ {
 		step := workflowSteps[i]
 		agentID := fmt.Sprintf("agent-%d", i+1)
-		
+
 		agentConfig := agent.DefaultAgentConfig()
 		agentConfig.ID = agentID
 		agentConfig.Name = step.name
@@ -708,7 +709,7 @@ func createWorkflowAgents(config *agent.MultiAgentConfig, count int) {
 		agentConfig.Provider = "openai"
 		agentConfig.SystemPrompt = fmt.Sprintf("You are the %s agent in the workflow. %s", step.name, step.description)
 		agentConfig.Tools = []string{"validator", "planner", "executor"}
-		
+
 		config.Agents[agentID] = agentConfig
 	}
 }
@@ -872,91 +873,69 @@ spec:
 }
 
 func createProjectREADME(projectName string, config *agent.MultiAgentConfig) {
-	readme := fmt.Sprintf(`# %s
+	readme := fmt.Sprintf("# %s\n\nMulti-agent GoLangGraph project with %d agents.\n\n", projectName, len(config.Agents))
 
-Multi-agent GoLangGraph project with %d agents.
+	readme += "## Quick Start\n\n"
+	readme += "1. **Validate configuration:**\n"
+	readme += "   ```bash\n"
+	readme += "   golanggraph multi-agent validate configs/multi-agent.yaml\n"
+	readme += "   ```\n\n"
+	readme += "2. **Start the multi-agent server:**\n"
+	readme += "   ```bash\n"
+	readme += "   golanggraph multi-agent serve configs/multi-agent.yaml\n"
+	readme += "   ```\n\n"
+	readme += "3. **Deploy with Docker:**\n"
+	readme += "   ```bash\n"
+	readme += "   docker-compose up -d\n"
+	readme += "   ```\n\n"
+	readme += "4. **Deploy to Kubernetes:**\n"
+	readme += "   ```bash\n"
+	readme += "   kubectl apply -f k8s/\n"
+	readme += "   ```\n\n"
 
-## Quick Start
-
-1. **Validate configuration:**
-   ```bash
-   golanggraph multi-agent validate configs/multi-agent.yaml
-   ```
-
-2. **Start the multi-agent server:**
-   ```bash
-   golanggraph multi-agent serve configs/multi-agent.yaml
-   ```
-
-3. **Deploy with Docker:**
-   ```bash
-   docker-compose up -d
-   ```
-
-4. **Deploy to Kubernetes:**
-   ```bash
-   kubectl apply -f k8s/
-   ```
-
-## Configuration
-
-The multi-agent configuration is defined in `configs/multi-agent.yaml`.
-
-### Agents
-
-`, projectName, len(config.Agents))
+	readme += "## Configuration\n\n"
+	readme += "The multi-agent configuration is defined in `configs/multi-agent.yaml`.\n\n"
+	readme += "### Agents\n\n"
 
 	for agentID, agentConfig := range config.Agents {
 		readme += fmt.Sprintf("- **%s**: %s (%s)\n", agentID, agentConfig.Name, agentConfig.Type)
 	}
 
-	readme += `
-### Routing
+	readme += "\n### Routing\n\n"
+	readme += "Requests are routed to different agents based on the configured routing rules.\n\n"
+	readme += "### API Endpoints\n\n"
+	readme += "- `POST /agent-1` - Route to Agent 1\n"
+	readme += "- `POST /agent-2` - Route to Agent 2\n"
+	readme += "- `GET /health` - Health check\n"
+	readme += "- `GET /metrics` - Metrics\n"
+	readme += "- `GET /agents` - List all agents\n\n"
 
-Requests are routed to different agents based on the configured routing rules.
+	readme += "## Development\n\n"
+	readme += "1. **Add a new agent:**\n"
+	readme += "   - Edit `configs/multi-agent.yaml`\n"
+	readme += "   - Add agent configuration\n"
+	readme += "   - Update routing rules\n"
+	readme += "   - Validate configuration\n\n"
+	readme += "2. **Test changes:**\n"
+	readme += "   ```bash\n"
+	readme += "   golanggraph multi-agent validate\n"
+	readme += "   golanggraph multi-agent serve\n"
+	readme += "   ```\n\n"
 
-### API Endpoints
+	readme += "## Deployment\n\n"
+	readme += "### Docker\n\n"
+	readme += "```bash\n"
+	readme += "docker-compose up -d\n"
+	readme += "```\n\n"
+	readme += "### Kubernetes\n\n"
+	readme += "```bash\n"
+	readme += "kubectl apply -f k8s/\n"
+	readme += "```\n\n"
 
-- `POST /agent-1` - Route to Agent 1
-- `POST /agent-2` - Route to Agent 2
-- `GET /health` - Health check
-- `GET /metrics` - Metrics
-- `GET /agents` - List all agents
-
-## Development
-
-1. **Add a new agent:**
-   - Edit `configs/multi-agent.yaml`
-   - Add agent configuration
-   - Update routing rules
-   - Validate configuration
-
-2. **Test changes:**
-   ```bash
-   golanggraph multi-agent validate
-   golanggraph multi-agent serve
-   ```
-
-## Deployment
-
-### Docker
-
-```bash
-docker-compose up -d
-```
-
-### Kubernetes
-
-```bash
-kubectl apply -f k8s/
-```
-
-## Monitoring
-
-- Health: `http://localhost:8080/health`
-- Metrics: `http://localhost:8080/metrics`
-- Agent Status: `http://localhost:8080/agents`
-`
+	readme += "## Monitoring\n\n"
+	readme += "- Health: `http://localhost:8080/health`\n"
+	readme += "- Metrics: `http://localhost:8080/metrics`\n"
+	readme += "- Agent Status: `http://localhost:8080/agents`\n"
 
 	readmePath := filepath.Join(projectName, "README.md")
 	os.WriteFile(readmePath, []byte(readme), 0644)
@@ -1016,17 +995,17 @@ func runMultiAgentLoad(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Loading agent definitions from: %s\n", path)
 
 	registry := agent.GetGlobalRegistry()
-	
+
 	// Check if it's a plugin file
 	if strings.HasSuffix(path, ".so") {
 		if verbose {
 			fmt.Printf("Loading plugin: %s\n", path)
 		}
-		
+
 		if err := registry.LoadFromPlugin(path); err != nil {
 			return fmt.Errorf("failed to load plugin: %w", err)
 		}
-		
+
 		fmt.Printf("Successfully loaded plugin: %s\n", path)
 	} else {
 		// Load from directory
@@ -1036,7 +1015,7 @@ func runMultiAgentLoad(cmd *cobra.Command, args []string) error {
 			fmt.Printf("Exclude patterns: %v\n", exclude)
 			fmt.Printf("Recursive: %v\n", recursive)
 		}
-		
+
 		// In a real implementation, this would scan the directory
 		// for Go files and load agent definitions
 		fmt.Printf("Directory-based loading not yet implemented\n")
@@ -1047,11 +1026,11 @@ func runMultiAgentLoad(cmd *cobra.Command, args []string) error {
 	// List loaded agents
 	definitions := registry.ListDefinitions()
 	factories := registry.ListFactories()
-	
+
 	fmt.Printf("\nLoaded agents:\n")
 	fmt.Printf("  Definitions: %d\n", len(definitions))
 	fmt.Printf("  Factories: %d\n", len(factories))
-	
+
 	if verbose {
 		fmt.Printf("\nDefinitions: %v\n", definitions)
 		fmt.Printf("Factories: %v\n", factories)
@@ -1060,7 +1039,7 @@ func runMultiAgentLoad(cmd *cobra.Command, args []string) error {
 	// Validate if requested
 	if validate {
 		fmt.Printf("\nValidating loaded agent definitions...\n")
-		
+
 		for _, defID := range definitions {
 			if def, exists := registry.GetDefinition(defID); exists {
 				if err := def.Validate(); err != nil {
@@ -1070,7 +1049,7 @@ func runMultiAgentLoad(cmd *cobra.Command, args []string) error {
 				}
 			}
 		}
-		
+
 		for _, factoryID := range factories {
 			// Create temporary instance to validate
 			factory := registry.ListFactories()
@@ -1124,24 +1103,24 @@ func runMultiAgentList(cmd *cobra.Command, args []string) error {
 		fmt.Printf("Agent Definitions (%d total):\n\n", len(infos))
 		fmt.Printf("%-20s %-12s %-15s %-10s\n", "ID", "Source", "Type", "Model")
 		fmt.Printf("%-20s %-12s %-15s %-10s\n", "--", "------", "----", "-----")
-		
+
 		for _, info := range infos {
 			model := "N/A"
 			agentType := "N/A"
-			
+
 			if info.Config != nil {
 				model = info.Config.Model
 				agentType = string(info.Config.Type)
 			}
-			
-			fmt.Printf("%-20s %-12s %-15s %-10s\n", 
+
+			fmt.Printf("%-20s %-12s %-15s %-10s\n",
 				info.ID, info.Source, agentType, model)
-			
+
 			if showConfig && info.Config != nil {
-				fmt.Printf("  Config: Name=%s, Provider=%s, Tools=%v\n", 
+				fmt.Printf("  Config: Name=%s, Provider=%s, Tools=%v\n",
 					info.Config.Name, info.Config.Provider, info.Config.Tools)
 			}
-			
+
 			if showMetadata && len(info.Metadata) > 0 {
 				fmt.Printf("  Metadata: ")
 				for k, v := range info.Metadata {

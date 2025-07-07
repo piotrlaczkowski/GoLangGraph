@@ -14,38 +14,38 @@ import (
 
 // MultiAgentConfig represents a configuration for multiple agents
 type MultiAgentConfig struct {
-	Name        string                    `json:"name" yaml:"name"`
-	Version     string                    `json:"version" yaml:"version"`
-	Description string                    `json:"description" yaml:"description"`
-	Agents      map[string]*AgentConfig   `json:"agents" yaml:"agents"`
-	Routing     *RoutingConfig            `json:"routing" yaml:"routing"`
-	Deployment  *DeploymentConfig         `json:"deployment" yaml:"deployment"`
-	Shared      *SharedConfig             `json:"shared" yaml:"shared"`
-	Metadata    map[string]interface{}    `json:"metadata" yaml:"metadata"`
+	Name        string                  `json:"name" yaml:"name"`
+	Version     string                  `json:"version" yaml:"version"`
+	Description string                  `json:"description" yaml:"description"`
+	Agents      map[string]*AgentConfig `json:"agents" yaml:"agents"`
+	Routing     *RoutingConfig          `json:"routing" yaml:"routing"`
+	Deployment  *DeploymentConfig       `json:"deployment" yaml:"deployment"`
+	Shared      *SharedConfig           `json:"shared" yaml:"shared"`
+	Metadata    map[string]interface{}  `json:"metadata" yaml:"metadata"`
 }
 
 // RoutingConfig defines how requests are routed to different agents
 type RoutingConfig struct {
-	Type        string                    `json:"type" yaml:"type"` // "path", "header", "query", "subdomain"
-	DefaultAgent string                   `json:"default_agent" yaml:"default_agent"`
-	Rules       []RoutingRule             `json:"rules" yaml:"rules"`
-	Middleware  []MiddlewareConfig        `json:"middleware" yaml:"middleware"`
+	Type         string             `json:"type" yaml:"type"` // "path", "header", "query", "subdomain"
+	DefaultAgent string             `json:"default_agent" yaml:"default_agent"`
+	Rules        []RoutingRule      `json:"rules" yaml:"rules"`
+	Middleware   []MiddlewareConfig `json:"middleware" yaml:"middleware"`
 }
 
 // RoutingRule defines a routing rule
 type RoutingRule struct {
-	ID          string                 `json:"id" yaml:"id"`
-	Pattern     string                 `json:"pattern" yaml:"pattern"`
-	AgentID     string                 `json:"agent_id" yaml:"agent_id"`
-	Method      string                 `json:"method" yaml:"method"`
-	Priority    int                    `json:"priority" yaml:"priority"`
-	Conditions  []RoutingCondition     `json:"conditions" yaml:"conditions"`
-	Metadata    map[string]interface{} `json:"metadata" yaml:"metadata"`
+	ID         string                 `json:"id" yaml:"id"`
+	Pattern    string                 `json:"pattern" yaml:"pattern"`
+	AgentID    string                 `json:"agent_id" yaml:"agent_id"`
+	Method     string                 `json:"method" yaml:"method"`
+	Priority   int                    `json:"priority" yaml:"priority"`
+	Conditions []RoutingCondition     `json:"conditions" yaml:"conditions"`
+	Metadata   map[string]interface{} `json:"metadata" yaml:"metadata"`
 }
 
 // RoutingCondition defines conditions for routing
 type RoutingCondition struct {
-	Type     string `json:"type" yaml:"type"`     // "header", "query", "body", "ip"
+	Type     string `json:"type" yaml:"type"` // "header", "query", "body", "ip"
 	Key      string `json:"key" yaml:"key"`
 	Value    string `json:"value" yaml:"value"`
 	Operator string `json:"operator" yaml:"operator"` // "equals", "contains", "regex", "prefix", "suffix"
@@ -60,17 +60,17 @@ type MiddlewareConfig struct {
 
 // DeploymentConfig defines deployment configuration
 type DeploymentConfig struct {
-	Type          string                 `json:"type" yaml:"type"` // "docker", "kubernetes", "serverless"
-	Environment   string                 `json:"environment" yaml:"environment"`
-	Replicas      int                    `json:"replicas" yaml:"replicas"`
-	Resources     *ResourceConfig        `json:"resources" yaml:"resources"`
-	Networking    *NetworkingConfig      `json:"networking" yaml:"networking"`
-	Scaling       *ScalingConfig         `json:"scaling" yaml:"scaling"`
-	HealthCheck   *HealthCheckConfig     `json:"health_check" yaml:"health_check"`
-	Secrets       map[string]string      `json:"secrets" yaml:"secrets"`
-	ConfigMaps    map[string]string      `json:"config_maps" yaml:"config_maps"`
-	Volumes       []VolumeConfig         `json:"volumes" yaml:"volumes"`
-	Metadata      map[string]interface{} `json:"metadata" yaml:"metadata"`
+	Type        string                 `json:"type" yaml:"type"` // "docker", "kubernetes", "serverless"
+	Environment string                 `json:"environment" yaml:"environment"`
+	Replicas    int                    `json:"replicas" yaml:"replicas"`
+	Resources   *ResourceConfig        `json:"resources" yaml:"resources"`
+	Networking  *NetworkingConfig      `json:"networking" yaml:"networking"`
+	Scaling     *ScalingConfig         `json:"scaling" yaml:"scaling"`
+	HealthCheck *HealthCheckConfig     `json:"health_check" yaml:"health_check"`
+	Secrets     map[string]string      `json:"secrets" yaml:"secrets"`
+	ConfigMaps  map[string]string      `json:"config_maps" yaml:"config_maps"`
+	Volumes     []VolumeConfig         `json:"volumes" yaml:"volumes"`
+	Metadata    map[string]interface{} `json:"metadata" yaml:"metadata"`
 }
 
 // ResourceConfig defines resource limits and requests
@@ -93,12 +93,12 @@ type ResourceConfig struct {
 
 // NetworkingConfig defines networking configuration
 type NetworkingConfig struct {
-	Type       string            `json:"type" yaml:"type"` // "ClusterIP", "NodePort", "LoadBalancer"
-	Ports      []PortConfig      `json:"ports" yaml:"ports"`
-	Ingress    *IngressConfig    `json:"ingress" yaml:"ingress"`
-	DNS        *DNSConfig        `json:"dns" yaml:"dns"`
-	TLS        *TLSConfig        `json:"tls" yaml:"tls"`
-	Proxy      *ProxyConfig      `json:"proxy" yaml:"proxy"`
+	Type        string            `json:"type" yaml:"type"` // "ClusterIP", "NodePort", "LoadBalancer"
+	Ports       []PortConfig      `json:"ports" yaml:"ports"`
+	Ingress     *IngressConfig    `json:"ingress" yaml:"ingress"`
+	DNS         *DNSConfig        `json:"dns" yaml:"dns"`
+	TLS         *TLSConfig        `json:"tls" yaml:"tls"`
+	Proxy       *ProxyConfig      `json:"proxy" yaml:"proxy"`
 	Annotations map[string]string `json:"annotations" yaml:"annotations"`
 }
 
@@ -113,12 +113,12 @@ type PortConfig struct {
 
 // IngressConfig defines ingress configuration
 type IngressConfig struct {
-	Enabled     bool                      `json:"enabled" yaml:"enabled"`
-	ClassName   string                    `json:"class_name" yaml:"class_name"`
-	Hosts       []string                  `json:"hosts" yaml:"hosts"`
-	Rules       []IngressRule             `json:"rules" yaml:"rules"`
-	TLS         []IngressTLS              `json:"tls" yaml:"tls"`
-	Annotations map[string]string         `json:"annotations" yaml:"annotations"`
+	Enabled     bool              `json:"enabled" yaml:"enabled"`
+	ClassName   string            `json:"class_name" yaml:"class_name"`
+	Hosts       []string          `json:"hosts" yaml:"hosts"`
+	Rules       []IngressRule     `json:"rules" yaml:"rules"`
+	TLS         []IngressTLS      `json:"tls" yaml:"tls"`
+	Annotations map[string]string `json:"annotations" yaml:"annotations"`
 }
 
 // IngressRule defines ingress rule
@@ -145,64 +145,64 @@ type IngressTLS struct {
 
 // DNSConfig defines DNS configuration
 type DNSConfig struct {
-	Policy     string   `json:"policy" yaml:"policy"`
+	Policy      string   `json:"policy" yaml:"policy"`
 	Nameservers []string `json:"nameservers" yaml:"nameservers"`
-	Searches   []string `json:"searches" yaml:"searches"`
-	Options    []string `json:"options" yaml:"options"`
+	Searches    []string `json:"searches" yaml:"searches"`
+	Options     []string `json:"options" yaml:"options"`
 }
 
 // TLSConfig defines TLS configuration
 type TLSConfig struct {
-	Enabled     bool   `json:"enabled" yaml:"enabled"`
-	CertFile    string `json:"cert_file" yaml:"cert_file"`
-	KeyFile     string `json:"key_file" yaml:"key_file"`
-	CAFile      string `json:"ca_file" yaml:"ca_file"`
-	InsecureSkipVerify bool `json:"insecure_skip_verify" yaml:"insecure_skip_verify"`
+	Enabled            bool   `json:"enabled" yaml:"enabled"`
+	CertFile           string `json:"cert_file" yaml:"cert_file"`
+	KeyFile            string `json:"key_file" yaml:"key_file"`
+	CAFile             string `json:"ca_file" yaml:"ca_file"`
+	InsecureSkipVerify bool   `json:"insecure_skip_verify" yaml:"insecure_skip_verify"`
 }
 
 // ProxyConfig defines proxy configuration
 type ProxyConfig struct {
-	Enabled     bool              `json:"enabled" yaml:"enabled"`
-	Type        string            `json:"type" yaml:"type"` // "http", "socks5"
-	URL         string            `json:"url" yaml:"url"`
-	Headers     map[string]string `json:"headers" yaml:"headers"`
-	Timeout     time.Duration     `json:"timeout" yaml:"timeout"`
-	Retries     int               `json:"retries" yaml:"retries"`
-	MaxIdleConns int              `json:"max_idle_conns" yaml:"max_idle_conns"`
+	Enabled      bool              `json:"enabled" yaml:"enabled"`
+	Type         string            `json:"type" yaml:"type"` // "http", "socks5"
+	URL          string            `json:"url" yaml:"url"`
+	Headers      map[string]string `json:"headers" yaml:"headers"`
+	Timeout      time.Duration     `json:"timeout" yaml:"timeout"`
+	Retries      int               `json:"retries" yaml:"retries"`
+	MaxIdleConns int               `json:"max_idle_conns" yaml:"max_idle_conns"`
 }
 
 // ScalingConfig defines scaling configuration
 type ScalingConfig struct {
-	Enabled                bool                 `json:"enabled" yaml:"enabled"`
-	MinReplicas            int                  `json:"min_replicas" yaml:"min_replicas"`
-	MaxReplicas            int                  `json:"max_replicas" yaml:"max_replicas"`
-	TargetCPUPercent       int                  `json:"target_cpu_percent" yaml:"target_cpu_percent"`
-	TargetMemoryPercent    int                  `json:"target_memory_percent" yaml:"target_memory_percent"`
-	ScaleUpCooldown        time.Duration        `json:"scale_up_cooldown" yaml:"scale_up_cooldown"`
-	ScaleDownCooldown      time.Duration        `json:"scale_down_cooldown" yaml:"scale_down_cooldown"`
-	CustomMetrics          []CustomMetricConfig `json:"custom_metrics" yaml:"custom_metrics"`
+	Enabled             bool                 `json:"enabled" yaml:"enabled"`
+	MinReplicas         int                  `json:"min_replicas" yaml:"min_replicas"`
+	MaxReplicas         int                  `json:"max_replicas" yaml:"max_replicas"`
+	TargetCPUPercent    int                  `json:"target_cpu_percent" yaml:"target_cpu_percent"`
+	TargetMemoryPercent int                  `json:"target_memory_percent" yaml:"target_memory_percent"`
+	ScaleUpCooldown     time.Duration        `json:"scale_up_cooldown" yaml:"scale_up_cooldown"`
+	ScaleDownCooldown   time.Duration        `json:"scale_down_cooldown" yaml:"scale_down_cooldown"`
+	CustomMetrics       []CustomMetricConfig `json:"custom_metrics" yaml:"custom_metrics"`
 }
 
 // CustomMetricConfig defines custom metric for scaling
 type CustomMetricConfig struct {
-	Name         string `json:"name" yaml:"name"`
-	Type         string `json:"type" yaml:"type"`
-	Query        string `json:"query" yaml:"query"`
-	TargetValue  string `json:"target_value" yaml:"target_value"`
-	Resource     string `json:"resource" yaml:"resource"`
+	Name        string `json:"name" yaml:"name"`
+	Type        string `json:"type" yaml:"type"`
+	Query       string `json:"query" yaml:"query"`
+	TargetValue string `json:"target_value" yaml:"target_value"`
+	Resource    string `json:"resource" yaml:"resource"`
 }
 
 // HealthCheckConfig defines health check configuration
 type HealthCheckConfig struct {
-	Enabled             bool          `json:"enabled" yaml:"enabled"`
-	Path                string        `json:"path" yaml:"path"`
-	Port                int           `json:"port" yaml:"port"`
-	InitialDelaySeconds int           `json:"initial_delay_seconds" yaml:"initial_delay_seconds"`
-	PeriodSeconds       int           `json:"period_seconds" yaml:"period_seconds"`
-	TimeoutSeconds      int           `json:"timeout_seconds" yaml:"timeout_seconds"`
-	SuccessThreshold    int           `json:"success_threshold" yaml:"success_threshold"`
-	FailureThreshold    int           `json:"failure_threshold" yaml:"failure_threshold"`
-	HTTPHeaders         []HTTPHeader  `json:"http_headers" yaml:"http_headers"`
+	Enabled             bool                          `json:"enabled" yaml:"enabled"`
+	Path                string                        `json:"path" yaml:"path"`
+	Port                int                           `json:"port" yaml:"port"`
+	InitialDelaySeconds int                           `json:"initial_delay_seconds" yaml:"initial_delay_seconds"`
+	PeriodSeconds       int                           `json:"period_seconds" yaml:"period_seconds"`
+	TimeoutSeconds      int                           `json:"timeout_seconds" yaml:"timeout_seconds"`
+	SuccessThreshold    int                           `json:"success_threshold" yaml:"success_threshold"`
+	FailureThreshold    int                           `json:"failure_threshold" yaml:"failure_threshold"`
+	HTTPHeaders         []HTTPHeader                  `json:"http_headers" yaml:"http_headers"`
 	AgentSpecific       map[string]*HealthCheckConfig `json:"agent_specific" yaml:"agent_specific"`
 }
 
@@ -224,39 +224,39 @@ type VolumeConfig struct {
 
 // SharedConfig defines shared configuration for all agents
 type SharedConfig struct {
-	Database     *DatabaseConfig    `json:"database" yaml:"database"`
-	Cache        *CacheConfig       `json:"cache" yaml:"cache"`
-	Logging      *LoggingConfig     `json:"logging" yaml:"logging"`
-	Monitoring   *MonitoringConfig  `json:"monitoring" yaml:"monitoring"`
-	Security     *SecurityConfig    `json:"security" yaml:"security"`
-	Environment  map[string]string  `json:"environment" yaml:"environment"`
-	Secrets      map[string]string  `json:"secrets" yaml:"secrets"`
+	Database     *DatabaseConfig               `json:"database" yaml:"database"`
+	Cache        *CacheConfig                  `json:"cache" yaml:"cache"`
+	Logging      *LoggingConfig                `json:"logging" yaml:"logging"`
+	Monitoring   *MonitoringConfig             `json:"monitoring" yaml:"monitoring"`
+	Security     *SecurityConfig               `json:"security" yaml:"security"`
+	Environment  map[string]string             `json:"environment" yaml:"environment"`
+	Secrets      map[string]string             `json:"secrets" yaml:"secrets"`
 	LLMProviders map[string]*LLMProviderConfig `json:"llm_providers" yaml:"llm_providers"`
 }
 
 // DatabaseConfig defines database configuration
 type DatabaseConfig struct {
-	Type         string `json:"type" yaml:"type"`
-	Host         string `json:"host" yaml:"host"`
-	Port         int    `json:"port" yaml:"port"`
-	Database     string `json:"database" yaml:"database"`
-	Username     string `json:"username" yaml:"username"`
-	Password     string `json:"password" yaml:"password"`
-	SSLMode      string `json:"ssl_mode" yaml:"ssl_mode"`
-	MaxConns     int    `json:"max_conns" yaml:"max_conns"`
-	MaxIdleConns int    `json:"max_idle_conns" yaml:"max_idle_conns"`
+	Type         string        `json:"type" yaml:"type"`
+	Host         string        `json:"host" yaml:"host"`
+	Port         int           `json:"port" yaml:"port"`
+	Database     string        `json:"database" yaml:"database"`
+	Username     string        `json:"username" yaml:"username"`
+	Password     string        `json:"password" yaml:"password"`
+	SSLMode      string        `json:"ssl_mode" yaml:"ssl_mode"`
+	MaxConns     int           `json:"max_conns" yaml:"max_conns"`
+	MaxIdleConns int           `json:"max_idle_conns" yaml:"max_idle_conns"`
 	MaxLifetime  time.Duration `json:"max_lifetime" yaml:"max_lifetime"`
 }
 
 // CacheConfig defines cache configuration
 type CacheConfig struct {
-	Type      string        `json:"type" yaml:"type"`
-	Host      string        `json:"host" yaml:"host"`
-	Port      int           `json:"port" yaml:"port"`
-	Password  string        `json:"password" yaml:"password"`
-	Database  int           `json:"database" yaml:"database"`
-	TTL       time.Duration `json:"ttl" yaml:"ttl"`
-	MaxRetries int          `json:"max_retries" yaml:"max_retries"`
+	Type       string        `json:"type" yaml:"type"`
+	Host       string        `json:"host" yaml:"host"`
+	Port       int           `json:"port" yaml:"port"`
+	Password   string        `json:"password" yaml:"password"`
+	Database   int           `json:"database" yaml:"database"`
+	TTL        time.Duration `json:"ttl" yaml:"ttl"`
+	MaxRetries int           `json:"max_retries" yaml:"max_retries"`
 }
 
 // LoggingConfig defines logging configuration
@@ -270,19 +270,19 @@ type LoggingConfig struct {
 
 // MonitoringConfig defines monitoring configuration
 type MonitoringConfig struct {
-	Enabled    bool              `json:"enabled" yaml:"enabled"`
-	Metrics    *MetricsConfig    `json:"metrics" yaml:"metrics"`
-	Tracing    *TracingConfig    `json:"tracing" yaml:"tracing"`
-	Alerting   *AlertingConfig   `json:"alerting" yaml:"alerting"`
+	Enabled  bool            `json:"enabled" yaml:"enabled"`
+	Metrics  *MetricsConfig  `json:"metrics" yaml:"metrics"`
+	Tracing  *TracingConfig  `json:"tracing" yaml:"tracing"`
+	Alerting *AlertingConfig `json:"alerting" yaml:"alerting"`
 }
 
 // MetricsConfig defines metrics configuration
 type MetricsConfig struct {
-	Enabled    bool   `json:"enabled" yaml:"enabled"`
-	Path       string `json:"path" yaml:"path"`
-	Port       int    `json:"port" yaml:"port"`
-	Namespace  string `json:"namespace" yaml:"namespace"`
-	Subsystem  string `json:"subsystem" yaml:"subsystem"`
+	Enabled   bool   `json:"enabled" yaml:"enabled"`
+	Path      string `json:"path" yaml:"path"`
+	Port      int    `json:"port" yaml:"port"`
+	Namespace string `json:"namespace" yaml:"namespace"`
+	Subsystem string `json:"subsystem" yaml:"subsystem"`
 }
 
 // TracingConfig defines tracing configuration
@@ -295,11 +295,11 @@ type TracingConfig struct {
 
 // AlertingConfig defines alerting configuration
 type AlertingConfig struct {
-	Enabled   bool                   `json:"enabled" yaml:"enabled"`
-	Webhooks  []WebhookConfig        `json:"webhooks" yaml:"webhooks"`
-	Email     *EmailConfig           `json:"email" yaml:"email"`
-	Slack     *SlackConfig           `json:"slack" yaml:"slack"`
-	Rules     []AlertRule            `json:"rules" yaml:"rules"`
+	Enabled  bool            `json:"enabled" yaml:"enabled"`
+	Webhooks []WebhookConfig `json:"webhooks" yaml:"webhooks"`
+	Email    *EmailConfig    `json:"email" yaml:"email"`
+	Slack    *SlackConfig    `json:"slack" yaml:"slack"`
+	Rules    []AlertRule     `json:"rules" yaml:"rules"`
 }
 
 // WebhookConfig defines webhook configuration
@@ -350,12 +350,12 @@ type AlertRule struct {
 
 // SecurityConfig defines security configuration
 type SecurityConfig struct {
-	Authentication *AuthConfig           `json:"authentication" yaml:"authentication"`
-	Authorization  *AuthzConfig          `json:"authorization" yaml:"authorization"`
-	Encryption     *EncryptionConfig     `json:"encryption" yaml:"encryption"`
-	RateLimit      *RateLimitConfig      `json:"rate_limit" yaml:"rate_limit"`
-	CORS           *CORSConfig           `json:"cors" yaml:"cors"`
-	Headers        map[string]string     `json:"headers" yaml:"headers"`
+	Authentication *AuthConfig       `json:"authentication" yaml:"authentication"`
+	Authorization  *AuthzConfig      `json:"authorization" yaml:"authorization"`
+	Encryption     *EncryptionConfig `json:"encryption" yaml:"encryption"`
+	RateLimit      *RateLimitConfig  `json:"rate_limit" yaml:"rate_limit"`
+	CORS           *CORSConfig       `json:"cors" yaml:"cors"`
+	Headers        map[string]string `json:"headers" yaml:"headers"`
 }
 
 // AuthConfig defines authentication configuration
@@ -389,30 +389,30 @@ type EncryptionAtRestConfig struct {
 
 // EncryptionInTransitConfig defines encryption in transit configuration
 type EncryptionInTransitConfig struct {
-	Enabled  bool   `json:"enabled" yaml:"enabled"`
-	MinTLS   string `json:"min_tls" yaml:"min_tls"`
+	Enabled  bool     `json:"enabled" yaml:"enabled"`
+	MinTLS   string   `json:"min_tls" yaml:"min_tls"`
 	Ciphers  []string `json:"ciphers" yaml:"ciphers"`
-	CertFile string `json:"cert_file" yaml:"cert_file"`
-	KeyFile  string `json:"key_file" yaml:"key_file"`
+	CertFile string   `json:"cert_file" yaml:"cert_file"`
+	KeyFile  string   `json:"key_file" yaml:"key_file"`
 }
 
 // RateLimitConfig defines rate limiting configuration
 type RateLimitConfig struct {
-	Enabled     bool          `json:"enabled" yaml:"enabled"`
-	Global      *RateLimit    `json:"global" yaml:"global"`
-	PerAgent    map[string]*RateLimit `json:"per_agent" yaml:"per_agent"`
-	PerUser     *RateLimit    `json:"per_user" yaml:"per_user"`
-	PerIP       *RateLimit    `json:"per_ip" yaml:"per_ip"`
-	BurstLimit  int           `json:"burst_limit" yaml:"burst_limit"`
-	WindowSize  time.Duration `json:"window_size" yaml:"window_size"`
+	Enabled    bool                  `json:"enabled" yaml:"enabled"`
+	Global     *RateLimit            `json:"global" yaml:"global"`
+	PerAgent   map[string]*RateLimit `json:"per_agent" yaml:"per_agent"`
+	PerUser    *RateLimit            `json:"per_user" yaml:"per_user"`
+	PerIP      *RateLimit            `json:"per_ip" yaml:"per_ip"`
+	BurstLimit int                   `json:"burst_limit" yaml:"burst_limit"`
+	WindowSize time.Duration         `json:"window_size" yaml:"window_size"`
 }
 
 // RateLimit defines rate limit configuration
 type RateLimit struct {
-	Requests   int           `json:"requests" yaml:"requests"`
-	Period     time.Duration `json:"period" yaml:"period"`
-	Burst      int           `json:"burst" yaml:"burst"`
-	SkipPaths  []string      `json:"skip_paths" yaml:"skip_paths"`
+	Requests  int           `json:"requests" yaml:"requests"`
+	Period    time.Duration `json:"period" yaml:"period"`
+	Burst     int           `json:"burst" yaml:"burst"`
+	SkipPaths []string      `json:"skip_paths" yaml:"skip_paths"`
 }
 
 // CORSConfig defines CORS configuration
@@ -440,23 +440,23 @@ type LLMProviderConfig struct {
 // ExtendedAgentConfig extends AgentConfig with additional deployment-specific fields
 type ExtendedAgentConfig struct {
 	*AgentConfig
-	Path         string                 `json:"path" yaml:"path"`
-	Port         int                    `json:"port" yaml:"port"`
-	Host         string                 `json:"host" yaml:"host"`
-	Subdomain    string                 `json:"subdomain" yaml:"subdomain"`
-	Schema       *SchemaConfig          `json:"schema" yaml:"schema"`
-	Middleware   []MiddlewareConfig     `json:"middleware" yaml:"middleware"`
-	Resources    *ResourceConfig        `json:"resources" yaml:"resources"`
-	Scaling      *ScalingConfig         `json:"scaling" yaml:"scaling"`
-	Environment  map[string]string      `json:"environment" yaml:"environment"`
-	Secrets      map[string]string      `json:"secrets" yaml:"secrets"`
-	ConfigMaps   map[string]string      `json:"config_maps" yaml:"config_maps"`
-	Volumes      []VolumeConfig         `json:"volumes" yaml:"volumes"`
-	Dependencies []string               `json:"dependencies" yaml:"dependencies"`
-	Priority     int                    `json:"priority" yaml:"priority"`
-	Labels       map[string]string      `json:"labels" yaml:"labels"`
-	Annotations  map[string]string      `json:"annotations" yaml:"annotations"`
-	Disabled     bool                   `json:"disabled" yaml:"disabled"`
+	Path         string             `json:"path" yaml:"path"`
+	Port         int                `json:"port" yaml:"port"`
+	Host         string             `json:"host" yaml:"host"`
+	Subdomain    string             `json:"subdomain" yaml:"subdomain"`
+	Schema       *SchemaConfig      `json:"schema" yaml:"schema"`
+	Middleware   []MiddlewareConfig `json:"middleware" yaml:"middleware"`
+	Resources    *ResourceConfig    `json:"resources" yaml:"resources"`
+	Scaling      *ScalingConfig     `json:"scaling" yaml:"scaling"`
+	Environment  map[string]string  `json:"environment" yaml:"environment"`
+	Secrets      map[string]string  `json:"secrets" yaml:"secrets"`
+	ConfigMaps   map[string]string  `json:"config_maps" yaml:"config_maps"`
+	Volumes      []VolumeConfig     `json:"volumes" yaml:"volumes"`
+	Dependencies []string           `json:"dependencies" yaml:"dependencies"`
+	Priority     int                `json:"priority" yaml:"priority"`
+	Labels       map[string]string  `json:"labels" yaml:"labels"`
+	Annotations  map[string]string  `json:"annotations" yaml:"annotations"`
+	Disabled     bool               `json:"disabled" yaml:"disabled"`
 }
 
 // SchemaConfig defines input/output schema validation
@@ -467,44 +467,44 @@ type SchemaConfig struct {
 
 // SchemaDefinition defines schema definition
 type SchemaDefinition struct {
-	Type       string                        `json:"type" yaml:"type"`
+	Type       string                         `json:"type" yaml:"type"`
 	Properties map[string]*PropertyDefinition `json:"properties" yaml:"properties"`
-	Required   []string                      `json:"required" yaml:"required"`
-	MinLength  int                           `json:"min_length" yaml:"min_length"`
-	MaxLength  int                           `json:"max_length" yaml:"max_length"`
-	Pattern    string                        `json:"pattern" yaml:"pattern"`
-	Format     string                        `json:"format" yaml:"format"`
-	Enum       []interface{}                 `json:"enum" yaml:"enum"`
-	Example    interface{}                   `json:"example" yaml:"example"`
+	Required   []string                       `json:"required" yaml:"required"`
+	MinLength  int                            `json:"min_length" yaml:"min_length"`
+	MaxLength  int                            `json:"max_length" yaml:"max_length"`
+	Pattern    string                         `json:"pattern" yaml:"pattern"`
+	Format     string                         `json:"format" yaml:"format"`
+	Enum       []interface{}                  `json:"enum" yaml:"enum"`
+	Example    interface{}                    `json:"example" yaml:"example"`
 }
 
 // PropertyDefinition defines property definition
 type PropertyDefinition struct {
-	Type        string                        `json:"type" yaml:"type"`
-	Description string                        `json:"description" yaml:"description"`
+	Type        string                         `json:"type" yaml:"type"`
+	Description string                         `json:"description" yaml:"description"`
 	Properties  map[string]*PropertyDefinition `json:"properties" yaml:"properties"`
-	Items       *PropertyDefinition           `json:"items" yaml:"items"`
-	Required    []string                      `json:"required" yaml:"required"`
-	MinLength   int                           `json:"min_length" yaml:"min_length"`
-	MaxLength   int                           `json:"max_length" yaml:"max_length"`
-	Minimum     float64                       `json:"minimum" yaml:"minimum"`
-	Maximum     float64                       `json:"maximum" yaml:"maximum"`
-	Pattern     string                        `json:"pattern" yaml:"pattern"`
-	Format      string                        `json:"format" yaml:"format"`
-	Enum        []interface{}                 `json:"enum" yaml:"enum"`
-	Default     interface{}                   `json:"default" yaml:"default"`
-	Example     interface{}                   `json:"example" yaml:"example"`
+	Items       *PropertyDefinition            `json:"items" yaml:"items"`
+	Required    []string                       `json:"required" yaml:"required"`
+	MinLength   int                            `json:"min_length" yaml:"min_length"`
+	MaxLength   int                            `json:"max_length" yaml:"max_length"`
+	Minimum     float64                        `json:"minimum" yaml:"minimum"`
+	Maximum     float64                        `json:"maximum" yaml:"maximum"`
+	Pattern     string                         `json:"pattern" yaml:"pattern"`
+	Format      string                         `json:"format" yaml:"format"`
+	Enum        []interface{}                  `json:"enum" yaml:"enum"`
+	Default     interface{}                    `json:"default" yaml:"default"`
+	Example     interface{}                    `json:"example" yaml:"example"`
 }
 
 // DefaultMultiAgentConfig returns default multi-agent configuration
 func DefaultMultiAgentConfig() *MultiAgentConfig {
 	return &MultiAgentConfig{
-		Version:     "1.0.0",
-		Agents:      make(map[string]*AgentConfig),
-		Metadata:    make(map[string]interface{}),
+		Version:  "1.0.0",
+		Agents:   make(map[string]*AgentConfig),
+		Metadata: make(map[string]interface{}),
 		Routing: &RoutingConfig{
-			Type:   "path",
-			Rules:  []RoutingRule{},
+			Type:       "path",
+			Rules:      []RoutingRule{},
 			Middleware: []MiddlewareConfig{},
 		},
 		Deployment: &DeploymentConfig{
@@ -655,13 +655,15 @@ func (mac *MultiAgentConfig) validateDeployment() error {
 		return fmt.Errorf("deployment replicas must be at least 1")
 	}
 
-	// Validate port assignments
-	portMap := make(map[int]string)
-	for _, port := range mac.Deployment.Networking.Ports {
-		if existing, exists := portMap[port.Port]; exists {
-			return fmt.Errorf("port %d is assigned to both %s and %s", port.Port, existing, port.Name)
+	// Validate port assignments if networking is configured
+	if mac.Deployment.Networking != nil {
+		portMap := make(map[int]string)
+		for _, port := range mac.Deployment.Networking.Ports {
+			if existing, exists := portMap[port.Port]; exists {
+				return fmt.Errorf("port %d is assigned to both %s and %s", port.Port, existing, port.Name)
+			}
+			portMap[port.Port] = port.Name
 		}
-		portMap[port.Port] = port.Name
 	}
 
 	return nil

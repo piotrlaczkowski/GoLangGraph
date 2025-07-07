@@ -427,7 +427,7 @@ func (mam *MultiAgentManager) setupManagementEndpoints() {
 
 // setupHealthChecking initializes health checking for agents
 func (mam *MultiAgentManager) setupHealthChecking() error {
-	if mam.config.Deployment.HealthCheck == nil || !mam.config.Deployment.HealthCheck.Enabled {
+	if mam.config.Deployment == nil || mam.config.Deployment.HealthCheck == nil || !mam.config.Deployment.HealthCheck.Enabled {
 		return nil
 	}
 
