@@ -129,7 +129,7 @@ database:
   password: "password"
 `
 
-	err := ioutil.WriteFile(configPath, []byte(configContent), 0644)
+	err := ioutil.WriteFile(configPath, []byte(configContent), 0600)
 	require.NoError(t, err)
 
 	// Test validation
@@ -145,7 +145,7 @@ type: "invalid-type"
 model: ""
 `
 
-	err = ioutil.WriteFile(invalidConfigPath, []byte(invalidContent), 0644)
+	err = ioutil.WriteFile(invalidConfigPath, []byte(invalidContent), 0600)
 	require.NoError(t, err)
 
 	isValid, errors = validateConfig(invalidConfigPath)
@@ -199,7 +199,7 @@ func testDevMode(t *testing.T) {
 
 func createProjectStructure(projectPath, template string) error {
 	// Create project directory
-	if err := os.MkdirAll(projectPath, 0755); err != nil {
+	if err := os.MkdirAll(projectPath, 0750); err != nil {
 		return err
 	}
 
@@ -213,7 +213,7 @@ func createProjectStructure(projectPath, template string) error {
 	}
 
 	for _, dir := range dirs {
-		if err := os.MkdirAll(filepath.Join(projectPath, dir), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Join(projectPath, dir), 0750); err != nil {
 			return err
 		}
 	}
@@ -257,7 +257,7 @@ database:
 `
 
 	configPath := filepath.Join(projectPath, "configs", "agent-config.yaml")
-	if err := ioutil.WriteFile(configPath, []byte(agentConfig), 0644); err != nil {
+	if err := ioutil.WriteFile(configPath, []byte(agentConfig), 0600); err != nil {
 		return err
 	}
 
@@ -285,7 +285,7 @@ volumes:
 `
 
 	dockerComposePath := filepath.Join(projectPath, "docker-compose.yml")
-	return ioutil.WriteFile(dockerComposePath, []byte(dockerCompose), 0644)
+	return ioutil.WriteFile(dockerComposePath, []byte(dockerCompose), 0600)
 }
 
 func createAdvancedTemplate(projectPath string) error {
@@ -357,7 +357,7 @@ vector_store:
 `
 
 	configPath := filepath.Join(projectPath, "configs", "advanced-config.yaml")
-	return ioutil.WriteFile(configPath, []byte(advancedConfig), 0644)
+	return ioutil.WriteFile(configPath, []byte(advancedConfig), 0600)
 }
 
 func createRAGTemplate(projectPath string) error {
@@ -422,7 +422,7 @@ database:
 `
 
 	configPath := filepath.Join(projectPath, "configs", "rag-config.yaml")
-	return ioutil.WriteFile(configPath, []byte(ragConfig), 0644)
+	return ioutil.WriteFile(configPath, []byte(ragConfig), 0600)
 }
 
 func createTestDockerfile(filepath string, distroless bool) error {
@@ -543,7 +543,7 @@ CMD ["serve", "--host", "0.0.0.0", "--port", "8080"]
 `
 	}
 
-	return ioutil.WriteFile(filepath, []byte(dockerfile), 0644)
+	return ioutil.WriteFile(filepath, []byte(dockerfile), 0600)
 }
 
 func validateConfig(configPath string) (bool, []string) {
@@ -678,7 +678,7 @@ provider: "openai"`,
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			configPath := filepath.Join(tempDir, "config.yaml")
-			err := ioutil.WriteFile(configPath, []byte(tc.config), 0644)
+			err := ioutil.WriteFile(configPath, []byte(tc.config), 0600)
 			require.NoError(t, err)
 
 			isValid, errors := validateConfig(configPath)

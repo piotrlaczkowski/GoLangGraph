@@ -81,7 +81,6 @@ linters:
   enable:
     - errcheck
     - gofmt
-    - goimports
     - gosimple
     - govet
     - ineffassign
@@ -90,11 +89,13 @@ linters:
     - typecheck
     - unused
     - staticcheck
+    - goimports
 
 issues:
   uniq-by-line: true
   exclude-dirs:
     - examples/
+    - cmd/examples/
   exclude-rules:
     - path: _test\.go
       linters:

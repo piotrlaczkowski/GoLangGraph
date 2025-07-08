@@ -468,7 +468,7 @@ func (t *FileWriteTool) Execute(ctx context.Context, args string) (string, error
 
 	// Create directory if it doesn't exist
 	dir := filepath.Dir(params.FilePath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0750); err != nil {
 		return "", fmt.Errorf("failed to create directory: %w", err)
 	}
 
@@ -476,7 +476,7 @@ func (t *FileWriteTool) Execute(ctx context.Context, args string) (string, error
 	if params.Append {
 		err = appendToFile(params.FilePath, params.Content)
 	} else {
-		err = os.WriteFile(params.FilePath, []byte(params.Content), 0644)
+		err = os.WriteFile(params.FilePath, []byte(params.Content), 0600)
 	}
 
 	if err != nil {
@@ -522,7 +522,7 @@ func (t *FileWriteTool) SetConfig(config map[string]interface{}) error {
 
 // Helper function for appending to file
 func appendToFile(filePath, content string) error {
-	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
 		return err
 	}
