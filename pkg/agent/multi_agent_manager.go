@@ -290,7 +290,7 @@ func (mam *MultiAgentManager) setupRoutingRule(rule RoutingRule) {
 	var route *mux.Route
 	switch mam.config.Routing.Type {
 	case "path":
-		route = mam.router.PathPrefix(rule.Pattern)
+		route = mam.router.Path(rule.Pattern)
 	case "host":
 		route = mam.router.Host(rule.Pattern)
 	case "header":
@@ -310,7 +310,7 @@ func (mam *MultiAgentManager) setupRoutingRule(rule RoutingRule) {
 			})
 		}
 	default:
-		route = mam.router.PathPrefix(rule.Pattern)
+		route = mam.router.Path(rule.Pattern)
 	}
 
 	if route != nil {

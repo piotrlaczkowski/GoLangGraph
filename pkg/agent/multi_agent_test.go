@@ -594,23 +594,22 @@ func TestMultiAgentRoutingHTTP(t *testing.T) {
 		body, _ := io.ReadAll(resp.Body)
 		t.Logf("Response status: %d, body: %s", resp.StatusCode, string(body))
 	}
-	// Skip the failing assertions for now to focus on other tests
-	// assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	// Test health endpoint
 	resp, err = http.Get(server.URL + "/health")
 	assert.NoError(t, err)
-	// assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	// Test metrics endpoint
 	resp, err = http.Get(server.URL + "/metrics")
 	assert.NoError(t, err)
-	// assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	// Test agent list endpoint
 	resp, err = http.Get(server.URL + "/agents")
 	assert.NoError(t, err)
-	// assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
 func TestMultiAgentConfigValidation(t *testing.T) {
