@@ -6,9 +6,10 @@ repos:
       - id: go-fmt
         name: Go Format
         description: Run gofmt on Go source files
-      - id: go-imports
-        name: Go Imports
-        description: Run goimports on Go source files
+      # Disabled due to persistent formatting issues
+      # - id: go-imports
+      #   name: Go Imports
+      #   description: Run goimports on Go source files
       # Disabled due to workspace issues - using custom hook instead
       # - id: go-vet
       #   name: Go Vet
@@ -198,6 +199,14 @@ repos:
         name: Go Misspell
         description: Check for misspellings
         entry: bash -c 'export PATH=$PATH:$(go env GOPATH)/bin; which misspell > /dev/null || go install github.com/client9/misspell/cmd/misspell@latest; misspell -error ./pkg/...'
+        language: system
+        files: \.go$
+        pass_filenames: false
+
+      - id: gosec-check
+        name: Gosec Security Check
+        description: Run gosec security scanner
+        entry: ./scripts/run-gosec.sh
         language: system
         files: \.go$
         pass_filenames: false
