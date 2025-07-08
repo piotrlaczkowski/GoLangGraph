@@ -10,7 +10,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -589,26 +588,25 @@ func TestMultiAgentRoutingHTTP(t *testing.T) {
 	requestBody := `{"input": "test message"}`
 	resp, err := http.Post(server.URL+"/echo", "application/json", strings.NewReader(requestBody))
 	assert.NoError(t, err)
-	if resp.StatusCode != http.StatusOK {
-		// Read the response body to see what the error is
-		body, _ := io.ReadAll(resp.Body)
-		t.Logf("Response status: %d, body: %s", resp.StatusCode, string(body))
-	}
+	defer resp.Body.Close()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	// Test health endpoint
 	resp, err = http.Get(server.URL + "/health")
 	assert.NoError(t, err)
+	defer resp.Body.Close()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	// Test metrics endpoint
 	resp, err = http.Get(server.URL + "/metrics")
 	assert.NoError(t, err)
+	defer resp.Body.Close()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	// Test agent list endpoint
 	resp, err = http.Get(server.URL + "/agents")
 	assert.NoError(t, err)
+	defer resp.Body.Close()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 

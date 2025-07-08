@@ -267,18 +267,18 @@ func (mam *MultiAgentManager) setupRouting() error {
 		return rules[i].Priority > rules[j].Priority
 	})
 
+	// Setup management endpoints FIRST so they don't get caught by other routes
+	mam.setupManagementEndpoints()
+
 	// Setup routing rules
 	for _, rule := range rules {
 		mam.setupRoutingRule(rule)
 	}
 
-	// Setup default route if configured
+	// Setup default route if configured (this should be LAST)
 	if mam.config.Routing.DefaultAgent != "" {
 		mam.router.PathPrefix("/").HandlerFunc(mam.createAgentHandler(mam.config.Routing.DefaultAgent, true))
 	}
-
-	// Setup management endpoints
-	mam.setupManagementEndpoints()
 
 	return nil
 }
