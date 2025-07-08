@@ -257,7 +257,7 @@ func runMultiAgentInit(args []string, template string, agentCount int, outputFor
 	fmt.Printf("Template: %s, Agents: %d, Format: %s, Routing: %s\n", template, agentCount, outputFormat, routingType)
 
 	// Create project directory
-	if err := os.MkdirAll(projectName, 0755); err != nil {
+	if err := os.MkdirAll(projectName, 0750); err != nil {
 		fmt.Printf("Error creating project directory: %v\n", err)
 		os.Exit(1)
 	}
@@ -274,7 +274,7 @@ func runMultiAgentInit(args []string, template string, agentCount int, outputFor
 	}
 
 	for _, dir := range dirs {
-		if err := os.MkdirAll(filepath.Join(projectName, dir), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Join(projectName, dir), 0750); err != nil {
 			fmt.Printf("Error creating directory %s: %v\n", dir, err)
 			os.Exit(1)
 		}
@@ -283,7 +283,7 @@ func runMultiAgentInit(args []string, template string, agentCount int, outputFor
 	// Create agent subdirectories
 	for i := 1; i <= agentCount; i++ {
 		agentDir := filepath.Join(projectName, "agents", fmt.Sprintf("agent-%d", i))
-		if err := os.MkdirAll(agentDir, 0755); err != nil {
+		if err := os.MkdirAll(agentDir, 0750); err != nil {
 			fmt.Printf("Error creating agent directory: %v\n", err)
 			os.Exit(1)
 		}
@@ -314,7 +314,7 @@ func runMultiAgentInit(args []string, template string, agentCount int, outputFor
 		os.Exit(1)
 	}
 
-	if err := os.WriteFile(configPath, configData, 0644); err != nil {
+	if err := os.WriteFile(configPath, configData, 0600); err != nil {
 		fmt.Printf("Error writing configuration file: %v\n", err)
 		os.Exit(1)
 	}
@@ -767,7 +767,7 @@ func createIndividualAgentConfigs(projectName string, config *agent.MultiAgentCo
 		}
 
 		if err == nil {
-			os.WriteFile(configPath, configData, 0644)
+			os.WriteFile(configPath, configData, 0600)
 		}
 	}
 }
@@ -817,7 +817,7 @@ volumes:
 `
 
 	composePath := filepath.Join(projectName, "docker-compose.yml")
-	os.WriteFile(composePath, []byte(dockerCompose), 0644)
+	os.WriteFile(composePath, []byte(dockerCompose), 0600)
 }
 
 func createK8sManifests(projectName string, config *agent.MultiAgentConfig) {
@@ -868,8 +868,8 @@ spec:
   type: LoadBalancer
 `
 
-	os.WriteFile(filepath.Join(k8sDir, "deployment.yaml"), []byte(deployment), 0644)
-	os.WriteFile(filepath.Join(k8sDir, "service.yaml"), []byte(service), 0644)
+	os.WriteFile(filepath.Join(k8sDir, "deployment.yaml"), []byte(deployment), 0600)
+	os.WriteFile(filepath.Join(k8sDir, "service.yaml"), []byte(service), 0600)
 }
 
 func createProjectREADME(projectName string, config *agent.MultiAgentConfig) {
@@ -938,7 +938,7 @@ func createProjectREADME(projectName string, config *agent.MultiAgentConfig) {
 	readme += "- Agent Status: `http://localhost:8080/agents`\n"
 
 	readmePath := filepath.Join(projectName, "README.md")
-	os.WriteFile(readmePath, []byte(readme), 0644)
+	os.WriteFile(readmePath, []byte(readme), 0600)
 }
 
 // Additional validation functions

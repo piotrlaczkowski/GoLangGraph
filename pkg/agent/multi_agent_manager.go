@@ -466,11 +466,8 @@ func (mam *MultiAgentManager) runHealthChecker(checker *HealthChecker) {
 	// Initial delay
 	time.Sleep(time.Duration(checker.Config.InitialDelaySeconds) * time.Second)
 
-	for {
-		select {
-		case <-ticker.C:
-			mam.performHealthCheck(checker)
-		}
+	for range ticker.C {
+		mam.performHealthCheck(checker)
 	}
 }
 
@@ -733,11 +730,10 @@ func (mam *MultiAgentManager) handleAgentHealth(w http.ResponseWriter, r *http.R
 
 func (mam *MultiAgentManager) handleMetrics(w http.ResponseWriter, r *http.Request) {
 	mam.metrics.mu.RLock()
-	metrics := *mam.metrics
-	mam.metrics.mu.RUnlock()
+	defer mam.metrics.mu.RUnlock()
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(metrics)
+	json.NewEncoder(w).Encode(mam.metrics)
 }
 
 func (mam *MultiAgentManager) handleListAgents(w http.ResponseWriter, r *http.Request) {
@@ -921,8 +917,36 @@ func (mam *MultiAgentManager) GetMetrics() *MultiAgentMetrics {
 	mam.metrics.mu.RLock()
 	defer mam.metrics.mu.RUnlock()
 
-	metrics := *mam.metrics
-	return &metrics
+	// Create a copy of metrics without copying the mutex
+	metricsCopy := MultiAgentMetrics{
+		TotalRequests: mam.metrics.TotalRequests,
+		TotalErrors:   mam.metrics.TotalErrors,
+		AgentMetrics:  make(map[string]*AgentMetrics),
+		RoutingMetrics: &RoutingMetrics{
+			RoutingDecisions: make(map[string]int64),
+			DefaultRoutes:    mam.metrics.RoutingMetrics.DefaultRoutes,
+			FailedRoutes:     mam.metrics.RoutingMetrics.FailedRoutes,
+		},
+		LastUpdated: mam.metrics.LastUpdated,
+	}
+
+	// Copy agent metrics
+	for k, v := range mam.metrics.AgentMetrics {
+		metricsCopy.AgentMetrics[k] = &AgentMetrics{
+			RequestCount:   v.RequestCount,
+			ErrorCount:     v.ErrorCount,
+			AverageLatency: v.AverageLatency,
+			LastRequest:    v.LastRequest,
+			TotalLatency:   v.TotalLatency,
+		}
+	}
+
+	// Copy routing decisions
+	for k, v := range mam.metrics.RoutingMetrics.RoutingDecisions {
+		metricsCopy.RoutingMetrics.RoutingDecisions[k] = v
+	}
+
+	return &metricsCopy
 }
 
 // GetDeploymentState returns current deployment state

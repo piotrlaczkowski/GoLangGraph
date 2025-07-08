@@ -483,7 +483,7 @@ func runVisualize(args []string, format, output string) {
 
 	// Output result
 	if output != "" {
-		if err := os.WriteFile(output, []byte(result), 0644); err != nil {
+		if err := os.WriteFile(output, []byte(result), 0600); err != nil {
 			log.Fatalf("Failed to write output file: %v", err)
 		}
 		fmt.Printf("Visualization saved to %s\n", output)
@@ -566,7 +566,7 @@ func runInit(args []string, template string) {
 	fmt.Printf("Creating project: %s with template: %s\n", projectName, template)
 
 	// Create project directory
-	if err := os.MkdirAll(projectName, 0755); err != nil {
+	if err := os.MkdirAll(projectName, 0750); err != nil {
 		log.Fatalf("Failed to create project directory: %v", err)
 	}
 
@@ -580,7 +580,7 @@ func runInit(args []string, template string) {
 	}
 
 	for _, dir := range dirs {
-		if err := os.MkdirAll(fmt.Sprintf("%s/%s", projectName, dir), 0755); err != nil {
+		if err := os.MkdirAll(fmt.Sprintf("%s/%s", projectName, dir), 0750); err != nil {
 			log.Fatalf("Failed to create directory %s: %v", dir, err)
 		}
 	}
@@ -780,7 +780,7 @@ database:
   password: "password"
 `
 
-	if err := os.WriteFile(fmt.Sprintf("%s/configs/agent-config.yaml", projectName), []byte(agentConfig), 0644); err != nil {
+	if err := os.WriteFile(fmt.Sprintf("%s/configs/agent-config.yaml", projectName), []byte(agentConfig), 0600); err != nil {
 		log.Fatalf("Failed to create agent config: %v", err)
 	}
 
@@ -807,7 +807,7 @@ volumes:
   postgres_data:
 `
 
-	if err := os.WriteFile(fmt.Sprintf("%s/docker-compose.yml", projectName), []byte(dockerCompose), 0644); err != nil {
+	if err := os.WriteFile(fmt.Sprintf("%s/docker-compose.yml", projectName), []byte(dockerCompose), 0600); err != nil {
 		log.Fatalf("Failed to create docker-compose: %v", err)
 	}
 }
@@ -878,7 +878,7 @@ vector_store:
   dimensions: 1536
 `
 
-	if err := os.WriteFile(fmt.Sprintf("%s/configs/advanced-config.yaml", projectName), []byte(advancedConfig), 0644); err != nil {
+	if err := os.WriteFile(fmt.Sprintf("%s/configs/advanced-config.yaml", projectName), []byte(advancedConfig), 0600); err != nil {
 		log.Fatalf("Failed to create advanced config: %v", err)
 	}
 }
@@ -942,7 +942,7 @@ database:
   password: "password"
 `
 
-	if err := os.WriteFile(fmt.Sprintf("%s/configs/rag-config.yaml", projectName), []byte(ragConfig), 0644); err != nil {
+	if err := os.WriteFile(fmt.Sprintf("%s/configs/rag-config.yaml", projectName), []byte(ragConfig), 0600); err != nil {
 		log.Fatalf("Failed to create RAG config: %v", err)
 	}
 }
@@ -1014,7 +1014,7 @@ ENTRYPOINT ["./golanggraph-agent"]
 CMD ["serve", "--host", "0.0.0.0", "--port", "8080"]
 `
 
-	if err := os.WriteFile(filepath, []byte(dockerfile), 0644); err != nil {
+	if err := os.WriteFile(filepath, []byte(dockerfile), 0600); err != nil {
 		log.Fatalf("Failed to create Dockerfile: %v", err)
 	}
 }
@@ -1070,7 +1070,7 @@ ENTRYPOINT ["/golanggraph-agent"]
 CMD ["serve", "--host", "0.0.0.0", "--port", "8080"]
 `
 
-	if err := os.WriteFile(filepath, []byte(dockerfile), 0644); err != nil {
+	if err := os.WriteFile(filepath, []byte(dockerfile), 0600); err != nil {
 		log.Fatalf("Failed to create distroless Dockerfile: %v", err)
 	}
 }
