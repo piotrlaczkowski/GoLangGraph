@@ -26,10 +26,11 @@ repos:
         name: Go Build
         description: Run go build on Go source files
         args: ["-buildvcs=false", "./pkg/..."]
-      - id: golangci-lint
-        name: golangci-lint
-        description: Run golangci-lint on Go source files
-        args: ["--timeout=5m"]
+      # Disabled due to PATH issues - using custom hook instead
+      # - id: golangci-lint
+      #   name: golangci-lint
+      #   description: Run golangci-lint on Go source files
+      #   args: ["--timeout=5m"]
 
   # Security scanning
   - repo: https://github.com/Yelp/detect-secrets
@@ -136,6 +137,14 @@ repos:
         name: Gosec Security Check
         description: Run gosec security scanner
         entry: bash -c 'export PATH=$PATH:$(go env GOPATH)/bin; which gosec > /dev/null || go install github.com/securego/gosec/v2/cmd/gosec@latest; gosec -exclude=G301,G306,G304,G204,G104,G302 -exclude-dir=examples -exclude-dir=cmd/examples ./pkg/... || true'
+        language: system
+        files: \.go$
+        pass_filenames: false
+
+      - id: golangci-lint-local
+        name: golangci-lint (Local)
+        description: Run golangci-lint with proper PATH
+        entry: bash -c 'export PATH=$PATH:$(go env GOPATH)/bin; which golangci-lint > /dev/null || go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest; golangci-lint run --timeout=5m ./pkg/...'
         language: system
         files: \.go$
         pass_filenames: false
