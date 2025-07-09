@@ -712,30 +712,6 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 - 🐹 Built with the excellent **Go ecosystem**
 - 👥 Special thanks to **all contributors**
 
-## 🗺️ Roadmap
-
-<table>
-<tr>
-<td width="50%">
-
-### 🚀 **Near Term**
-
-- [ ] **v1.1**: 🔍 Enhanced RAG capabilities
-- [ ] **v1.2**: 🎭 Multi-modal support (images, audio)
-- [ ] **v1.3**: 🌐 Distributed execution
-
-</td>
-<td width="50%">
-
-### 🔮 **Future**
-
-- [ ] **v1.4**: 🎨 Visual workflow editor
-- [ ] **v1.5**: 📊 Advanced monitoring and analytics
-- [ ] **v2.0**: ☁️ Cloud-native deployment options
-
-</td>
-</tr>
-</table>
 
 ---
 

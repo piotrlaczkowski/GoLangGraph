@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  GO_VERSION: '1.23.10'
+  GO_VERSION: '1.23'
 
 jobs:
   test:
@@ -121,7 +121,7 @@ jobs:
       uses: golangci/golangci-lint-action@v6
       with:
         version: v1.61.0
-        args: --timeout=10m --disable=typecheck --skip-dirs=examples
+        args: --timeout=10m
       continue-on-error: true
 
   security:

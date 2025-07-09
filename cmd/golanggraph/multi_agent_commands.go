@@ -17,7 +17,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v3"
+	yaml "gopkg.in/yaml.v3"
 
 	"github.com/piotrlaczkowski/GoLangGraph/pkg/agent"
 	"github.com/piotrlaczkowski/GoLangGraph/pkg/llm"
@@ -34,7 +34,7 @@ with different configurations, routing, and deployment options.
 
 This includes:
 - Initializing multi-agent projects
-- Deploying multiple agents simultaneously  
+- Deploying multiple agents simultaneously
 - Managing agent routing and load balancing
 - Monitoring multi-agent deployments
 - Schema validation for individual agents`,
@@ -157,17 +157,17 @@ func init() {
 		Use:   "load [plugin-path or directory]",
 		Short: "Load agent definitions from Go files or plugins",
 		Long: `Load agent definitions from Go files or plugins.
-		
+
 This command can load agents defined programmatically in Go files,
 either as plugins or by analyzing Go source files in a directory.
 
 Examples:
   # Load agents from a plugin file
   golanggraph multi-agent load ./agents.so
-  
+
   # Load agents from Go files in a directory
   golanggraph multi-agent load ./agents/
-  
+
   # Load agents from current directory
   golanggraph multi-agent load .`,
 		Args: cobra.MaximumNArgs(1),

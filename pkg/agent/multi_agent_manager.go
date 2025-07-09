@@ -20,7 +20,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v3"
+	yaml "gopkg.in/yaml.v3"
 
 	"github.com/piotrlaczkowski/GoLangGraph/pkg/llm"
 	"github.com/piotrlaczkowski/GoLangGraph/pkg/tools"

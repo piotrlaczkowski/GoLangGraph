@@ -96,6 +96,10 @@ issues:
   exclude-dirs:
     - examples/
     - cmd/examples/
+  exclude-files:
+    - ".*_test\\.go$"
+    - "examples/.*\\.go$"
+    - "cmd/examples/.*\\.go$"
   exclude-rules:
     - path: _test\.go
       linters:
@@ -226,3 +230,15 @@ issues:
     - linters:
         - noctx
       path: _test\.go
+
+    - linters:
+        - typecheck
+      text: "undefined:"
+
+    - linters:
+        - typecheck
+      path: "examples/"
+
+    - linters:
+        - typecheck
+      path: "cmd/examples/"

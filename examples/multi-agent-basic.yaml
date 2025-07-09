@@ -77,7 +77,7 @@ routing:
       conditions: []
       metadata:
         description: "Route general chat requests"
-    
+
     - id: "reasoning-route"
       pattern: "/reason"
       agent_id: "react-agent"
@@ -86,7 +86,7 @@ routing:
       conditions: []
       metadata:
         description: "Route complex reasoning tasks"
-    
+
     - id: "tools-route"
       pattern: "/tools"
       agent_id: "tool-agent"
@@ -102,13 +102,13 @@ routing:
       config:
         allowed_origins: ["*"]
         allowed_methods: ["GET", "POST", "OPTIONS"]
-    
+
     - type: "logging"
       enabled: true
       config:
         level: "info"
         format: "json"
-    
+
     - type: "rate_limit"
       enabled: true
       config:
@@ -119,7 +119,7 @@ deployment:
   type: "docker"
   environment: "development"
   replicas: 1
-  
+
   resources:
     cpu: "1000m"
     memory: "1Gi"
@@ -132,7 +132,7 @@ deployment:
       cpu: "2000m"
       memory: "2Gi"
       storage: "20Gi"
-  
+
   networking:
     type: "ClusterIP"
     ports:
@@ -146,7 +146,7 @@ deployment:
         target_port: 9090
         protocol: "TCP"
         agent_id: ""
-    
+
     ingress:
       enabled: true
       class_name: "nginx"
@@ -173,7 +173,7 @@ deployment:
       annotations:
         nginx.ingress.kubernetes.io/rewrite-target: "/"
         nginx.ingress.kubernetes.io/ssl-redirect: "true"
-  
+
   scaling:
     enabled: true
     min_replicas: 1
@@ -182,7 +182,7 @@ deployment:
     target_memory_percent: 80
     scale_up_cooldown: "5m"
     scale_down_cooldown: "10m"
-  
+
   health_check:
     enabled: true
     path: "/health"
@@ -195,28 +195,28 @@ deployment:
     http_headers:
       - name: "User-Agent"
         value: "HealthChecker/1.0"
-    
+
     agent_specific:
       react-agent:
         enabled: true
         path: "/health/react"
         timeout_seconds: 10
         failure_threshold: 5
-      
+
       tool-agent:
         enabled: true
         path: "/health/tools"
         timeout_seconds: 8
         failure_threshold: 4
-  
+
   secrets:
     openai_api_key: "${OPENAI_API_KEY}"
     ollama_url: "${OLLAMA_URL}"
-  
+
   config_maps:
     log_level: "info"
     debug_mode: "false"
-  
+
   volumes:
     - name: "config-volume"
       type: "configmap"
@@ -224,14 +224,14 @@ deployment:
       mount_path: "/app/configs"
       read_only: true
       agent_id: ""
-    
+
     - name: "data-volume"
       type: "persistentvolume"
       source: "golanggraph-data-pvc"
       mount_path: "/app/data"
       read_only: false
       agent_id: ""
-  
+
   metadata:
     project: "golanggraph"
     environment: "development"
@@ -249,7 +249,7 @@ shared:
     max_conns: 10
     max_idle_conns: 5
     max_lifetime: "1h"
-  
+
   cache:
     type: "redis"
     host: "redis"
@@ -258,7 +258,7 @@ shared:
     database: 0
     ttl: "1h"
     max_retries: 3
-  
+
   logging:
     level: "info"
     format: "json"
@@ -267,7 +267,7 @@ shared:
     fields:
       service: "golanggraph-multi-agent"
       version: "1.0.0"
-  
+
   monitoring:
     enabled: true
     metrics:
@@ -276,20 +276,20 @@ shared:
       port: 9090
       namespace: "golanggraph"
       subsystem: "multi_agent"
-    
+
     tracing:
       enabled: false
       endpoint: "http://jaeger:14268"
       service_name: "golanggraph-multi-agent"
       sample_rate: 0.1
-    
+
     alerting:
       enabled: true
       webhooks:
         - url: "http://alertmanager:9093/api/v1/alerts"
           method: "POST"
           timeout: "10s"
-      
+
       rules:
         - name: "high_error_rate"
           description: "Alert when error rate is high"
@@ -300,7 +300,7 @@ shared:
           labels:
             severity: "warning"
             team: "platform"
-  
+
   security:
     authentication:
       type: "apikey"
@@ -309,45 +309,45 @@ shared:
       config:
         header_name: "X-API-Key"
         query_param: "api_key"
-    
+
     authorization:
       type: "rbac"
       enabled: false
       config:
         admin_roles: ["admin"]
         user_roles: ["user"]
-    
+
     encryption:
       at_rest:
         enabled: false
         algorithm: "AES-256"
         provider: "vault"
-      
+
       in_transit:
         enabled: true
         min_tls: "1.2"
         ciphers: ["TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"]
-    
+
     rate_limit:
       enabled: true
       global:
         requests: 1000
         period: "1m"
         burst: 100
-      
+
       per_user:
         requests: 100
         period: "1m"
         burst: 20
-      
+
       per_ip:
         requests: 200
         period: "1m"
         burst: 50
-      
+
       burst_limit: 200
       window_size: "1m"
-    
+
     cors:
       enabled: true
       allowed_origins: ["*"]
@@ -356,22 +356,22 @@ shared:
       exposed_headers: ["X-Request-ID"]
       allow_credentials: false
       max_age: 86400
-    
+
     headers:
       X-Frame-Options: "DENY"
       X-Content-Type-Options: "nosniff"
       X-XSS-Protection: "1; mode=block"
-  
+
   environment:
     NODE_ENV: "development"
     LOG_LEVEL: "info"
     DEBUG: "false"
-  
+
   secrets:
     openai_api_key: "${OPENAI_API_KEY}"
     postgres_password: "${POSTGRES_PASSWORD}"
     redis_password: "${REDIS_PASSWORD}"
-  
+
   llm_providers:
     openai:
       type: "openai"
@@ -383,7 +383,7 @@ shared:
       config:
         organization: ""
         base_url: ""
-    
+
     ollama:
       type: "ollama"
       api_key: ""
