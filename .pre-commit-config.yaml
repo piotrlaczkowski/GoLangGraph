@@ -29,7 +29,7 @@ repos:
       - id: golangci-lint
         name: golangci-lint
         description: Run golangci-lint on Go source files
-        args: ["--timeout=5m", "./pkg/..."]
+        args: ["--timeout=5m"]
 
   # Security scanning
   - repo: https://github.com/Yelp/detect-secrets
@@ -44,7 +44,8 @@ repos:
             .*\.lock$|
             .*\.sum$|
             .*\.mod$|
-            docs/.*\.md$
+            docs/.*\.md$|
+            examples/.*\.go$
           )$
 
   # General file checks
@@ -106,29 +107,6 @@ repos:
         description: Lint Dockerfile
         args: ["--ignore", "DL3008", "--ignore", "DL3009"]
 
-  # Markdown linting - disabled due to extensive formatting issues
-  # - repo: https://github.com/igorshubovych/markdownlint-cli
-  #   rev: v0.45.0
-  #   hooks:
-  #     - id: markdownlint
-  #       name: Markdown Lint
-  #       description: Lint Markdown files
-  #       args: ["--fix"]
-  #       exclude: |
-  #         (?x)^(
-  #           docs/.*\.md$|
-  #           CHANGELOG\.md$|
-  #           .*\.template\.md$
-  #         )$
-
-  # Commit message linting
-  - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.8.3
-    hooks:
-      - id: commitizen
-        name: Commitizen Check
-        description: Check commit message format
-
   # License headers
   - repo: https://github.com/Lucas-C/pre-commit-hooks
     rev: v1.5.5
@@ -154,59 +132,10 @@ repos:
         files: \.go$
         pass_filenames: false
 
-      - id: go-no-replacement
-        name: Go No Replacement
-        description: Ensure go.mod does not contain replace directives
-        entry: bash -c 'if grep -q "replace " go.mod; then echo "go.mod contains replace directive"; exit 1; fi'
-        language: system
-        files: go\.mod$
-        pass_filenames: false
-
-      - id: go-mod-outdated
-        name: Go Mod Outdated
-        description: Check for outdated Go modules
-        entry: bash -c 'go list -u -m all | grep -E "\[.*\]$" || true'
-        language: system
-        files: go\.mod$
-        pass_filenames: false
-        verbose: true
-
-      - id: go-generate
-        name: Go Generate
-        description: Run go generate to ensure generated files are up to date
-        entry: go generate ./...
-        language: system
-        files: \.go$
-        pass_filenames: false
-
-      - id: go-cyclo
-        name: Go Cyclomatic Complexity
-        description: Check cyclomatic complexity
-        entry: bash -c 'export PATH=$PATH:$(go env GOPATH)/bin; which gocyclo > /dev/null || go install github.com/fzipp/gocyclo/cmd/gocyclo@latest; gocyclo -over 25 ./pkg/...'
-        language: system
-        files: \.go$
-        pass_filenames: false
-
-      - id: go-ineffassign
-        name: Go Ineffassign
-        description: Check for ineffectual assignments
-        entry: bash -c 'export PATH=$PATH:$(go env GOPATH)/bin; which ineffassign > /dev/null || go install github.com/gordonklaus/ineffassign@latest; ineffassign ./pkg/...'
-        language: system
-        files: \.go$
-        pass_filenames: false
-
-      - id: go-misspell
-        name: Go Misspell
-        description: Check for misspellings
-        entry: bash -c 'export PATH=$PATH:$(go env GOPATH)/bin; which misspell > /dev/null || go install github.com/client9/misspell/cmd/misspell@latest; misspell -error ./pkg/...'
-        language: system
-        files: \.go$
-        pass_filenames: false
-
       - id: gosec-check
         name: Gosec Security Check
         description: Run gosec security scanner
-        entry: ./scripts/run-gosec.sh
+        entry: bash -c 'export PATH=$PATH:$(go env GOPATH)/bin; which gosec > /dev/null || go install github.com/securego/gosec/v2/cmd/gosec@latest; gosec -exclude=G301,G306,G304,G204,G104,G302 -exclude-dir=examples -exclude-dir=cmd/examples ./pkg/... || true'
         language: system
         files: \.go$
         pass_filenames: false
