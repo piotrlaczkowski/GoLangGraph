@@ -1,7 +1,7 @@
 {
   "exclude": {
     "G301": "File permissions",
-    "G306": "File permissions", 
+    "G306": "File permissions",
     "G304": "File inclusion",
     "G204": "Command injection",
     "G104": "Unhandled errors",
