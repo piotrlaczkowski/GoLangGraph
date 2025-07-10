@@ -56,123 +56,175 @@ ollama run gemma3:1b "Hello, world!"
 The easiest way to test the Ollama integration:
 
 ```bash
-# Run the complete Ollama demo
-make example-ollama
+# Set up Ollama with required models
+make ollama-setup
+
+# Run local demo with all services
+make demo-local
 
 # Run comprehensive integration tests
-make test-ollama
-
-# Test only the Ollama setup (no demo execution)
-make test-ollama-setup
+make test-local
 ```
 
 ### Manual Execution
 
 ```bash
-# Build the demo
-go build -o bin/ollama-demo ./cmd/examples
+# Run any example with Ollama
+cd examples/01-basic-chat
+go run main.go
 
-# Run the demo
-./bin/ollama-demo
+# Or run from root
+go run ./examples/01-basic-chat/main.go
 ```
 
-## Demo Features
+## Working Examples
 
-The Ollama demo (`examples/ollama_demo.go`) demonstrates six key capabilities:
+The repository includes 9 working examples that use Ollama with Gemma 3:1B:
 
-### 1. Basic Chat Agent
+### 1. Basic Chat Agent (`examples/01-basic-chat/`)
 ```go
-config := &agent.AgentConfig{
-    Name:        "demo-chat",
-    Type:        agent.AgentTypeChat,
-    Provider:    "ollama",
-    Model:       "gemma3:1b",
-    Temperature: 0.1,
-    MaxTokens:   100,
+package main
+
+import (
+    "context"
+    "fmt"
+    "log"
+
+    "github.com/piotrlaczkowski/GoLangGraph/pkg/agent"
+    "github.com/piotrlaczkowski/GoLangGraph/pkg/llm"
+    "github.com/piotrlaczkowski/GoLangGraph/pkg/tools"
+)
+
+func main() {
+    // Create LLM manager
+    llmManager := llm.NewLLMManager()
+    
+    // Add Ollama provider
+    err := llmManager.AddProvider("ollama", &llm.OllamaConfig{
+        BaseURL: "http://localhost:11434",
+    })
+    if err != nil {
+        log.Fatal("Failed to add Ollama provider:", err)
+    }
+    
+    // Create tool registry
+    toolRegistry := tools.NewToolRegistry()
+    
+    // Create chat agent
+    config := &agent.AgentConfig{
+        Name:         "chat-agent",
+        Type:         agent.AgentTypeChat,
+        Model:        "gemma3:1b",
+        Provider:     "ollama",
+        SystemPrompt: "You are a helpful AI assistant.",
+    }
+    
+    chatAgent := agent.NewAgent(config, llmManager, toolRegistry)
+    
+    // Execute
+    execution, err := chatAgent.Execute(context.Background(), "Hello! Please introduce yourself.")
+    if err != nil {
+        log.Fatal("Failed to execute agent:", err)
+    }
+    
+    fmt.Printf("Agent: %s\n", execution.Response)
 }
-
-chatAgent := agent.NewAgent(config, llmManager, toolRegistry)
-execution, err := chatAgent.Execute(ctx, "Hello! Please say 'Hello from Gemma 3:1B!'")
 ```
 
-### 2. ReAct Agent with Tools
+### 2. ReAct Agent with Tools (`examples/02-react-agent/`)
 ```go
+// Create tool registry with calculator
+toolRegistry := tools.NewToolRegistry()
+calculator := tools.NewCalculatorTool()
+toolRegistry.RegisterTool("calculator", calculator)
+
+// Create ReAct agent
 config := &agent.AgentConfig{
-    Name:          "demo-react",
+    Name:          "react-agent",
     Type:          agent.AgentTypeReAct,
-    Provider:      "ollama",
     Model:         "gemma3:1b",
-    Tools:         []string{"calculator"},
+    Provider:      "ollama",
+    SystemPrompt:  "You are a helpful assistant that can use tools to solve problems.",
     MaxIterations: 3,
 }
 
 reactAgent := agent.NewAgent(config, llmManager, toolRegistry)
-execution, err := reactAgent.Execute(ctx, "What is 25 + 17? Please calculate this.")
+
+// Execute with calculation request
+execution, err := reactAgent.Execute(context.Background(), "What is 25 * 17?")
+if err != nil {
+    log.Fatal("Failed to execute agent:", err)
+}
+
+fmt.Printf("Agent: %s\n", execution.Response)
 ```
 
-### 3. Multi-Agent Coordination
+### 3. Multi-Agent System (`examples/03-multi-agent/`)
 ```go
-// Create researcher and writer agents
-researcher := agent.NewAgent(researcherConfig, llmManager, toolRegistry)
-writer := agent.NewAgent(writerConfig, llmManager, toolRegistry)
+// Create multiple agents
+analyzerAgent := agent.NewAgent(&agent.AgentConfig{
+    Name:         "analyzer",
+    Type:         agent.AgentTypeChat,
+    Model:        "gemma3:1b",
+    Provider:     "ollama",
+    SystemPrompt: "You analyze user requests and extract key information.",
+}, llmManager, toolRegistry)
 
-// Coordinate sequential execution
-coordinator := agent.NewMultiAgentCoordinator()
-coordinator.AddAgent("researcher", researcher)
-coordinator.AddAgent("writer", writer)
+writerAgent := agent.NewAgent(&agent.AgentConfig{
+    Name:         "writer",
+    Type:         agent.AgentTypeChat,
+    Model:        "gemma3:1b",
+    Provider:     "ollama",
+    SystemPrompt: "You write detailed responses based on analysis.",
+}, llmManager, toolRegistry)
 
-results, err := coordinator.ExecuteSequential(ctx, 
-    []string{"researcher", "writer"}, 
-    "Research and summarize: What is machine learning?")
+// Use in a graph workflow
+graph := core.NewGraph()
+graph.AddNode("analyzer", analyzerFunc)
+graph.AddNode("writer", writerFunc)
+graph.AddEdge("analyzer", "writer")
+
+// Execute the workflow
+result, err := graph.Execute(context.Background(), initialState)
 ```
 
-### 4. Quick Builder Pattern
+### 4. RAG System (`examples/04-rag-system/`)
 ```go
-quick := builder.Quick().WithConfig(&builder.QuickConfig{
-    DefaultModel:   "gemma3:1b",
-    OllamaURL:      "http://localhost:11434",
-    Temperature:    0.1,
-    MaxTokens:      100,
-    EnableAllTools: true,
+// Create RAG agent with document retrieval
+config := &agent.AgentConfig{
+    Name:         "rag-agent",
+    Type:         agent.AgentTypeChat,
+    Model:        "gemma3:1b",
+    Provider:     "ollama",
+    SystemPrompt: "You are a helpful assistant that answers questions based on provided context.",
+}
+
+ragAgent := agent.NewAgent(config, llmManager, toolRegistry)
+
+// Add document context to the query
+context := "GoLangGraph is a framework for building AI agent workflows..."
+query := fmt.Sprintf("Context: %s\n\nQuestion: %s", context, userQuestion)
+
+execution, err := ragAgent.Execute(ctx, query)
+```
+
+### 5. Streaming Responses (`examples/05-streaming/`)
+```go
+// Create streaming agent
+config := &agent.AgentConfig{
+    Name:     "streaming-agent",
+    Type:     agent.AgentTypeChat,
+    Model:    "gemma3:1b",
+    Provider: "ollama",
+    Streaming: true,
+}
+
+streamingAgent := agent.NewAgent(config, llmManager, toolRegistry)
+
+// Execute with streaming callback
+execution, err := streamingAgent.ExecuteWithCallback(ctx, "Tell me a story", func(chunk string) {
+    fmt.Print(chunk)
 })
-
-chatAgent := quick.Chat("quick-demo")
-execution, err := chatAgent.Execute(ctx, "Say 'Quick builder works!'")
-```
-
-### 5. Custom Graph Execution
-```go
-graph := core.NewGraph("demo-graph")
-
-// Add processing nodes
-graph.AddNode("input", "Input Processing", inputFunc)
-graph.AddNode("llm", "LLM Processing", llmFunc)
-graph.AddNode("output", "Output Processing", outputFunc)
-
-// Connect nodes
-graph.AddEdge("input", "llm", nil)
-graph.AddEdge("llm", "output", nil)
-
-// Execute graph
-result, err := graph.Execute(ctx, initialState)
-```
-
-### 6. Streaming Response
-```go
-request := llm.CompletionRequest{
-    Messages: []llm.Message{
-        {Role: "user", Content: "Count from 1 to 5"},
-    },
-    Model:       "gemma3:1b",
-    Stream:      true,
-}
-
-callback := func(chunk llm.CompletionResponse) error {
-    // Process streaming chunks
-    return nil
-}
-
-err := llmManager.CompleteStream(ctx, "ollama", request, callback)
 ```
 
 ## Configuration Options
@@ -180,14 +232,12 @@ err := llmManager.CompleteStream(ctx, "ollama", request, callback)
 ### LLM Provider Configuration
 
 ```go
-config := &llm.ProviderConfig{
-    Type:        "ollama",
-    Endpoint:    "http://localhost:11434",  // Ollama server URL
-    Model:       "gemma3:1b",               // Model name
-    Temperature: 0.1,                       // Creativity (0.0-1.0)
-    MaxTokens:   200,                       // Response length limit
-    Timeout:     60 * time.Second,          // Request timeout
+config := &llm.OllamaConfig{
+    BaseURL: "http://localhost:11434",  // Ollama server URL
+    Timeout: 60 * time.Second,          // Request timeout
 }
+
+err := llmManager.AddProvider("ollama", config)
 ```
 
 ### Agent Configuration
@@ -195,13 +245,12 @@ config := &llm.ProviderConfig{
 ```go
 config := &agent.AgentConfig{
     Name:          "my-agent",
-    Type:          agent.AgentTypeChat,     // Chat, ReAct, or Custom
+    Type:          agent.AgentTypeChat,     // Chat, ReAct, or Tool
     Provider:      "ollama",
     Model:         "gemma3:1b",
-    Temperature:   0.1,
-    MaxTokens:     100,
+    Temperature:   0.1,                     // Creativity (0.0-1.0)
+    MaxTokens:     200,                     // Response length limit
     MaxIterations: 3,                       // For ReAct agents
-    Tools:         []string{"calculator"},  // Available tools
     SystemPrompt:  "You are a helpful AI assistant.",
 }
 ```
@@ -211,7 +260,7 @@ config := &agent.AgentConfig{
 Ollama supports many open-source models. Popular choices for GoLangGraph:
 
 ### Small Models (Good for Development)
-- **gemma3:1b** - Google's Gemma 3 1B parameters
+- **gemma3:1b** - Google's Gemma 3 1B parameters (recommended)
 - **phi3:mini** - Microsoft's Phi-3 Mini
 - **llama3.2:1b** - Meta's Llama 3.2 1B
 
@@ -306,51 +355,42 @@ curl http://localhost:11434/api/version
 Enable debug logging in your Go application:
 
 ```go
-import "github.com/sirupsen/logrus"
+import "log"
 
 // Set log level to debug
-logrus.SetLevel(logrus.DebugLevel)
+log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-// Enable detailed LLM logging
+// Enable detailed logging in your application
 config.Debug = true
 ```
 
 ## Integration Testing
 
-The test script (`scripts/test-ollama-demo.sh`) provides comprehensive validation:
+Use the available Make commands for comprehensive testing:
 
-### Test Components
-1. **Ollama Installation Check**
-2. **Service Health Verification**
-3. **Model Availability Validation**
-4. **Basic Functionality Test**
-5. **Demo Execution**
-6. **Output Validation**
-
-### Running Tests
-
+### Test Commands
 ```bash
-# Full integration test
-./scripts/test-ollama-demo.sh
+# Set up Ollama with required models
+make ollama-setup
 
-# Check setup only
-./scripts/test-ollama-demo.sh check-only
+# Run comprehensive local tests
+make test-local
 
-# Build only
-./scripts/test-ollama-demo.sh build-only
+# Run specific example tests
+make test-examples
 
-# Run demo only
-./scripts/test-ollama-demo.sh run-only
+# Run local demo
+make demo-local
 ```
 
-### Test Output
-The script validates that all six demo components pass:
-- ✅ Basic chat test passed!
-- ✅ ReAct agent test passed!
-- ✅ Multi-agent test passed!
-- ✅ Quick builder test passed!
-- ✅ Graph execution test passed!
-- ✅ Streaming test passed!
+### Manual Testing
+```bash
+# Test individual examples
+cd examples/01-basic-chat && go run main.go
+cd examples/02-react-agent && go run main.go
+cd examples/03-multi-agent && go run main.go
+# ... etc
+```
 
 ## Production Considerations
 
@@ -363,16 +403,6 @@ The script validates that all six demo components pass:
 - Single Ollama instance serves multiple agents
 - Consider load balancing for high-throughput applications
 - Monitor resource usage and scale horizontally if needed
-
-### Monitoring
-```go
-// Add metrics collection
-import "github.com/prometheus/client_golang/prometheus"
-
-// Track response times, error rates, etc.
-responseTime := prometheus.NewHistogramVec(...)
-errorRate := prometheus.NewCounterVec(...)
-```
 
 ### Deployment
 ```yaml
@@ -393,7 +423,7 @@ services:
     depends_on:
       - ollama
     environment:
-      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_BASE_URL=http://ollama:11434
 
 volumes:
   ollama_data:
@@ -401,16 +431,16 @@ volumes:
 
 ## Next Steps
 
-1. **Explore More Models**: Try different models for your use case
-2. **Custom Tools**: Implement domain-specific tools for your agents
-3. **Advanced Workflows**: Build complex multi-agent systems
-4. **Performance Tuning**: Optimize for your specific requirements
-5. **Production Deployment**: Scale and monitor your agent applications
+1. **Explore Examples**: Run all 9 examples in the `/examples` directory
+2. **Try Different Models**: Experiment with different model sizes and capabilities
+3. **Custom Tools**: Add domain-specific tools for your agents
+4. **Advanced Workflows**: Build complex multi-agent systems
+5. **Performance Tuning**: Optimize for your specific requirements
 
 ## Resources
 
 - [Ollama Documentation](https://ollama.ai/docs)
 - [Gemma Model Card](https://ai.google.dev/gemma)
-- [GoLangGraph Examples](../examples/)
-- [Agent Configuration Guide](../user-guide/agents.md)
-- [Tool Development Guide](../user-guide/tools.md) 
+- [GoLangGraph Examples](../../examples/)
+- [Quick Start Guide](../getting-started/quick-start.md)
+- [Development Guide](../DEVELOPMENT.md) 

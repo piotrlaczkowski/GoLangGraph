@@ -4,15 +4,15 @@ Welcome to GoLangGraph development! This guide will help you set up your develop
 
 ## 📋 Prerequisites
 
-- **Go**: Version 1.23 or later
-- **Docker**: For running integration tests
+- **Go**: Version 1.21 or later
+- **Docker**: For running integration tests with PostgreSQL and Redis
 - **Make**: For build automation
 - **Git**: For version control
 
 ### Optional Tools
 
-- **golangci-lint**: For code linting
-- **Ollama**: For local LLM testing
+- **golangci-lint**: For code linting (will be installed automatically)
+- **Ollama**: For local LLM testing with Gemma models
 - **pre-commit**: For git hooks
 
 ## 🚀 Quick Setup
@@ -24,30 +24,35 @@ Welcome to GoLangGraph development! This guide will help you set up your develop
    cd GoLangGraph
    ```
 
-2. **Initialize Go workspace**:
-
-   ```bash
-   go work init
-   go work use .
-   go work use ./examples/*
-   ```
-
-3. **Install dependencies**:
+2. **Install dependencies**:
 
    ```bash
    make install
    ```
 
-4. **Run tests**:
+3. **Run tests**:
 
    ```bash
    make test
    ```
 
-5. **Build the project**:
+4. **Build the project**:
 
    ```bash
    make build
+   ```
+
+5. **Set up local development environment**:
+
+   ```bash
+   # Start PostgreSQL and Redis containers
+   make docker-up
+   
+   # Set up Ollama with required models
+   make ollama-setup
+   
+   # Run comprehensive tests
+   make test-local
    ```
 
 ## 🏗️ Project Structure
@@ -55,16 +60,34 @@ Welcome to GoLangGraph development! This guide will help you set up your develop
 ```
 GoLangGraph/
 ├── 📁 pkg/              # Core library packages
-│   ├── agent/           # AI agent framework
-│   ├── core/            # Graph execution engine
-│   ├── llm/             # LLM provider integrations
-│   ├── persistence/     # Database and storage
-│   └── tools/           # Built-in tools
+│   ├── agent/           # AI agent implementations (Chat, ReAct, Tool)
+│   ├── builder/         # Quick builder patterns for rapid development
+│   ├── core/            # Graph execution engine and state management
+│   ├── debug/           # Debugging and visualization tools
+│   ├── llm/             # LLM provider integrations (OpenAI, Ollama, Gemini)
+│   ├── persistence/     # Database integration and checkpointing
+│   ├── server/          # HTTP server and WebSocket support
+│   └── tools/           # Built-in tools and tool registry
 ├── 📁 cmd/              # CLI applications
-├── 📁 examples/         # Usage examples (each with own go.mod)
+│   ├── golanggraph/     # Main CLI application
+│   └── examples/        # Example CLI tools
+├── 📁 examples/         # Working examples (each with own go.mod)
+│   ├── 01-basic-chat/
+│   ├── 02-react-agent/
+│   ├── 03-multi-agent/
+│   ├── 04-rag-system/
+│   ├── 05-streaming/
+│   ├── 06-persistence/
+│   ├── 07-tools-integration/
+│   ├── 08-production-ready/
+│   └── 09-workflow-graph/
 ├── 📁 docs/             # Documentation source
 ├── 📁 test/             # Integration tests
-└── 📁 scripts/          # Build and utility scripts
+├── 📁 scripts/          # Build and utility scripts
+├── 📁 .github/          # GitHub Actions workflows
+├── go.work              # Go workspace configuration
+├── Makefile             # Build automation
+└── README.md            # Project overview
 ```
 
 ## 🧪 Testing Strategy
@@ -91,7 +114,7 @@ make test-race
 # Start dependencies and run integration tests
 make test-integration
 
-# Test with local Ollama
+# Run comprehensive local tests with all services
 make test-local
 ```
 
@@ -100,6 +123,19 @@ make test-local
 ```bash
 # Test all examples
 make test-examples
+
+# Run local demo with all services
+make demo-local
+```
+
+### Enhanced Testing
+
+```bash
+# Run enhanced test suite including CLI tests
+make test-enhanced
+
+# Run benchmarks
+make benchmark
 ```
 
 ## 🔧 Development Workflow
@@ -121,6 +157,7 @@ type(scope): description
 feat(agent): add new tool integration
 fix(core): resolve graph execution deadlock
 docs(readme): update installation instructions
+refactor(llm): simplify provider interface
 ```
 
 ### 3. **Code Quality**
@@ -150,49 +187,72 @@ pre-commit install
 
 ## 🐳 Docker Development
 
-### Start Services
+### Database Services
 
 ```bash
-# Start PostgreSQL and Redis
+# Start PostgreSQL and Redis containers
 make docker-up
 
-# View logs
+# View container logs
 make docker-logs
 
-# Stop services
+# Stop and remove containers
 make docker-down
 ```
 
-### Local Ollama Setup
+### Local LLM Setup
 
 ```bash
-# Setup Ollama with required models
+# Install and setup Ollama with gemma2:2b model
 make ollama-setup
 
 # Start Ollama service
 make ollama-start
 ```
 
-## 📦 Adding Dependencies
+## 📦 Go Workspace Management
 
-1. **Add to main module**:
+The project uses Go workspaces to manage multiple modules:
 
-   ```bash
-   go get github.com/new/dependency
-   go mod tidy
-   ```
+```bash
+# The workspace is already configured in go.work
+# It includes the main module and all examples
 
-2. **Update workspace**:
+# To sync workspace
+go work sync
 
-   ```bash
-   go work sync
-   ```
+# To add a new example
+go work use ./examples/new-example
+```
 
-3. **Test compatibility**:
+## 🔍 Building and Running
 
-   ```bash
-   make test-all
-   ```
+### Build Commands
+
+```bash
+# Build main binary
+make build
+
+# Build all binaries and examples
+make build-all
+
+# Run the main application
+make run
+
+# Clean build artifacts
+make clean
+```
+
+### Running Examples
+
+```bash
+# Examples are in the workspace, run them directly
+cd examples/01-basic-chat
+go run main.go
+
+# Or run from root
+go run ./examples/01-basic-chat/main.go
+```
 
 ## 🔍 Debugging
 
@@ -218,24 +278,26 @@ go tool pprof cpu.prof
 
 ## 📚 Documentation
 
-### Generate Documentation
-
-```bash
-# Start documentation server
-make docs-serve
-
-# Build documentation
-make docs-build
-
-# Deploy documentation
-make docs-deploy
-```
-
-### API Documentation
+### Local Documentation
 
 ```bash
 # Generate Go docs
 godoc -http=:6060
+
+# View at http://localhost:6060/pkg/github.com/piotrlaczkowski/GoLangGraph/
+```
+
+### MkDocs Documentation
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Serve documentation locally
+mkdocs serve
+
+# Build documentation
+mkdocs build
 ```
 
 ## 🚢 Release Process
@@ -258,6 +320,22 @@ godoc -http=:6060
    - Create release
    - Deploy documentation
 
+## 🧰 Available Make Targets
+
+Run `make help` to see all available targets:
+
+```bash
+make help
+```
+
+Key targets include:
+
+- **Development**: `install`, `build`, `run`, `clean`
+- **Testing**: `test`, `test-coverage`, `test-integration`, `test-local`
+- **Quality**: `lint`, `fmt`, `security-scan`, `quality`
+- **Docker**: `docker-up`, `docker-down`, `docker-logs`
+- **Ollama**: `ollama-setup`, `ollama-start`, `demo-local`
+
 ## ❓ Troubleshooting
 
 ### Common Issues
@@ -266,8 +344,7 @@ godoc -http=:6060
 
 ```bash
 # Reinitialize workspace
-rm go.work
-make workspace-init
+go work sync
 ```
 
 **Docker permission issues**:
@@ -286,15 +363,69 @@ go clean -modcache
 make install
 ```
 
+**Ollama connection issues**:
+
+```bash
+# Check if Ollama is running
+curl http://localhost:11434/api/tags
+
+# Restart Ollama
+make ollama-start
+```
+
+**Test failures**:
+
+```bash
+# Run tests with verbose output
+go test -v ./pkg/...
+
+# Run specific test
+go test -v -run TestSpecificFunction ./pkg/core
+```
+
+## 📝 Adding New Features
+
+### 1. **Adding a New Agent Type**
+
+1. Create agent implementation in `pkg/agent/`
+2. Add tests in `pkg/agent/`
+3. Update documentation
+4. Add example in `examples/`
+
+### 2. **Adding a New Tool**
+
+1. Implement tool interface in `pkg/tools/`
+2. Register in tool registry
+3. Add tests
+4. Update documentation
+
+### 3. **Adding a New LLM Provider**
+
+1. Implement provider interface in `pkg/llm/`
+2. Add configuration options
+3. Add tests with mocked responses
+4. Update documentation
+
 ## 📞 Getting Help
 
-- 💬 **Discussions**: GitHub Discussions
-- 🐛 **Issues**: GitHub Issues
-- 📧 **Email**: [dev@golanggraph.dev]
-- 📖 **Docs**: [docs.golanggraph.dev]
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/piotrlaczkowski/GoLangGraph/discussions)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/piotrlaczkowski/GoLangGraph/issues)
+- 📧 **Email**: Support via GitHub Issues
+- 📖 **Docs**: Browse the `/docs` directory
 
 ## 🤝 Contributing Guidelines
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines.
+Please read [CONTRIBUTING.md](../CONTRIBUTING.md) for detailed contribution guidelines.
+
+### Development Checklist
+
+Before submitting a PR:
+
+- [ ] Code follows Go conventions
+- [ ] Tests pass: `make test`
+- [ ] Linting passes: `make lint`
+- [ ] Documentation updated
+- [ ] Examples work with changes
+- [ ] Integration tests pass: `make test-integration`
 
 Happy coding! 🚀

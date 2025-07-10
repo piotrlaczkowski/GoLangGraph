@@ -20,33 +20,33 @@
 
     ---
 
-    Design complex AI workflows as directed graphs. Each node represents a computational unit, edges define execution flow.
+    Design AI workflows as directed graphs. Each node represents a computational unit, edges define execution flow.
 
     [:octicons-arrow-right-24: Learn More](CORE_PACKAGE.md)
 
--   :material-database-outline:{ .lg .middle } **💾 Persistence & RAG**
+-   :material-database-outline:{ .lg .middle } **💾 Persistence**
 
     ---
 
-    Built-in support for PostgreSQL, Redis, and vector databases. Perfect for RAG applications and long-running workflows.
+    Built-in support for PostgreSQL, Redis, and memory-based persistence. Perfect for stateful applications.
 
     [:octicons-arrow-right-24: Persistence Guide](PERSISTENCE_GUIDE.md)
 
--   :material-tools:{ .lg .middle } **🔧 Rich Tooling**
+-   :material-tools:{ .lg .middle } **🔧 Examples**
 
     ---
 
-    Comprehensive debugging, visualization, and monitoring tools. Built-in support for popular LLM providers.
+    Comprehensive examples showing real-world usage patterns with Ollama and other LLM providers.
 
-    [:octicons-arrow-right-24: Tools & Extensions](CORE_PACKAGE.md)
+    [:octicons-arrow-right-24: View Examples](examples/ollama-integration.md)
 
 </div>
 
 ## 🎯 What is GoLangGraph?
 
-**GoLangGraph** is a powerful Go framework for building AI agent workflows with graph-based execution. It provides a clean, type-safe API for creating complex multi-agent systems, RAG applications, and intelligent workflows.
+**GoLangGraph** is a Go framework for building AI agent workflows with graph-based execution. It provides a clean, type-safe API for creating intelligent agents that can reason, use tools, and execute complex workflows.
 
-> 💡 **Perfect for**: Building production-ready AI applications that require reliability, performance, and scalability.
+> 💡 **Perfect for**: Building AI applications with local LLMs like Ollama, creating RAG systems, and developing intelligent automation tools.
 
 ## ✨ Key Features
 
@@ -62,31 +62,31 @@
     
     ---
     
-    Thread-safe state containers with automatic persistence. Never lose your workflow progress.
+    Thread-safe state containers with persistence options. Maintain workflow state across executions.
 
--   🤖 **Multi-Agent Support**
+-   🤖 **AI Agent Framework**
     
     ---
     
-    Build complex multi-agent systems with ease. Coordinate multiple AI agents working together.
+    Built-in support for Chat, ReAct, and Tool agents. Easy integration with multiple LLM providers.
 
 -   🗄️ **Database Integration**
     
     ---
     
-    Native support for PostgreSQL, Redis, and vector databases. Perfect for RAG applications.
+    Native support for PostgreSQL, Redis, and memory-based persistence. Checkpointing and session management.
 
--   🔧 **Rich Tooling**
+-   🔧 **Built-in Tools**
     
     ---
     
-    Comprehensive debugging, visualization, and monitoring tools built right in.
+    Comprehensive tool library including calculator, web search, file operations, and more.
 
 -   ⚡ **High Performance**
     
     ---
     
-    Optimized for production workloads with comprehensive benchmarking and Go's native concurrency.
+    Optimized for production workloads with Go's native concurrency and comprehensive testing.
 
 -   🔒 **Type Safety**
     
@@ -98,7 +98,7 @@
     
     ---
     
-    Docker support, CI/CD pipelines, monitoring, and everything you need for production.
+    Docker support, comprehensive testing, and everything you need for production deployment.
 
 </div>
 
@@ -112,33 +112,48 @@ import (
     "fmt"
     "log"
     
-    "github.com/piotrlaczkowski/GoLangGraph/pkg/builder"
+    "github.com/piotrlaczkowski/GoLangGraph/pkg/agent"
     "github.com/piotrlaczkowski/GoLangGraph/pkg/llm"
+    "github.com/piotrlaczkowski/GoLangGraph/pkg/tools"
 )
 
 func main() {
-    // 🤖 Create a simple chat agent
-    agent := builder.OneLineChat("MyAgent")
+    // Create LLM provider manager
+    llmManager := llm.NewProviderManager()
     
-    // 🌐 Configure with OpenAI
-    provider, err := llm.NewOpenAIProvider(llm.OpenAIConfig{
-        APIKey: "your-api-key",
-        Model:  "gpt-4",
+    // Add Ollama provider
+    provider, err := llm.NewOllamaProvider(&llm.ProviderConfig{
+        Endpoint: "http://localhost:11434",
+        Model:    "gemma3:1b",
     })
     if err != nil {
         log.Fatal(err)
     }
+    llmManager.RegisterProvider("ollama", provider)
     
-    agent.SetLLMProvider(provider)
+    // Create tool registry
+    toolRegistry := tools.NewToolRegistry()
     
-    // 🚀 Execute the agent
+    // Create agent
+    config := &agent.AgentConfig{
+        Name:         "chat-agent",
+        Type:         agent.AgentTypeChat,
+        Model:        "gemma3:1b",
+        Provider:     "ollama",
+        SystemPrompt: "You are a helpful AI assistant.",
+        Temperature:  0.7,
+    }
+    
+    chatAgent := agent.NewAgent(config, llmManager, toolRegistry)
+    
+    // Execute
     ctx := context.Background()
-    response, err := agent.Execute(ctx, "Hello, world! 👋")
+    execution, err := chatAgent.Execute(ctx, "Hello! Tell me about Go programming.")
     if err != nil {
         log.Fatal(err)
     }
     
-    fmt.Printf("🤖 Agent Response: %s\n", response.Content)
+    fmt.Printf("🤖 Agent: %s\n", execution.Output)
 }
 ```
 
@@ -173,13 +188,13 @@ graph TB
     
     ---
     
-    Build intelligent agents that can reason, plan, and execute complex tasks using various LLM providers.
+    Build intelligent agents that can reason, plan, and execute tasks using various LLM providers.
 
 -   🔍 **RAG Applications**
     
     ---
     
-    Create sophisticated Retrieval-Augmented Generation systems with vector database integration.
+    Create Retrieval-Augmented Generation systems with database integration for knowledge retrieval.
 
 -   🤝 **Multi-Agent Systems**
     
@@ -187,23 +202,17 @@ graph TB
     
     Design workflows where multiple specialized agents collaborate to solve complex problems.
 
--   📊 **Data Processing Pipelines**
+-   📊 **Data Processing**
     
     ---
     
     Build intelligent data processing workflows that can adapt and make decisions based on content.
 
--   🛠️ **Automation Workflows**
+-   🛠️ **Automation**
     
     ---
     
     Create smart automation systems that can handle exceptions and make intelligent decisions.
-
--   🌐 **API Orchestration**
-    
-    ---
-    
-    Coordinate complex API interactions with intelligent error handling and retry logic.
 
 </div>
 
@@ -219,19 +228,11 @@ graph TB
 
     [:octicons-arrow-right-24: GitHub Repository](https://github.com/piotrlaczkowski/GoLangGraph)
 
--   :material-chat:{ .lg .middle } **💬 Discord**
-
-    ---
-
-    Join our community for real-time discussions, support, and collaboration with other developers.
-
-    [:octicons-arrow-right-24: Join Discord](https://discord.gg/golanggraph)
-
 -   :material-book-open:{ .lg .middle } **📚 Documentation**
 
     ---
 
-    Comprehensive guides, examples, and API reference to help you build amazing AI workflows.
+    Comprehensive guides, examples, and API reference to help you build AI workflows.
 
     [:octicons-arrow-right-24: Browse Docs](getting-started/quick-start.md)
 
@@ -243,41 +244,49 @@ graph TB
 
     [:octicons-arrow-right-24: Report Issue](https://github.com/piotrlaczkowski/GoLangGraph/issues)
 
+-   :material-chat:{ .lg .middle } **💬 Discussions**
+
+    ---
+
+    Join discussions about features, usage patterns, and best practices with other developers.
+
+    [:octicons-arrow-right-24: Join Discussions](https://github.com/piotrlaczkowski/GoLangGraph/discussions)
+
 </div>
 
 ## 🚀 Why Choose GoLangGraph?
 
 <div class="grid cards" markdown>
 
--   ⚡ **Performance First**
+-   ⚡ **Performance**
     
     ---
     
-    Built with Go's performance and concurrency in mind. Optimized for production workloads with comprehensive benchmarking.
+    Built with Go's performance and concurrency in mind. Optimized for production workloads.
 
 -   👨‍💻 **Developer Experience**
     
     ---
     
-    Clean, intuitive API with excellent error handling and debugging tools. Comprehensive documentation and examples.
+    Clean, intuitive API with excellent error handling and debugging tools. Comprehensive examples.
 
 -   🏭 **Production Ready**
     
     ---
     
-    Battle-tested with comprehensive test coverage, CI/CD pipelines, and production deployment guides.
+    Comprehensive test coverage, CI/CD pipelines, and production deployment examples.
 
 -   🔧 **Extensible**
     
     ---
     
-    Plugin architecture allows easy extension with custom tools, LLM providers, and persistence backends.
+    Easy to extend with custom tools, LLM providers, and persistence backends.
 
 -   🔒 **Secure**
     
     ---
     
-    Built-in security features including input validation, SQL injection prevention, and secure credential handling.
+    Built-in security features including input validation and secure credential handling.
 
 -   🌍 **Open Source**
     
@@ -287,91 +296,15 @@ graph TB
 
 </div>
 
-## 📊 Performance Highlights
-
-<div class="grid cards" markdown>
-
--   🏃 **Fast Execution**
-    
-    ---
-    
-    **1.2ms** average graph execution time
-    **120ns** state operations
-    Concurrent node processing
-
--   💾 **Memory Efficient**
-    
-    ---
-    
-    **512B** per operation
-    **8 allocs** per execution
-    Optimized state management
-
--   🔗 **Scalable**
-    
-    ---
-    
-    Connection pooling
-    Streaming execution
-    Distributed processing ready
-
--   📈 **Benchmarked**
-    
-    ---
-    
-    Comprehensive performance testing
-    Production-validated metrics
-    Continuous optimization
-
-</div>
-
-## 🗺️ Roadmap
-
-<div class="grid cards" markdown>
-
--   🚀 **v1.1 - Enhanced RAG**
-    
-    ---
-    
-    - 🔍 Advanced vector search
-    - 📊 Multi-modal embeddings
-    - 🧠 Improved retrieval strategies
-
--   🎭 **v1.2 - Multi-Modal**
-    
-    ---
-    
-    - 🖼️ Image processing
-    - 🎵 Audio support
-    - 📹 Video analysis
-
--   🌐 **v1.3 - Distributed**
-    
-    ---
-    
-    - ☁️ Cloud deployment
-    - 🔄 Horizontal scaling
-    - 🌍 Multi-region support
-
--   🎨 **v1.4 - Visual Editor**
-    
-    ---
-    
-    - 🖥️ Web-based editor
-    - 📊 Real-time visualization
-    - 🎯 Drag-and-drop workflows
-
-</div>
-
 ---
 
 <div align="center">
   <h2>🚀 Ready to Build Your First AI Agent?</h2>
-  <p>Get started with GoLangGraph today and join the future of AI workflow development!</p>
+  <p>Get started with GoLangGraph today and build intelligent AI workflows with Go!</p>
   
   [Get Started Now!](getting-started/quick-start.md){ .md-button .md-button--primary } 
   [View Examples](examples/ollama-integration.md){ .md-button }
-  [Join Community](https://discord.gg/golanggraph){ .md-button }
+  [GitHub Repository](https://github.com/piotrlaczkowski/GoLangGraph){ .md-button }
 </div>
 
 ---

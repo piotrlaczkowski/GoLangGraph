@@ -35,7 +35,7 @@ type Graph struct {
 // Create a new graph
 graph := core.NewGraph("my_workflow")
 
-// Configure the graph
+// Configure the graph (optional)
 graph.Config.MaxIterations = 50
 graph.Config.Timeout = 5 * time.Minute
 graph.Config.EnableStreaming = true
@@ -95,14 +95,14 @@ fmt.Printf("Result: %s\n", output)
 
 ### State Management
 
-The `BaseState` struct provides thread-safe state management with history tracking.
+The `BaseState` struct provides thread-safe state management.
 
 ```go
 type BaseState struct {
     data     map[string]interface{}
     metadata map[string]interface{}
-    history  []StateSnapshot
     mu       sync.RWMutex
+    // ... internal fields
 }
 ```
 
@@ -154,25 +154,6 @@ version, _ := state.GetMetadata("version")
 metadata := state.GetAllMetadata()
 ```
 
-#### State History
-
-```go
-// Create a snapshot
-snapshot := state.CreateSnapshot("checkpoint_1")
-
-// Restore from snapshot
-err := state.RestoreFromSnapshot(snapshot)
-if err != nil {
-    log.Printf("Failed to restore: %v", err)
-}
-
-// Get history
-history := state.GetHistory()
-for _, snapshot := range history {
-    fmt.Printf("Snapshot: %s at %v\n", snapshot.Name, snapshot.Timestamp)
-}
-```
-
 ### Node Functions
 
 Node functions are the building blocks of your workflow. They receive a context and state, and return a modified state.
@@ -198,28 +179,31 @@ simpleNode := func(ctx context.Context, state *BaseState) (*BaseState, error) {
 }
 ```
 
-#### Node with Error Handling
+#### Error Handling Node
 
 ```go
-validationNode := func(ctx context.Context, state *BaseState) (*BaseState, error) {
+errorHandlingNode := func(ctx context.Context, state *BaseState) (*BaseState, error) {
     input, exists := state.Get("input")
     if !exists {
-        return nil, fmt.Errorf("input is required")
+        return nil, fmt.Errorf("required input not found")
     }
     
+    // Validate input
     if input == "" {
-        return nil, fmt.Errorf("input cannot be empty")
+        state.Set("error", "empty input")
+        return state, nil
     }
     
-    state.Set("validated", true)
+    // Process
+    state.Set("processed", input)
     return state, nil
 }
 ```
 
-#### Async Node
+#### Async Node with Context
 
 ```go
-asyncNode := func(ctx context.Context, state *BaseState) (*BaseState, error) {
+asyncNode := func(ctx context.Context, state *BaseState) (*core.BaseState, error) {
     // Check for cancellation
     select {
     case <-ctx.Done():
@@ -228,16 +212,22 @@ asyncNode := func(ctx context.Context, state *BaseState) (*BaseState, error) {
     }
     
     // Simulate async work
-    time.Sleep(100 * time.Millisecond)
+    timer := time.NewTimer(2 * time.Second)
+    defer timer.Stop()
     
-    state.Set("async_result", "completed")
-    return state, nil
+    select {
+    case <-timer.C:
+        state.Set("async_result", "completed")
+        return state, nil
+    case <-ctx.Done():
+        return nil, ctx.Err()
+    }
 }
 ```
 
 ### Edge Conditions
 
-Edge conditions enable dynamic routing based on state values.
+Edge conditions determine the flow of execution based on the current state.
 
 ```go
 type EdgeCondition func(ctx context.Context, state *BaseState) (string, error)
@@ -247,11 +237,15 @@ type EdgeCondition func(ctx context.Context, state *BaseState) (string, error)
 
 ```go
 condition := func(ctx context.Context, state *BaseState) (string, error) {
-    value, _ := state.Get("decision")
-    if value == "yes" {
-        return "yes_node", nil
+    value, _ := state.Get("score")
+    score := value.(int)
+    
+    if score > 80 {
+        return "success_node", nil
+    } else if score > 50 {
+        return "retry_node", nil
     }
-    return "no_node", nil
+    return "failure_node", nil
 }
 ```
 
@@ -259,319 +253,193 @@ condition := func(ctx context.Context, state *BaseState) (string, error) {
 
 ```go
 complexCondition := func(ctx context.Context, state *BaseState) (string, error) {
-    score, exists := state.Get("score")
-    if !exists {
-        return "", fmt.Errorf("score is required for routing")
-    }
+    // Multiple criteria
+    status, _ := state.Get("status")
+    attempts, _ := state.Get("attempts")
     
-    scoreValue := score.(float64)
-    switch {
-    case scoreValue >= 90:
-        return "excellent_node", nil
-    case scoreValue >= 70:
-        return "good_node", nil
-    case scoreValue >= 50:
-        return "average_node", nil
-    default:
-        return "poor_node", nil
+    if status == "error" && attempts.(int) < 3 {
+        return "retry_node", nil
+    } else if status == "success" {
+        return "success_node", nil
     }
+    return "failure_node", nil
 }
 ```
 
-### Graph Configuration
+## Agent Integration
 
-The `GraphConfig` struct provides configuration options for graph execution.
-
-```go
-type GraphConfig struct {
-    MaxIterations     int           // Maximum number of iterations
-    Timeout           time.Duration // Execution timeout
-    EnableStreaming   bool          // Enable real-time streaming
-    EnableCheckpoints bool          // Enable checkpointing
-    ParallelExecution bool          // Enable parallel execution
-    RetryAttempts     int           // Number of retry attempts
-    RetryDelay        time.Duration // Delay between retries
-}
-```
-
-#### Custom Configuration
+The core package integrates seamlessly with the agent package:
 
 ```go
-config := &core.GraphConfig{
-    MaxIterations:     100,
-    Timeout:           10 * time.Minute,
-    EnableStreaming:   true,
-    EnableCheckpoints: true,
-    ParallelExecution: true,
-    RetryAttempts:     3,
-    RetryDelay:        1 * time.Second,
+// Create an agent that uses a custom graph
+config := &agent.AgentConfig{
+    Name: "custom-agent",
+    Type: agent.AgentTypeReAct,
+    // ... other config
 }
 
-graph := core.NewGraph("configured_graph")
-graph.Config = config
+// Create agent
+agentInstance := agent.NewAgent(config, llmManager, toolRegistry)
+
+// Get the agent's graph for customization
+graph := agentInstance.GetGraph()
+
+// Add custom nodes
+graph.AddNode("custom", "Custom Processing", func(ctx context.Context, state *core.BaseState) (*core.BaseState, error) {
+    // Custom logic here
+    return state, nil
+})
 ```
 
-### Streaming Execution
+## Persistence Integration
 
-Enable real-time monitoring of graph execution.
+State can be persisted using the persistence package:
 
 ```go
-// Enable streaming
-graph.Config.EnableStreaming = true
+// Create checkpointer
+checkpointer := persistence.NewMemoryCheckpointer()
 
-// Get the streaming channel
-streamChan := graph.Stream()
-
-// Execute in a goroutine
-go func() {
-    result, err := graph.Execute(context.Background(), initialState)
-    if err != nil {
-        log.Printf("Execution failed: %v", err)
-    }
-}()
-
-// Listen for execution updates
-for result := range streamChan {
-    fmt.Printf("Node %s completed in %v\n", result.NodeID, result.Duration)
-    if result.Error != nil {
-        fmt.Printf("Error in node %s: %v\n", result.NodeID, result.Error)
-    }
+// Save state as checkpoint
+checkpoint := &persistence.Checkpoint{
+    ID:       "checkpoint_1",
+    ThreadID: "thread_1",
+    State:    state,
+    Metadata: map[string]interface{}{
+        "step": "processing",
+    },
+    CreatedAt: time.Now(),
 }
-```
 
-### Parallel Execution
-
-Execute multiple nodes in parallel for improved performance.
-
-```go
-// Enable parallel execution
-graph.Config.ParallelExecution = true
-
-// Execute multiple nodes in parallel
-nodeIDs := []string{"node1", "node2", "node3"}
-results, err := graph.ExecuteParallel(context.Background(), nodeIDs, state)
+err := checkpointer.Save(context.Background(), checkpoint)
 if err != nil {
-    log.Fatal(err)
+    log.Printf("Failed to save checkpoint: %v", err)
 }
 
-// Process results
-for nodeID, result := range results {
-    fmt.Printf("Node %s: Success=%v, Duration=%v\n", 
-        nodeID, result.Success, result.Duration)
-}
-```
-
-### Graph Introspection
-
-Get information about the graph structure and execution.
-
-```go
-// Get topology
-topology := graph.GetTopology()
-for from, targets := range topology {
-    fmt.Printf("Node %s connects to: %v\n", from, targets)
-}
-
-// Get execution history
-history := graph.GetExecutionHistory()
-for _, result := range history {
-    fmt.Printf("Executed %s at %v (Duration: %v)\n", 
-        result.NodeID, result.Timestamp, result.Duration)
-}
-
-// Get current state
-currentState := graph.GetCurrentState()
-if currentState != nil {
-    fmt.Printf("Current state has %d keys\n", len(currentState.Keys()))
-}
-
-// Check if running
-if graph.IsRunning() {
-    fmt.Println("Graph is currently executing")
-}
-```
-
-### Error Handling
-
-Comprehensive error handling throughout the execution lifecycle.
-
-```go
-// Node with error handling
-errorNode := func(ctx context.Context, state *BaseState) (*BaseState, error) {
-    defer func() {
-        if r := recover(); r != nil {
-            log.Printf("Recovered from panic: %v", r)
-        }
-    }()
-    
-    // Validate inputs
-    if err := validateInputs(state); err != nil {
-        return nil, fmt.Errorf("validation failed: %w", err)
-    }
-    
-    // Process with error handling
-    result, err := processData(state)
-    if err != nil {
-        return nil, fmt.Errorf("processing failed: %w", err)
-    }
-    
-    state.Set("result", result)
-    return state, nil
-}
-
-// Execute with error handling
-result, err := graph.Execute(context.Background(), initialState)
+// Load checkpoint
+loaded, err := checkpointer.Load(context.Background(), "thread_1", "checkpoint_1")
 if err != nil {
-    switch {
-    case errors.Is(err, context.DeadlineExceeded):
-        log.Printf("Execution timed out")
-    case errors.Is(err, context.Canceled):
-        log.Printf("Execution was canceled")
-    default:
-        log.Printf("Execution failed: %v", err)
-    }
-    return
+    log.Printf("Failed to load checkpoint: %v", err)
 }
 ```
 
-### Best Practices
+## Best Practices
 
-#### 1. State Management
+### 1. State Management
 
-```go
-// ✅ Good: Use typed access with validation
-func safeGetString(state *core.BaseState, key string) (string, error) {
-    value, exists := state.Get(key)
-    if !exists {
-        return "", fmt.Errorf("key %s not found", key)
-    }
-    
-    str, ok := value.(string)
-    if !ok {
-        return "", fmt.Errorf("key %s is not a string", key)
-    }
-    
-    return str, nil
-}
+- Keep state data simple and serializable
+- Use metadata for non-critical information
+- Clone state when passing between functions
+- Validate state data in node functions
 
-// ❌ Bad: Direct type assertion without checking
-func unsafeGetString(state *core.BaseState, key string) string {
-    value, _ := state.Get(key)
-    return value.(string) // Panic if not string or doesn't exist
-}
-```
+### 2. Error Handling
 
-#### 2. Node Design
+- Always handle errors in node functions
+- Use context for cancellation and timeouts
+- Set error information in state when appropriate
+- Fail fast for critical errors
 
-```go
-// ✅ Good: Focused, single-responsibility nodes
-func validateInputNode(ctx context.Context, state *core.BaseState) (*core.BaseState, error) {
-    // Only validate inputs
-    return validateInputs(state)
-}
+### 3. Graph Design
 
-func processDataNode(ctx context.Context, state *core.BaseState) (*core.BaseState, error) {
-    // Only process data
-    return processData(state)
-}
+- Keep graphs simple and focused
+- Use descriptive node and edge names
+- Design for reusability
+- Test graph execution paths
 
-// ❌ Bad: Monolithic node doing everything
-func monolithicNode(ctx context.Context, state *core.BaseState) (*core.BaseState, error) {
-    // Validate, process, format, save - too many responsibilities
-    // ...
-}
-```
+### 4. Performance
 
-#### 3. Error Handling
+- Minimize state data size
+- Use efficient data structures
+- Implement proper timeouts
+- Monitor execution metrics
+
+## Examples
+
+### Simple Linear Workflow
 
 ```go
-// ✅ Good: Descriptive error messages with context
-func processNode(ctx context.Context, state *core.BaseState) (*core.BaseState, error) {
-    input, exists := state.Get("input")
-    if !exists {
-        return nil, fmt.Errorf("processNode: input is required")
-    }
-    
-    result, err := processInput(input)
-    if err != nil {
-        return nil, fmt.Errorf("processNode: failed to process input %v: %w", input, err)
-    }
-    
-    state.Set("result", result)
+graph := core.NewGraph("linear_workflow")
+
+// Add nodes
+graph.AddNode("input", "Input", func(ctx context.Context, state *core.BaseState) (*core.BaseState, error) {
+    state.Set("data", "initial_data")
     return state, nil
-}
-```
+})
 
-#### 4. Context Usage
-
-```go
-// ✅ Good: Respect context cancellation
-func longRunningNode(ctx context.Context, state *core.BaseState) (*core.BaseState, error) {
-    for i := 0; i < 1000; i++ {
-        select {
-        case <-ctx.Done():
-            return nil, ctx.Err()
-        default:
-        }
-        
-        // Do work
-        time.Sleep(10 * time.Millisecond)
-    }
-    
+graph.AddNode("process", "Process", func(ctx context.Context, state *core.BaseState) (*core.BaseState, error) {
+    data, _ := state.Get("data")
+    processed := strings.ToUpper(data.(string))
+    state.Set("processed", processed)
     return state, nil
-}
+})
+
+graph.AddNode("output", "Output", func(ctx context.Context, state *core.BaseState) (*core.BaseState, error) {
+    processed, _ := state.Get("processed")
+    fmt.Printf("Final result: %s\n", processed)
+    return state, nil
+})
+
+// Connect nodes
+graph.AddEdge("input", "process", nil)
+graph.AddEdge("process", "output", nil)
+
+// Configure
+graph.SetStartNode("input")
+graph.AddEndNode("output")
+
+// Execute
+result, err := graph.Execute(context.Background(), core.NewBaseState())
 ```
 
-## Testing
-
-The core package includes comprehensive tests. Run them with:
-
-```bash
-go test ./pkg/core -v
-```
-
-### Example Test
+### Conditional Workflow
 
 ```go
-func TestGraph_Execute(t *testing.T) {
-    graph := core.NewGraph("test_graph")
-    
-    node1 := func(ctx context.Context, state *core.BaseState) (*core.BaseState, error) {
-        state.Set("node1_executed", true)
-        return state, nil
-    }
-    
-    node2 := func(ctx context.Context, state *core.BaseState) (*core.BaseState, error) {
-        state.Set("node2_executed", true)
-        return state, nil
-    }
-    
-    graph.AddNode("node1", "Node 1", node1)
-    graph.AddNode("node2", "Node 2", node2)
-    graph.AddEdge("node1", "node2", nil)
-    graph.SetStartNode("node1")
-    graph.AddEndNode("node2")
-    
-    state := core.NewBaseState()
-    result, err := graph.Execute(context.Background(), state)
-    
-    assert.NoError(t, err)
-    assert.NotNil(t, result)
-    
-    val1, _ := result.Get("node1_executed")
-    val2, _ := result.Get("node2_executed")
-    assert.True(t, val1.(bool))
-    assert.True(t, val2.(bool))
+graph := core.NewGraph("conditional_workflow")
+
+// Decision node
+graph.AddNode("decision", "Decision", func(ctx context.Context, state *core.BaseState) (*core.BaseState, error) {
+    // Simulate decision logic
+    state.Set("choice", "path_a")
+    return state, nil
+})
+
+// Path A
+graph.AddNode("path_a", "Path A", func(ctx context.Context, state *core.BaseState) (*core.BaseState, error) {
+    state.Set("result", "Took path A")
+    return state, nil
+})
+
+// Path B
+graph.AddNode("path_b", "Path B", func(ctx context.Context, state *core.BaseState) (*core.BaseState, error) {
+    state.Set("result", "Took path B")
+    return state, nil
+})
+
+// Conditional edges
+choiceCondition := func(ctx context.Context, state *core.BaseState) (string, error) {
+    choice, _ := state.Get("choice")
+    return choice.(string), nil
 }
+
+graph.AddEdge("decision", "path_a", func(ctx context.Context, state *core.BaseState) (string, error) {
+    choice, _ := state.Get("choice")
+    if choice == "path_a" {
+        return "path_a", nil
+    }
+    return "", nil
+})
+
+graph.AddEdge("decision", "path_b", func(ctx context.Context, state *core.BaseState) (string, error) {
+    choice, _ := state.Get("choice")
+    if choice == "path_b" {
+        return "path_b", nil
+    }
+    return "", nil
+})
+
+// Configure
+graph.SetStartNode("decision")
+graph.AddEndNode("path_a")
+graph.AddEndNode("path_b")
 ```
 
-## Performance Considerations
-
-- **State Cloning**: State is cloned at each node execution. For large states, consider using references where appropriate.
-- **Concurrent Access**: All state operations are thread-safe, but excessive concurrent access may impact performance.
-- **Memory Usage**: Large execution histories can consume significant memory. Consider periodic cleanup.
-- **Streaming**: Streaming adds minimal overhead but requires proper channel management.
-
-## Conclusion
-
-The core package provides a solid foundation for building complex workflow systems. Its graph-based execution model, combined with flexible state management and comprehensive error handling, makes it suitable for a wide range of applications from simple data processing pipelines to complex AI agent workflows. 
+This core package provides the foundation for building complex AI workflows with GoLangGraph, offering flexibility, performance, and reliability for production use. 
