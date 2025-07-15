@@ -33,6 +33,8 @@
 - 🌐 **Multi-LLM Support** - OpenAI, Ollama, and Gemini provider integrations
 - 🔧 **Built-in Tools** - Calculator, web search, file operations, and more
 - 💾 **State Management** - Thread-safe state containers with persistence options
+- 🚀 **Auto Server** - Automatically generate REST APIs for your agents
+- 📊 **Monitoring & Observability** - Grafana dashboards, Prometheus metrics, and comprehensive monitoring
 - 🐳 **Production Ready** - Docker support, comprehensive testing, and error handling
 
 ## 📦 Installation
@@ -249,6 +251,40 @@ provider, err := llm.NewGeminiProvider(&llm.ProviderConfig{
 })
 ```
 
+## 🚀 Auto Server & API Generation
+
+GoLangGraph can automatically generate REST APIs for your agents:
+
+```go
+import "github.com/piotrlaczkowski/GoLangGraph/pkg/server"
+
+// Create auto server
+config := server.DefaultAutoServerConfig()
+config.Port = 8080
+config.EnableWebUI = true
+config.EnablePlayground = true
+
+autoServer := server.NewAutoServer(config)
+
+// Register your agents
+autoServer.RegisterAgent("chat-agent", chatAgentDefinition)
+autoServer.RegisterAgent("react-agent", reactAgentDefinition)
+
+// Generate endpoints automatically
+autoServer.GenerateEndpoints()
+
+// Start server
+ctx := context.Background()
+autoServer.Start(ctx)
+```
+
+This automatically creates:
+- 🌐 **REST Endpoints**: `/api/{agent-id}` for each agent
+- 🎮 **Web UI**: Interactive chat interface at `/`
+- 🔧 **API Playground**: Test endpoints at `/playground`
+- 📊 **Metrics**: System metrics at `/metrics`
+- 📋 **Health Checks**: Status monitoring at `/health`
+
 ## 📊 Examples
 
 Explore comprehensive examples in the `/examples` directory:
@@ -262,6 +298,7 @@ Explore comprehensive examples in the `/examples` directory:
 - **[07-tools-integration](examples/07-tools-integration/)** - Advanced tools
 - **[08-production-ready](examples/08-production-ready/)** - Production deployment
 - **[09-workflow-graph](examples/09-workflow-graph/)** - Complex workflows
+- **[10-ideation-agents](examples/10-ideation-agents/)** - Creative agent collaboration with monitoring
 
 ### Running Examples
 
@@ -291,28 +328,53 @@ git clone https://github.com/piotrlaczkowski/GoLangGraph.git
 cd GoLangGraph
 
 # Install dependencies
-go mod tidy
+make install
+
+# Build the project
+make build
 
 # Run tests
-go test ./...
+make test
 
 # Run examples
 cd examples/01-basic-chat
 go run main.go
 ```
 
-### 🧪 Testing
+### 🧪 Testing & Quality
 
 ```bash
 # Run all tests
-go test ./...
+make test
 
-# Run with coverage
-go test -cover ./...
+# Run tests with coverage
+make test-coverage
 
-# Run specific package tests
-go test ./pkg/core -v
-go test ./pkg/agent -v
+# Run integration tests
+make test-integration
+
+# Code quality checks
+make lint           # Run linter
+make fmt            # Format code
+make vet            # Run go vet
+make security       # Security scan
+
+# Complete quality check
+make check          # Run all checks
+```
+
+### 🐳 Docker & Production
+
+```bash
+# Build Docker images
+make docker-build-agent
+
+# Production deployment
+make build-release
+
+# Local development with Ollama
+make ollama-setup
+make test-local
 ```
 
 ## 🔒 Security
