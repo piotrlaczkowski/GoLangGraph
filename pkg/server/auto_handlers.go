@@ -136,6 +136,12 @@ func (as *AutoServer) handleAgentInfo(w http.ResponseWriter, r *http.Request) {
 // createAgentHandler creates a handler for agent execution
 func (as *AutoServer) createAgentHandler(agentID string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Handle OPTIONS request for CORS preflight
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
 		agent, exists := as.agentInstances[agentID]
 		if !exists {
 			http.Error(w, "Agent not found", http.StatusNotFound)
@@ -183,8 +189,19 @@ func (as *AutoServer) createAgentHandler(agentID string) http.HandlerFunc {
 			return
 		}
 
-		// Get output
-		output := result.Output
+		// Get output - prioritize structured output for JSON responses
+		var output interface{}
+
+		// First priority: Use the new StructuredOutput field for proper JSON
+		if result.StructuredOutput != nil {
+			output = result.StructuredOutput
+		} else if result.Metadata != nil && result.Metadata["structured_output"] != nil {
+			// Fallback: Use metadata structured output (for backward compatibility)
+			output = result.Metadata["structured_output"]
+		} else {
+			// Last resort: Use string output
+			output = result.Output
+		}
 
 		response := map[string]interface{}{
 			"success":         true,
@@ -193,6 +210,28 @@ func (as *AutoServer) createAgentHandler(agentID string) http.HandlerFunc {
 			"schema_valid":    true, // TODO: Implement schema validation
 			"processing_time": time.Since(start).String(),
 			"timestamp":       time.Now().UTC().Format(time.RFC3339),
+			"execution_id":    result.ID,
+			"execution_path":  result.ExecutionPath,
+			"state_changes":   result.StateChanges,
+			"tool_calls":      result.ToolCalls,
+		}
+
+		// Add agent metadata for better frontend integration
+		if metadata, exists := as.agentMetadata[agentID]; exists {
+			response["agent_metadata"] = metadata
+		}
+
+		// Add graph information if available
+		if agent, exists := as.agentInstances[agentID]; exists && agent.GetGraph() != nil {
+			graph := agent.GetGraph()
+			response["graph_info"] = map[string]interface{}{
+				"graph_id":   graph.ID,
+				"graph_name": graph.Name,
+				"node_count": len(graph.Nodes),
+				"start_node": graph.StartNode,
+				"end_nodes":  graph.EndNodes,
+				"is_running": graph.IsRunning(),
+			}
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -203,6 +242,12 @@ func (as *AutoServer) createAgentHandler(agentID string) http.HandlerFunc {
 // createAgentStreamHandler creates a handler for streaming agent responses
 func (as *AutoServer) createAgentStreamHandler(agentID string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Handle OPTIONS request for CORS preflight
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
 		agent, exists := as.agentInstances[agentID]
 		if !exists {
 			http.Error(w, "Agent not found", http.StatusNotFound)

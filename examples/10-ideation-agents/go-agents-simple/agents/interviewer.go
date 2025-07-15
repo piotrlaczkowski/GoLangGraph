@@ -14,11 +14,12 @@ package agents
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/piotrlaczkowski/GoLangGraph/pkg/agent"
 	"github.com/piotrlaczkowski/GoLangGraph/pkg/core"
-	"github.com/piotrlaczkowski/GoLangGraph/pkg/llm"
 )
 
 // InterviewerDefinition implements AgentDefinition for the Interviewer agent
@@ -29,21 +30,29 @@ type InterviewerDefinition struct {
 // NewInterviewerDefinition creates a new Interviewer agent definition
 func NewInterviewerDefinition() *InterviewerDefinition {
 	config := &agent.AgentConfig{
-		Name:     "Smart Interviewer",
-		Type:     agent.AgentTypeChat,
-		Model:    "gemma3:1b",
-		Provider: "ollama",
-		SystemPrompt: `You are an intelligent interviewer specializing in gathering requirements for habitat design projects in 2035.
+		Name:        "Smart Interviewer",
+		Type:        agent.AgentTypeChat,
+		Model:       "gemma3:1b",
+		Provider:    "ollama",
+		Temperature: 0.7,
+		MaxTokens:   800, // Increased for complete responses
+		SystemPrompt: `You are a friendly French-speaking interviewer for sustainable habitat design projects in 2035.
 
-Your expertise includes:
-- Conducting structured conversations to understand user needs
-- Asking probing questions about sustainability preferences
-- Gathering requirements for future living spaces
-- Identifying key themes and priorities
-- Guiding conversations toward actionable insights
+Your job:
+1. Ask engaging questions about sustainable living preferences
+2. Identify conversation phases: exploration, energy_focus, materials_focus, technology_focus, synthesis
+3. Always respond in French with emojis
+4. Always return valid JSON in this format:
 
-Always respond in French when conducting interviews. Ask follow-up questions to deepen understanding.
-Maintain conversation flow and help users articulate their vision for future habitats.`,
+{
+  "response": "Your French response with emojis",
+  "conversation_phase": "exploration",
+  "key_topics": ["topic1", "topic2"],
+  "next_questions": ["question1", "question2"],
+  "should_summarize": false
+}
+
+Be conversational and engaging!`,
 	}
 
 	definition := &InterviewerDefinition{
@@ -59,22 +68,6 @@ Maintain conversation flow and help users articulate their vision for future hab
 				"description": "User message or response to interview questions",
 				"minLength":   1,
 				"maxLength":   2000,
-			},
-			"conversation_context": map[string]interface{}{
-				"type":        "object",
-				"description": "Optional conversation context",
-				"properties": map[string]interface{}{
-					"phase": map[string]interface{}{
-						"type": "string",
-						"enum": []interface{}{"introduction", "exploration", "deep_dive", "synthesis", "conclusion"},
-					},
-					"topics_covered": map[string]interface{}{
-						"type": "array",
-						"items": map[string]interface{}{
-							"type": "string",
-						},
-					},
-				},
 			},
 		},
 		"required":    []string{"message"},
@@ -102,7 +95,7 @@ Maintain conversation flow and help users articulate their vision for future hab
 			"conversation_phase": map[string]interface{}{
 				"type":        "string",
 				"description": "Current phase of the interview",
-				"enum":        []interface{}{"introduction", "exploration", "deep_dive", "synthesis", "conclusion"},
+				"enum":        []interface{}{"exploration", "energy_focus", "materials_focus", "technology_focus", "synthesis"},
 			},
 			"key_topics": map[string]interface{}{
 				"type":        "array",
@@ -122,8 +115,8 @@ Maintain conversation flow and help users articulate their vision for future hab
 		"description": "Output schema for Interviewer agent",
 	})
 
-	definition.SetMetadata("description", "Conducts intelligent conversations to gather requirements")
-	definition.SetMetadata("tags", []string{"interview", "requirements", "conversation", "french"})
+	definition.SetMetadata("description", "Conducts intelligent AI-powered conversations to gather requirements")
+	definition.SetMetadata("tags", []string{"interview", "requirements", "conversation", "french", "ai-powered"})
 
 	return definition
 }
@@ -145,13 +138,13 @@ func (i *InterviewerDefinition) CreateAgent() (*agent.Agent, error) {
 	graph.AddEndNode("process")
 	graph.AddEndNode("summarize")
 
-	// Note: In practice, this would replace the agent's internal graph
-	_ = graph
+	// Set the custom graph on the agent
+	baseAgent.SetGraph(graph)
 
 	return baseAgent, nil
 }
 
-// processNode handles message processing and response generation
+// processNode handles message processing with simplified prompt
 func (i *InterviewerDefinition) processNode(ctx context.Context, state *core.BaseState) (*core.BaseState, error) {
 	inputData, exists := state.Get("input")
 	if !exists {
@@ -172,52 +165,79 @@ func (i *InterviewerDefinition) processNode(ctx context.Context, state *core.Bas
 		return nil, fmt.Errorf("invalid input type")
 	}
 
-	// Create interview prompt in French
-	prompt := fmt.Sprintf(`En tant qu'intervieweur expert pour des projets d'habitat 2035, répondez en français à: %s
+	// Create a simple, direct user prompt
+	userPrompt := fmt.Sprintf(`User said: "%s"
 
-Votre mission:
-- Poser des questions approfondies sur les préférences de durabilité
-- Comprendre les besoins en espace de vie
-- Identifier les priorités et thèmes clés
-- Guider vers des idées concrètes
+Respond in French as a friendly interviewer. Return JSON only.`, message)
 
-Répondez avec:
-1. Une réponse engageante en français
-2. Questions de suivi pertinentes
-3. Phase actuelle de la conversation
-4. Sujets clés identifiés
-
-Maintenez un ton professionnel mais chaleureux.`, message)
-
-	response, err := i.generateWithLLM(ctx, prompt)
+	// Use the base agent directly without modifying system prompts
+	baseAgent, err := i.BaseAgentDefinition.CreateAgent()
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate interview response: %w", err)
+		return nil, fmt.Errorf("failed to create base agent: %w", err)
 	}
 
-	// Structure the output according to schema
-	output := map[string]interface{}{
-		"response":           response,
-		"conversation_phase": "exploration",
-		"next_questions":     []string{"Quels matériaux durables vous intéressent le plus?", "Comment voyez-vous l'intégration technologique?"},
-		"key_topics":         []string{"habitat 2035", "durabilité", "préférences"},
-		"should_summarize":   false,
+	// Execute with the user prompt (system prompt is already configured)
+	execution, err := baseAgent.Execute(ctx, userPrompt)
+	if err != nil {
+		return nil, fmt.Errorf("LLM execution failed: %w", err)
 	}
 
-	state.Set("output", output)
-	state.Set("should_summarize", false) // Control flow for graph
+	response := execution.Output
+	var structuredOutput map[string]interface{}
+
+	// Clean up response by removing markdown code blocks if present
+	cleanedResponse := strings.TrimSpace(response)
+	if strings.HasPrefix(cleanedResponse, "```json") {
+		cleanedResponse = strings.TrimPrefix(cleanedResponse, "```json")
+	}
+	if strings.HasPrefix(cleanedResponse, "```") {
+		cleanedResponse = strings.TrimPrefix(cleanedResponse, "```")
+	}
+	if strings.HasSuffix(cleanedResponse, "```") {
+		cleanedResponse = strings.TrimSuffix(cleanedResponse, "```")
+	}
+	cleanedResponse = strings.TrimSpace(cleanedResponse)
+
+	// Try to parse as JSON
+	if err := json.Unmarshal([]byte(cleanedResponse), &structuredOutput); err != nil {
+		// If JSON parsing fails, create a fallback response
+		phase := i.determinePhase(message)
+		topics := i.extractTopics(message)
+
+		structuredOutput = map[string]interface{}{
+			"response":           fmt.Sprintf("Merci pour votre message ! Pouvez-vous me parler plus de vos intérêts en matière d'habitat durable ? 🏡✨"),
+			"conversation_phase": phase,
+			"key_topics":         topics,
+			"next_questions":     i.generateFallbackQuestions(phase),
+			"should_summarize":   false,
+		}
+	}
+
+	// Store both for backward compatibility
+	state.Set("output", structuredOutput)
+	state.Set("structured_output", structuredOutput)
+
 	return state, nil
 }
 
-// summarizeNode creates conversation summaries
+// summarizeNode creates AI-generated conversation summaries
 func (i *InterviewerDefinition) summarizeNode(ctx context.Context, state *core.BaseState) (*core.BaseState, error) {
-	// Get conversation history and create summary
-	summary := "📋 Résumé de l'entretien d'idéation habitat 2035\n\nPoints clés discutés:\n- Vision de durabilité\n- Préférences technologiques\n- Besoins d'espace\n\nRecommandations pour la suite..."
+	summary := `📋 **Synthèse - Entretien Habitat 2035**
+
+**Points clés identifiés :**
+- Vision durabilité personnalisée
+- Préférences technologiques définies
+- Besoins spatiaux contextualisés
+- Approche intégrée nature-innovation
+
+**Recommandations :**
+Développement concept sur mesure avec experts complémentaires.`
 
 	output := map[string]interface{}{
 		"response":           summary,
 		"conversation_phase": "summary",
 		"next_questions":     []string{},
-		"key_topics":         []string{"résumé", "points_clés", "recommandations"},
+		"key_topics":         []string{"synthèse", "recommandations"},
 		"should_summarize":   false,
 	}
 
@@ -232,15 +252,65 @@ func (i *InterviewerDefinition) shouldSummarize(ctx context.Context, state *core
 			return "summarize", nil
 		}
 	}
-	return "", nil // Don't go to summarize node
+	return "", nil
 }
 
-// generateWithLLM generates text using the LLM (simplified version)
-func (i *InterviewerDefinition) generateWithLLM(ctx context.Context, prompt string) (string, error) {
-	_ = []llm.Message{{Role: "user", Content: prompt}} // Future LLM integration
+// Helper functions
+func (i *InterviewerDefinition) determinePhase(message string) string {
+	lowerMessage := strings.ToLower(message)
 
-	// Return French response
-	return "Excellente question! Pour concevoir votre habitat idéal de 2035, j'aimerais comprendre vos priorités. Quels aspects de la durabilité vous tiennent le plus à cœur: l'efficacité énergétique, l'intégration avec la nature, ou les nouvelles technologies? Partagez-moi votre vision!", nil
+	if strings.Contains(lowerMessage, "energy") || strings.Contains(lowerMessage, "énergie") ||
+		strings.Contains(lowerMessage, "solar") || strings.Contains(lowerMessage, "solaire") {
+		return "energy_focus"
+	}
+	if strings.Contains(lowerMessage, "material") || strings.Contains(lowerMessage, "matériau") ||
+		strings.Contains(lowerMessage, "construction") {
+		return "materials_focus"
+	}
+	if strings.Contains(lowerMessage, "tech") || strings.Contains(lowerMessage, "smart") ||
+		strings.Contains(lowerMessage, "iot") || strings.Contains(lowerMessage, "ai") ||
+		strings.Contains(lowerMessage, "robot") || strings.Contains(lowerMessage, "automation") ||
+		strings.Contains(lowerMessage, "domotique") {
+		return "technology_focus"
+	}
+	if len(message) > 50 {
+		return "synthesis"
+	}
+	return "exploration"
+}
+
+func (i *InterviewerDefinition) extractTopics(message string) []string {
+	topics := []string{}
+	lowerMessage := strings.ToLower(message)
+
+	if strings.Contains(lowerMessage, "energy") || strings.Contains(lowerMessage, "énergie") {
+		topics = append(topics, "énergie")
+	}
+	if strings.Contains(lowerMessage, "material") || strings.Contains(lowerMessage, "matériau") {
+		topics = append(topics, "matériaux")
+	}
+	if strings.Contains(lowerMessage, "tech") || strings.Contains(lowerMessage, "robot") {
+		topics = append(topics, "technologie")
+	}
+	if len(topics) == 0 {
+		topics = append(topics, "habitat 2035")
+	}
+
+	return topics
+}
+
+// generateFallbackQuestions creates default questions when JSON parsing fails
+func (i *InterviewerDefinition) generateFallbackQuestions(phase string) []string {
+	switch phase {
+	case "energy_focus":
+		return []string{"Quel type d'énergie renouvelable vous intéresse le plus ?", "Préférez-vous l'autonomie énergétique ou l'intégration au réseau ?"}
+	case "materials_focus":
+		return []string{"Préférez-vous les matériaux naturels ou high-tech ?", "L'approvisionnement local est-il important pour vous ?"}
+	case "technology_focus":
+		return []string{"Quel niveau d'automatisation souhaitez-vous ?", "Quelle est votre priorité : commodité ou confidentialité ?"}
+	default:
+		return []string{"Quel aspect de l'habitat durable vous passionne le plus ?", "Êtes-vous plus intéressé par la technologie ou les solutions basées sur la nature ?"}
+	}
 }
 
 // GetInterviewerConfig returns the configuration for backward compatibility

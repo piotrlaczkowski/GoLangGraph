@@ -216,10 +216,10 @@ func (as *AutoServer) generateAgentEndpoints() error {
 		basePath := fmt.Sprintf("%s/%s", as.config.BasePath, agentID)
 
 		// Main agent execution endpoint
-		as.router.HandleFunc(basePath, as.createAgentHandler(agentID)).Methods("POST")
+		as.router.HandleFunc(basePath, as.createAgentHandler(agentID)).Methods("POST", "OPTIONS")
 
 		// Agent stream endpoint (if supported)
-		as.router.HandleFunc(basePath+"/stream", as.createAgentStreamHandler(agentID)).Methods("POST")
+		as.router.HandleFunc(basePath+"/stream", as.createAgentStreamHandler(agentID)).Methods("POST", "OPTIONS")
 
 		// Agent conversation endpoint
 		as.router.HandleFunc(basePath+"/conversation", as.createConversationHandler(agentID)).Methods("GET", "POST", "DELETE")

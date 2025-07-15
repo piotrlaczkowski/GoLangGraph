@@ -187,6 +187,97 @@ func (p *GeminiProvider) SupportsStreaming() bool {
 	return true
 }
 
+// GetStreamingConfig returns the current streaming configuration
+func (p *GeminiProvider) GetStreamingConfig() *StreamingConfig {
+	if p.config.Streaming == nil {
+		p.config.Streaming = DefaultStreamingConfig()
+	}
+	return p.config.Streaming
+}
+
+// SetStreamingConfig updates the streaming configuration
+func (p *GeminiProvider) SetStreamingConfig(config *StreamingConfig) error {
+	if config == nil {
+		return fmt.Errorf("streaming config cannot be nil")
+	}
+	p.config.Streaming = config
+	return nil
+}
+
+// CompleteWithMode generates a completion with explicit streaming mode
+func (p *GeminiProvider) CompleteWithMode(ctx context.Context, req CompletionRequest, mode StreamMode) (*CompletionResponse, error) {
+	switch mode {
+	case StreamModeNone:
+		// Force non-streaming mode
+		return p.completeNonStreaming(ctx, req)
+	case StreamModeForced:
+		// Force streaming mode but collect all chunks
+		return p.completeStreamingCollected(ctx, req)
+	case StreamModeAuto:
+		// Auto-detect based on request.Stream flag
+		if req.Stream {
+			return p.completeStreamingCollected(ctx, req)
+		}
+		return p.completeNonStreaming(ctx, req)
+	default:
+		return p.Complete(ctx, req)
+	}
+}
+
+// CompleteStreamWithMode generates a streaming completion with explicit mode
+func (p *GeminiProvider) CompleteStreamWithMode(ctx context.Context, req CompletionRequest, callback StreamCallback, mode StreamMode) error {
+	switch mode {
+	case StreamModeNone:
+		// Convert to non-streaming
+		resp, err := p.completeNonStreaming(ctx, req)
+		if err != nil {
+			return err
+		}
+		// Send as single chunk
+		return callback(*resp)
+	case StreamModeForced, StreamModeAuto:
+		// Use normal streaming
+		return p.CompleteStream(ctx, req, callback)
+	default:
+		return p.CompleteStream(ctx, req, callback)
+	}
+}
+
+// completeNonStreaming forces non-streaming completion (current Complete method)
+func (p *GeminiProvider) completeNonStreaming(ctx context.Context, req CompletionRequest) (*CompletionResponse, error) {
+	return p.Complete(ctx, req)
+}
+
+// completeStreamingCollected forces streaming but collects all chunks into single response
+func (p *GeminiProvider) completeStreamingCollected(ctx context.Context, req CompletionRequest) (*CompletionResponse, error) {
+	var completeContent strings.Builder
+	var finalResponse *CompletionResponse
+
+	err := p.CompleteStream(ctx, req, func(chunk CompletionResponse) error {
+		if len(chunk.Choices) > 0 {
+			completeContent.WriteString(chunk.Choices[0].Delta.Content)
+			finalResponse = &chunk
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if finalResponse != nil {
+		// Convert delta to complete message
+		finalResponse.Choices[0].Message = Message{
+			Role:    finalResponse.Choices[0].Delta.Role,
+			Content: completeContent.String(),
+		}
+		finalResponse.Choices[0].Delta = Message{} // Clear delta
+		finalResponse.Object = "chat.completion"   // Change from chunk to completion
+	}
+
+	return finalResponse, nil
+}
+
 // SupportsToolCalls returns whether the provider supports tool calls
 func (p *GeminiProvider) SupportsToolCalls() bool {
 	return true

@@ -111,11 +111,17 @@ type Provider interface {
 	// GetModels returns available models
 	GetModels(ctx context.Context) ([]string, error)
 
-	// Complete generates a completion
+	// Complete generates a completion (auto-detects streaming based on request)
 	Complete(ctx context.Context, req CompletionRequest) (*CompletionResponse, error)
 
 	// CompleteStream generates a streaming completion
 	CompleteStream(ctx context.Context, req CompletionRequest, callback StreamCallback) error
+
+	// CompleteWithMode generates a completion with explicit streaming mode
+	CompleteWithMode(ctx context.Context, req CompletionRequest, mode StreamMode) (*CompletionResponse, error)
+
+	// CompleteStreamWithMode generates a streaming completion with explicit mode
+	CompleteStreamWithMode(ctx context.Context, req CompletionRequest, callback StreamCallback, mode StreamMode) error
 
 	// IsHealthy checks if the provider is healthy
 	IsHealthy(ctx context.Context) error
@@ -125,6 +131,15 @@ type Provider interface {
 
 	// SetConfig updates provider configuration
 	SetConfig(config map[string]interface{}) error
+
+	// SupportsStreaming returns true if the provider supports streaming
+	SupportsStreaming() bool
+
+	// GetStreamingConfig returns the current streaming configuration
+	GetStreamingConfig() *StreamingConfig
+
+	// SetStreamingConfig updates the streaming configuration
+	SetStreamingConfig(config *StreamingConfig) error
 
 	// Close closes the provider and cleans up resources
 	Close() error
@@ -143,6 +158,7 @@ type ProviderConfig struct {
 	RetryCount  int                    `json:"retry_count,omitempty"`
 	RetryDelay  time.Duration          `json:"retry_delay,omitempty"`
 	Headers     map[string]string      `json:"headers,omitempty"`
+	Streaming   *StreamingConfig       `json:"streaming,omitempty"`
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
@@ -155,7 +171,39 @@ func DefaultProviderConfig() *ProviderConfig {
 		RetryCount:  3,
 		RetryDelay:  1 * time.Second,
 		Headers:     make(map[string]string),
+		Streaming:   DefaultStreamingConfig(),
 		Metadata:    make(map[string]interface{}),
+	}
+}
+
+// StreamMode represents the streaming mode for providers
+type StreamMode string
+
+const (
+	StreamModeNone   StreamMode = "none"   // No streaming
+	StreamModeAuto   StreamMode = "auto"   // Auto-detect based on request
+	StreamModeForced StreamMode = "forced" // Always stream
+)
+
+// StreamingConfig represents streaming configuration
+type StreamingConfig struct {
+	Enabled    bool       `json:"enabled"`
+	Mode       StreamMode `json:"mode"`
+	ChunkSize  int        `json:"chunk_size,omitempty"`
+	BufferSize int        `json:"buffer_size,omitempty"`
+	FlushDelay int        `json:"flush_delay_ms,omitempty"` // milliseconds
+	KeepAlive  bool       `json:"keep_alive,omitempty"`
+}
+
+// DefaultStreamingConfig returns default streaming configuration
+func DefaultStreamingConfig() *StreamingConfig {
+	return &StreamingConfig{
+		Enabled:    false,
+		Mode:       StreamModeAuto,
+		ChunkSize:  1024,
+		BufferSize: 4096,
+		FlushDelay: 50,
+		KeepAlive:  true,
 	}
 }
 
@@ -311,6 +359,84 @@ func (pm *ProviderManager) CompleteStream(ctx context.Context, providerName stri
 	}
 
 	return provider.CompleteStream(ctx, req, callback)
+}
+
+// CompleteWithMode generates a completion with explicit streaming mode
+func (pm *ProviderManager) CompleteWithMode(ctx context.Context, providerName string, req CompletionRequest, mode StreamMode) (*CompletionResponse, error) {
+	var provider Provider
+	var err error
+
+	if providerName == "" {
+		provider, err = pm.GetDefaultProvider()
+	} else {
+		provider, err = pm.GetProvider(providerName)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return provider.CompleteWithMode(ctx, req, mode)
+}
+
+// CompleteStreamWithMode generates a streaming completion with explicit mode
+func (pm *ProviderManager) CompleteStreamWithMode(ctx context.Context, providerName string, req CompletionRequest, callback StreamCallback, mode StreamMode) error {
+	var provider Provider
+	var err error
+
+	if providerName == "" {
+		provider, err = pm.GetDefaultProvider()
+	} else {
+		provider, err = pm.GetProvider(providerName)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return provider.CompleteStreamWithMode(ctx, req, callback, mode)
+}
+
+// EnableStreaming enables streaming for a provider
+func (pm *ProviderManager) EnableStreaming(providerName string) error {
+	provider, err := pm.GetProvider(providerName)
+	if err != nil {
+		return err
+	}
+
+	config := provider.GetStreamingConfig()
+	config.Enabled = true
+	config.Mode = StreamModeAuto
+
+	return provider.SetStreamingConfig(config)
+}
+
+// DisableStreaming disables streaming for a provider
+func (pm *ProviderManager) DisableStreaming(providerName string) error {
+	provider, err := pm.GetProvider(providerName)
+	if err != nil {
+		return err
+	}
+
+	config := provider.GetStreamingConfig()
+	config.Enabled = false
+	config.Mode = StreamModeNone
+
+	return provider.SetStreamingConfig(config)
+}
+
+// SetStreamingMode sets the streaming mode for a provider
+func (pm *ProviderManager) SetStreamingMode(providerName string, mode StreamMode) error {
+	provider, err := pm.GetProvider(providerName)
+	if err != nil {
+		return err
+	}
+
+	config := provider.GetStreamingConfig()
+	config.Mode = mode
+	config.Enabled = mode != StreamModeNone
+
+	return provider.SetStreamingConfig(config)
 }
 
 // HealthCheck checks the health of all providers
