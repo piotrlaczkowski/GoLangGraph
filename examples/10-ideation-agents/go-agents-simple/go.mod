@@ -4,7 +4,7 @@ go 1.23.0
 
 toolchain go1.23.10
 
-replace github.com/piotrlaczkowski/GoLangGraph => ../../..
+replace github.com/piotrlaczkowski/GoLangGraph => ../../../..
 
 require github.com/piotrlaczkowski/GoLangGraph v0.0.0-00010101000000-000000000000
 

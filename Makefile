@@ -496,5 +496,116 @@ check: fmt vet lint security test-short ## Run all checks
 dev-clean: clean docker-down ## Clean everything including Docker containers
 	@echo "$(GREEN)Development environment cleaned!$(NC)"
 
+##@ Stateful Agents System
+
+STATEFUL_DIR=./examples/10-ideation-agents/go-agents-simple-statefull
+STATEFUL_BINARY=stateful-agents
+COMPOSE_FILE=docker-compose.local.yml
+
+.PHONY: stateful-setup
+stateful-setup: ## Set up the stateful agents system with database
+	@echo "$(BLUE)Setting up stateful agents system...$(NC)"
+	@cd $(STATEFUL_DIR) && \
+	echo "$(YELLOW)1. Cleaning up existing containers...$(NC)" && \
+	docker stop golanggraph-postgres golanggraph-redis 2>/dev/null || true && \
+	docker rm golanggraph-postgres golanggraph-redis 2>/dev/null || true && \
+	echo "$(YELLOW)2. Starting PostgreSQL and Redis...$(NC)" && \
+	docker-compose -f $(COMPOSE_FILE) up -d postgres redis && \
+	echo "$(YELLOW)3. Waiting for PostgreSQL to initialize...$(NC)" && \
+	sleep 15 && \
+	echo "$(YELLOW)4. Verifying database setup...$(NC)" && \
+	docker exec golanggraph-postgres psql -U golanggraph -d golanggraph_stateful -c "SELECT 'Database ready!' as status;" && \
+	echo "$(GREEN)✅ Stateful agents system setup complete!$(NC)"
+
+.PHONY: stateful-build
+stateful-build: ## Build the stateful agents application
+	@echo "$(BLUE)Building stateful agents application...$(NC)"
+	@cd $(STATEFUL_DIR) && \
+	echo "$(YELLOW)Building $(STATEFUL_BINARY)...$(NC)" && \
+	GOWORK=off go mod tidy && \
+	GOWORK=off go build -o $(STATEFUL_BINARY) . && \
+	echo "$(GREEN)✅ Build complete: $(STATEFUL_BINARY)$(NC)"
+
+.PHONY: stateful-run
+stateful-run: ## Run the stateful agents application
+	@echo "$(BLUE)Starting stateful agents application...$(NC)"
+	@cd $(STATEFUL_DIR) && \
+	echo "$(YELLOW)Checking Ollama connection...$(NC)" && \
+	curl -s http://localhost:11434/api/tags > /dev/null && \
+	echo "$(GREEN)✅ Ollama is running$(NC)" && \
+	echo "$(YELLOW)Starting application...$(NC)" && \
+	OLLAMA_ENDPOINT=http://localhost:11434 \
+	POSTGRES_HOST=localhost POSTGRES_PORT=5432 \
+	POSTGRES_DB=golanggraph_stateful POSTGRES_USER=golanggraph \
+	POSTGRES_PASSWORD=stateful_password_2024 POSTGRES_SSL_MODE=disable \
+	LOG_LEVEL=info \
+	./$(STATEFUL_BINARY)
+
+.PHONY: stateful-test
+stateful-test: ## Test the stateful agents system
+	@echo "$(BLUE)Testing stateful agents system...$(NC)"
+	@cd $(STATEFUL_DIR) && \
+	echo "$(YELLOW)Running comprehensive tests...$(NC)" && \
+	chmod +x test-system.sh && \
+	./test-system.sh
+
+.PHONY: stateful-dev
+stateful-dev: stateful-setup stateful-build stateful-run ## Set up, build, and run the stateful agents system
+
+.PHONY: stateful-test-full
+stateful-test-full: stateful-setup stateful-build ## Full setup and testing
+	@echo "$(BLUE)Running full stateful agents test...$(NC)"
+	@cd $(STATEFUL_DIR) && \
+	echo "$(YELLOW)Starting application in background...$(NC)" && \
+	OLLAMA_ENDPOINT=http://localhost:11434 \
+	POSTGRES_HOST=localhost POSTGRES_PORT=5432 \
+	POSTGRES_DB=golanggraph_stateful POSTGRES_USER=golanggraph \
+	POSTGRES_PASSWORD=stateful_password_2024 POSTGRES_SSL_MODE=disable \
+	LOG_LEVEL=info \
+	./$(STATEFUL_BINARY) > app.log 2>&1 & \
+	echo $$! > app.pid && \
+	sleep 5 && \
+	echo "$(YELLOW)Running tests...$(NC)" && \
+	chmod +x test-system.sh && \
+	./test-system.sh && \
+	echo "$(YELLOW)Stopping application...$(NC)" && \
+	kill `cat app.pid` 2>/dev/null || true && \
+	rm -f app.pid && \
+	echo "$(GREEN)✅ Full test complete!$(NC)"
+
+.PHONY: stateful-logs
+stateful-logs: ## Show logs from the stateful agents system
+	@echo "$(BLUE)Showing Docker logs...$(NC)"
+	@cd $(STATEFUL_DIR) && \
+	docker-compose -f $(COMPOSE_FILE) logs -f
+
+.PHONY: stateful-status
+stateful-status: ## Check status of the stateful agents system
+	@echo "$(BLUE)Checking stateful agents system status...$(NC)"
+	@cd $(STATEFUL_DIR) && \
+	echo "$(YELLOW)Docker containers:$(NC)" && \
+	docker ps --filter name=golanggraph --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" && \
+	echo "$(YELLOW)Application health:$(NC)" && \
+	curl -s http://localhost:8080/health | jq . 2>/dev/null || echo "Application not responding" && \
+	echo "$(YELLOW)Database connection:$(NC)" && \
+	docker exec golanggraph-postgres psql -U golanggraph -d golanggraph_stateful -c "SELECT count(*) as tables FROM information_schema.tables WHERE table_schema = 'public';" 2>/dev/null || echo "Database not accessible"
+
+.PHONY: stateful-clean
+stateful-clean: ## Clean up stateful agents system
+	@echo "$(BLUE)Cleaning up stateful agents system...$(NC)"
+	@cd $(STATEFUL_DIR) && \
+	echo "$(YELLOW)Stopping containers...$(NC)" && \
+	docker-compose -f $(COMPOSE_FILE) down -v && \
+	echo "$(YELLOW)Removing binary...$(NC)" && \
+	rm -f $(STATEFUL_BINARY) app.log app.pid && \
+	echo "$(GREEN)✅ Cleanup complete!$(NC)"
+
+.PHONY: ollama-check
+ollama-check: ## Check if Ollama is running and show available models
+	@echo "$(BLUE)Checking Ollama status...$(NC)"
+	@curl -s http://localhost:11434/api/tags | jq -r '.models[] | .name' 2>/dev/null && \
+	echo "$(GREEN)✅ Ollama is running with models above$(NC)" || \
+	echo "$(RED)❌ Ollama is not running. Please start Ollama first.$(NC)"
+
 # Default target
 .DEFAULT_GOAL := help

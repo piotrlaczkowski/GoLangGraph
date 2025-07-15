@@ -1,0 +1,64 @@
+# GoLangGraph Stateful Ideation Agents - Local Development Dockerfile
+# Optimized for testing and development with all migrated agents
+
+FROM golang:1.23-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache \
+    git=2.42.1-r0 \
+    ca-certificates=20240226-r0 \
+    gcc=13.2.1_git20231014-r0 \
+    musl-dev=1.2.4_git20230717-r4
+
+WORKDIR /build
+
+# Copy go mod files first for better layer caching
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build the application with debug info and race detection for local testing
+RUN CGO_ENABLED=1 GOOS=linux go build \
+    -race \
+    -gcflags="all=-N -l" \
+    -o main \
+    .
+
+# Final stage - debug-enabled runtime image
+FROM alpine:3.19
+
+# Install runtime dependencies including debugging tools
+RUN apk --no-cache add \
+    ca-certificates=20240226-r0 \
+    curl=8.5.0-r0 \
+    wget=1.21.4-r0 \
+    htop=3.2.2-r1 \
+    net-tools=2.10-r3 \
+    bash=5.2.15-r5 \
+    && adduser -D -s /bin/bash appuser
+
+WORKDIR /app
+
+# Copy the binary from builder stage
+COPY --from=builder /build/main .
+
+# Create necessary directories
+RUN mkdir -p /app/logs /app/data /app/tmp && \
+    chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose ports
+EXPOSE 8080 2345
+
+# Health check
+HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# Development-friendly entrypoint
+CMD ["./main"]
