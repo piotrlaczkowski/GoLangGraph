@@ -149,6 +149,12 @@ func (p *OllamaProvider) Complete(ctx context.Context, req CompletionRequest) (*
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
+	// Log request being sent to Ollama
+	p.logger.WithFields(logrus.Fields{
+		"endpoint": p.config.Endpoint + "/api/chat",
+		"model":    ollamaReq.Model,
+	}).Debug("Sending request to Ollama")
+
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", p.config.Endpoint+"/api/chat", bytes.NewBuffer(reqBody))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -167,16 +173,56 @@ func (p *OllamaProvider) Complete(ctx context.Context, req CompletionRequest) (*
 		return nil, fmt.Errorf("Ollama API error: status %d, body: %s", resp.StatusCode, string(body))
 	}
 
-	var ollamaResp OllamaResponse
-	if err := json.NewDecoder(resp.Body).Decode(&ollamaResp); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	// Read all streaming chunks until done=true
+	var completeResponse strings.Builder
+	var finalModel string
+	var finalRole string
+
+	decoder := json.NewDecoder(resp.Body)
+	for {
+		var ollamaResp OllamaResponse
+		if err := decoder.Decode(&ollamaResp); err != nil {
+			if err == io.EOF {
+				break
+			}
+			return nil, fmt.Errorf("failed to decode response: %w", err)
+		}
+
+		if ollamaResp.Error != "" {
+			return nil, fmt.Errorf("Ollama API error: %s", ollamaResp.Error)
+		}
+
+		// Accumulate the response content
+		completeResponse.WriteString(ollamaResp.Message.Content)
+		finalModel = ollamaResp.Model
+		finalRole = ollamaResp.Message.Role
+
+		// Break when done
+		if ollamaResp.Done {
+			break
+		}
 	}
 
-	if ollamaResp.Error != "" {
-		return nil, fmt.Errorf("Ollama API error: %s", ollamaResp.Error)
+	finalContent := completeResponse.String()
+
+	// Log the complete response from Ollama
+	p.logger.WithFields(logrus.Fields{
+		"model":          finalModel,
+		"content_length": len(finalContent),
+	}).Debug("Received complete response from Ollama")
+
+	// Create final response object
+	finalResponse := OllamaResponse{
+		Model:     finalModel,
+		CreatedAt: time.Now(),
+		Message: OllamaMessage{
+			Role:    finalRole,
+			Content: finalContent,
+		},
+		Done: true,
 	}
 
-	return p.convertFromOllamaResponse(ollamaResp), nil
+	return p.convertFromOllamaResponse(finalResponse), nil
 }
 
 // CompleteStream generates a streaming completion
@@ -309,24 +355,38 @@ func (p *OllamaProvider) Close() error {
 
 // convertToOllamaRequest converts our request format to Ollama format
 func (p *OllamaProvider) convertToOllamaRequest(req CompletionRequest) OllamaRequest {
-	messages := make([]OllamaMessage, len(req.Messages))
-	for i, msg := range req.Messages {
-		// Skip system messages as they should be handled differently in Ollama
+	var systemPrompt string
+	var filteredMessages []OllamaMessage
+
+	// Extract system prompt and filter messages
+	for _, msg := range req.Messages {
 		if msg.Role == "system" {
-			continue
-		}
-		messages[i] = OllamaMessage{
-			Role:    msg.Role,
-			Content: msg.Content,
+			// Combine multiple system messages if present
+			if systemPrompt != "" {
+				systemPrompt += "\n\n" + msg.Content
+			} else {
+				systemPrompt = msg.Content
+			}
+		} else if msg.Content != "" {
+			// Only add non-empty non-system messages
+			filteredMessages = append(filteredMessages, OllamaMessage{
+				Role:    msg.Role,
+				Content: msg.Content,
+			})
 		}
 	}
 
-	// Filter out empty messages
-	var filteredMessages []OllamaMessage
-	for _, msg := range messages {
-		if msg.Content != "" {
-			filteredMessages = append(filteredMessages, msg)
-		}
+	// If we have a system prompt but no user messages, create a user message to trigger response
+	if systemPrompt != "" && len(filteredMessages) == 0 {
+		filteredMessages = append(filteredMessages, OllamaMessage{
+			Role:    "user",
+			Content: "Please respond according to your instructions.",
+		})
+	}
+
+	// If we have a system prompt and user messages, prepend system prompt to first user message
+	if systemPrompt != "" && len(filteredMessages) > 0 && filteredMessages[0].Role == "user" {
+		filteredMessages[0].Content = systemPrompt + "\n\n" + filteredMessages[0].Content
 	}
 
 	model := req.Model
@@ -353,6 +413,24 @@ func (p *OllamaProvider) convertToOllamaRequest(req CompletionRequest) OllamaReq
 		}
 	}
 
+	// CRITICAL: Ensure minimum MaxTokens to prevent truncation
+	if maxTokens < 50 {
+		p.logger.WithFields(logrus.Fields{
+			"requested_tokens": maxTokens,
+			"applied_tokens":   500,
+		}).Warn("MaxTokens too low, applying minimum safe value")
+		maxTokens = 500
+	}
+
+	// VALIDATION: Check for suspicious configurations
+	if maxTokens > 0 && maxTokens < 100 {
+		p.logger.WithFields(logrus.Fields{
+			"model":       model,
+			"maxTokens":   maxTokens,
+			"temperature": temperature,
+		}).Error("CRITICAL: MaxTokens dangerously low - this will cause truncation!")
+	}
+
 	ollamaReq := OllamaRequest{
 		Model:    model,
 		Messages: filteredMessages,
@@ -364,6 +442,14 @@ func (p *OllamaProvider) convertToOllamaRequest(req CompletionRequest) OllamaReq
 		},
 		KeepAlive: "5m",
 	}
+
+	// Log request details
+	p.logger.WithFields(logrus.Fields{
+		"model":         model,
+		"temperature":   temperature,
+		"num_predict":   maxTokens,
+		"message_count": len(filteredMessages),
+	}).Debug("Ollama request configuration")
 
 	return ollamaReq
 }
@@ -447,6 +533,97 @@ func (p *OllamaProvider) GetDefaultModels() []string {
 // SupportsStreaming returns true if the provider supports streaming
 func (p *OllamaProvider) SupportsStreaming() bool {
 	return true
+}
+
+// GetStreamingConfig returns the current streaming configuration
+func (p *OllamaProvider) GetStreamingConfig() *StreamingConfig {
+	if p.config.Streaming == nil {
+		p.config.Streaming = DefaultStreamingConfig()
+	}
+	return p.config.Streaming
+}
+
+// SetStreamingConfig updates the streaming configuration
+func (p *OllamaProvider) SetStreamingConfig(config *StreamingConfig) error {
+	if config == nil {
+		return fmt.Errorf("streaming config cannot be nil")
+	}
+	p.config.Streaming = config
+	return nil
+}
+
+// CompleteWithMode generates a completion with explicit streaming mode
+func (p *OllamaProvider) CompleteWithMode(ctx context.Context, req CompletionRequest, mode StreamMode) (*CompletionResponse, error) {
+	switch mode {
+	case StreamModeNone:
+		// Force non-streaming mode
+		return p.completeNonStreaming(ctx, req)
+	case StreamModeForced:
+		// Force streaming mode but collect all chunks
+		return p.completeStreamingCollected(ctx, req)
+	case StreamModeAuto:
+		// Auto-detect based on request.Stream flag
+		if req.Stream {
+			return p.completeStreamingCollected(ctx, req)
+		}
+		return p.completeNonStreaming(ctx, req)
+	default:
+		return p.Complete(ctx, req)
+	}
+}
+
+// CompleteStreamWithMode generates a streaming completion with explicit mode
+func (p *OllamaProvider) CompleteStreamWithMode(ctx context.Context, req CompletionRequest, callback StreamCallback, mode StreamMode) error {
+	switch mode {
+	case StreamModeNone:
+		// Convert to non-streaming
+		resp, err := p.completeNonStreaming(ctx, req)
+		if err != nil {
+			return err
+		}
+		// Send as single chunk
+		return callback(*resp)
+	case StreamModeForced, StreamModeAuto:
+		// Use normal streaming
+		return p.CompleteStream(ctx, req, callback)
+	default:
+		return p.CompleteStream(ctx, req, callback)
+	}
+}
+
+// completeNonStreaming forces non-streaming completion (current Complete method)
+func (p *OllamaProvider) completeNonStreaming(ctx context.Context, req CompletionRequest) (*CompletionResponse, error) {
+	return p.Complete(ctx, req)
+}
+
+// completeStreamingCollected forces streaming but collects all chunks into single response
+func (p *OllamaProvider) completeStreamingCollected(ctx context.Context, req CompletionRequest) (*CompletionResponse, error) {
+	var completeContent strings.Builder
+	var finalResponse *CompletionResponse
+
+	err := p.CompleteStream(ctx, req, func(chunk CompletionResponse) error {
+		if len(chunk.Choices) > 0 {
+			completeContent.WriteString(chunk.Choices[0].Delta.Content)
+			finalResponse = &chunk
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if finalResponse != nil {
+		// Convert delta to complete message
+		finalResponse.Choices[0].Message = Message{
+			Role:    finalResponse.Choices[0].Delta.Role,
+			Content: completeContent.String(),
+		}
+		finalResponse.Choices[0].Delta = Message{} // Clear delta
+		finalResponse.Object = "chat.completion"   // Change from chunk to completion
+	}
+
+	return finalResponse, nil
 }
 
 // SupportsToolCalls returns true if the provider supports tool calls

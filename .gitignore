@@ -54,5 +54,3 @@ docker-data/
 # Large test data files
 testdata/*.bin
 testdata/*.db
-
-studio

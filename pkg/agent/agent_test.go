@@ -64,6 +64,26 @@ func (m *mockProvider) CompleteStream(ctx context.Context, req llm.CompletionReq
 	return callback(*response)
 }
 
+func (m *mockProvider) CompleteWithMode(ctx context.Context, req llm.CompletionRequest, mode llm.StreamMode) (*llm.CompletionResponse, error) {
+	return m.Complete(ctx, req)
+}
+
+func (m *mockProvider) CompleteStreamWithMode(ctx context.Context, req llm.CompletionRequest, callback llm.StreamCallback, mode llm.StreamMode) error {
+	return m.CompleteStream(ctx, req, callback)
+}
+
+func (m *mockProvider) SupportsStreaming() bool { return true }
+
+func (m *mockProvider) GetStreamingConfig() *llm.StreamingConfig {
+	return &llm.StreamingConfig{
+		Mode:      llm.StreamModeNone,
+		ChunkSize: 100,
+		KeepAlive: false,
+	}
+}
+
+func (m *mockProvider) SetStreamingConfig(config *llm.StreamingConfig) error { return nil }
+
 func (m *mockProvider) IsHealthy(ctx context.Context) error {
 	return nil
 }

@@ -43,6 +43,7 @@ type AgentConfig struct {
 	MaxIterations   int                    `json:"max_iterations"`
 	Tools           []string               `json:"tools"`
 	EnableStreaming bool                   `json:"enable_streaming"`
+	StreamingMode   llm.StreamMode         `json:"streaming_mode,omitempty"`
 	Timeout         time.Duration          `json:"timeout"`
 	Metadata        map[string]interface{} `json:"metadata"`
 }
@@ -57,9 +58,122 @@ func DefaultAgentConfig() *AgentConfig {
 		MaxIterations:   10,
 		Tools:           []string{},
 		EnableStreaming: false,
+		StreamingMode:   llm.StreamModeAuto,
 		Timeout:         30 * time.Second,
 		Metadata:        make(map[string]interface{}),
 	}
+}
+
+// Validate validates the agent configuration
+func (config *AgentConfig) Validate() error {
+	if config.Name == "" {
+		return fmt.Errorf("agent name is required")
+	}
+
+	if config.Type == "" {
+		return fmt.Errorf("agent type is required")
+	}
+
+	if config.Model == "" {
+		return fmt.Errorf("agent model is required")
+	}
+
+	if config.Provider == "" {
+		return fmt.Errorf("agent provider is required")
+	}
+
+	// Validate MaxTokens - must be reasonable to prevent truncation
+	if config.MaxTokens <= 0 {
+		return fmt.Errorf("MaxTokens must be greater than 0, got %d", config.MaxTokens)
+	}
+
+	// Prevent dangerously low MaxTokens that could cause truncation
+	if config.MaxTokens <= 100 {
+		return fmt.Errorf("MaxTokens too low (%d), minimum required is 100 to prevent response truncation", config.MaxTokens)
+	}
+
+	if config.MaxTokens > 100000 {
+		return fmt.Errorf("MaxTokens too large (%d), maximum allowed is 100000", config.MaxTokens)
+	}
+
+	// Validate Temperature range
+	if config.Temperature < 0 || config.Temperature > 2.0 {
+		return fmt.Errorf("temperature must be between 0 and 2.0, got %f", config.Temperature)
+	}
+
+	// Validate MaxIterations
+	if config.MaxIterations <= 0 {
+		config.MaxIterations = 10 // Set default
+	}
+
+	if config.MaxIterations > 100 {
+		return fmt.Errorf("MaxIterations too large (%d), maximum allowed is 100", config.MaxIterations)
+	}
+
+	return nil
+}
+
+// ValidateAndSanitize validates the agent configuration and sanitizes problematic values
+func (config *AgentConfig) ValidateAndSanitize() error {
+	// First do basic validation for critical fields
+	if config.Name == "" {
+		return fmt.Errorf("agent name is required")
+	}
+
+	if config.Model == "" {
+		return fmt.Errorf("agent model is required")
+	}
+
+	if config.Provider == "" {
+		return fmt.Errorf("agent provider is required")
+	}
+
+	// Sanitize MaxTokens - automatically fix low values instead of erroring
+	if config.MaxTokens <= 0 {
+		config.MaxTokens = 500 // Set to safe default
+	} else if config.MaxTokens <= 100 {
+		config.MaxTokens = 500 // Sanitize to prevent truncation - any value 100 or below is risky
+	}
+
+	if config.MaxTokens > 100000 {
+		return fmt.Errorf("MaxTokens too large (%d), maximum allowed is 100000", config.MaxTokens)
+	}
+
+	// Sanitize Temperature range
+	if config.Temperature < 0 {
+		config.Temperature = 0.7 // Set to default
+	} else if config.Temperature > 2.0 {
+		config.Temperature = 0.7 // Set to default
+	}
+
+	// Validate MaxIterations
+	if config.MaxIterations <= 0 {
+		config.MaxIterations = 10 // Set default
+	}
+
+	if config.MaxIterations > 100 {
+		return fmt.Errorf("MaxIterations too large (%d), maximum allowed is 100", config.MaxIterations)
+	}
+
+	// Set default Type if not specified
+	if config.Type == "" {
+		config.Type = AgentTypeChat
+	}
+
+	// Set default timeout if not specified
+	if config.Timeout <= 0 {
+		config.Timeout = 30 * time.Second
+	}
+
+	// Initialize collections if nil
+	if config.Tools == nil {
+		config.Tools = make([]string, 0)
+	}
+	if config.Metadata == nil {
+		config.Metadata = make(map[string]interface{})
+	}
+
+	return nil
 }
 
 // Agent represents an AI agent
@@ -80,29 +194,74 @@ type Agent struct {
 
 // AgentExecution represents an agent execution record
 type AgentExecution struct {
-	ID        string                 `json:"id"`
+	ID               string                 `json:"id"`
+	Timestamp        time.Time              `json:"timestamp"`
+	Input            string                 `json:"input"`
+	Output           string                 `json:"output"`            // Legacy string output for backward compatibility
+	StructuredOutput interface{}            `json:"structured_output"` // New structured JSON output
+	ToolCalls        []llm.ToolCall         `json:"tool_calls"`
+	Duration         time.Duration          `json:"duration"`
+	Success          bool                   `json:"success"`
+	Error            error                  `json:"error,omitempty"`
+	Metadata         map[string]interface{} `json:"metadata"`
+	ExecutionPath    []string               `json:"execution_path"`          // Track which nodes were executed
+	StateChanges     []StateChange          `json:"state_changes,omitempty"` // Track state progression
+}
+
+// StateChange represents a change in agent state during execution
+type StateChange struct {
+	NodeID    string                 `json:"node_id"`
+	NodeName  string                 `json:"node_name"`
 	Timestamp time.Time              `json:"timestamp"`
-	Input     string                 `json:"input"`
-	Output    string                 `json:"output"`
-	ToolCalls []llm.ToolCall         `json:"tool_calls"`
+	Before    map[string]interface{} `json:"before,omitempty"`
+	After     map[string]interface{} `json:"after,omitempty"`
 	Duration  time.Duration          `json:"duration"`
-	Success   bool                   `json:"success"`
-	Error     error                  `json:"error,omitempty"`
-	Metadata  map[string]interface{} `json:"metadata"`
 }
 
 // NewAgent creates a new agent
 func NewAgent(config *AgentConfig, llmManager *llm.ProviderManager, toolRegistry *tools.ToolRegistry) *Agent {
-	if config == nil {
-		config = DefaultAgentConfig()
+	// Create a copy of config to avoid modification of original
+	agentConfig := *config
+
+	// Validate and sanitize configuration
+	if err := agentConfig.ValidateAndSanitize(); err != nil {
+		// Log the error and apply default configuration
+		logger := logrus.New()
+		logger.WithError(err).Error("Invalid agent configuration, applying defaults")
+
+		// Apply emergency defaults for critical missing fields only
+		// MaxTokens is now handled by ValidateAndSanitize
+		if agentConfig.Temperature < 0 || agentConfig.Temperature > 2.0 {
+			agentConfig.Temperature = 0.7
+		}
+		if agentConfig.Provider == "" {
+			agentConfig.Provider = "ollama"
+		}
+		if agentConfig.Model == "" {
+			agentConfig.Model = "llama2"
+		}
+	}
+
+	logger := logrus.New()
+	logger.WithFields(logrus.Fields{
+		"agent_name":  agentConfig.Name,
+		"agent_type":  agentConfig.Type,
+		"model":       agentConfig.Model,
+		"provider":    agentConfig.Provider,
+		"max_tokens":  agentConfig.MaxTokens,
+		"temperature": agentConfig.Temperature,
+	}).Info("Creating agent with validated configuration")
+
+	if agentConfig.ID == "" {
+		agentConfig.ID = uuid.New().String()
 	}
 
 	agent := &Agent{
-		config:           config,
+		config:           &agentConfig,
 		llmManager:       llmManager,
 		toolRegistry:     toolRegistry,
 		conversation:     llm.NewConversationHistory(),
-		logger:           logrus.New(),
+		logger:           logger,
 		executionHistory: make([]AgentExecution, 0),
 	}
 
@@ -235,12 +394,41 @@ func (a *Agent) Execute(ctx context.Context, input string) (*AgentExecution, err
 	} else {
 		execution.Success = true
 		if output, exists := finalState.Get("output"); exists {
-			execution.Output = fmt.Sprintf("%v", output)
+			// Always store structured output and provide string fallback
+			execution.StructuredOutput = output
+
+			switch v := output.(type) {
+			case string:
+				execution.Output = v
+			case map[string]interface{}:
+				// Store structured data for proper JSON serialization
+				execution.Metadata["structured_output"] = v
+				// Extract a meaningful string representation for legacy compatibility
+				if response, ok := v["response"].(string); ok {
+					execution.Output = response
+				} else if description, ok := v["description"].(string); ok {
+					execution.Output = description
+				} else if story, ok := v["story"].(string); ok {
+					execution.Output = story
+				} else if summary, ok := v["summary"].(string); ok {
+					execution.Output = summary
+				} else {
+					execution.Output = fmt.Sprintf("%v", v)
+				}
+			default:
+				execution.Output = fmt.Sprintf("%v", v)
+			}
 		}
 		if toolCalls, exists := finalState.Get("tool_calls"); exists {
 			if tc, ok := toolCalls.([]llm.ToolCall); ok {
 				execution.ToolCalls = tc
 			}
+		}
+
+		// Track execution path from graph
+		if a.graph != nil {
+			// This would be populated by the graph execution tracking
+			execution.ExecutionPath = []string{} // Placeholder for now
 		}
 	}
 
@@ -407,9 +595,19 @@ func (a *Agent) chatNode(ctx context.Context, state *core.BaseState) (*core.Base
 		Temperature: a.config.Temperature,
 		MaxTokens:   a.config.MaxTokens,
 		Tools:       toolDefs,
+		Stream:      a.config.EnableStreaming,
 	}
 
-	resp, err := a.llmManager.Complete(ctx, a.config.Provider, req)
+	var resp *llm.CompletionResponse
+	var err error
+
+	// Use streaming mode if enabled
+	if a.config.EnableStreaming {
+		resp, err = a.llmManager.CompleteWithMode(ctx, a.config.Provider, req, a.config.StreamingMode)
+	} else {
+		resp, err = a.llmManager.Complete(ctx, a.config.Provider, req)
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("chat failed: %w", err)
 	}
@@ -770,6 +968,63 @@ func (a *Agent) IsRunning() bool {
 // GetGraph returns the agent's execution graph
 func (a *Agent) GetGraph() *core.Graph {
 	return a.graph
+}
+
+// SetGraph sets the agent's execution graph
+func (a *Agent) SetGraph(graph *core.Graph) {
+	a.graph = graph
+}
+
+// EnableStreaming enables streaming mode for the agent
+func (a *Agent) EnableStreaming() error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	a.config.EnableStreaming = true
+	if a.config.StreamingMode == llm.StreamModeNone {
+		a.config.StreamingMode = llm.StreamModeAuto
+	}
+
+	// Enable streaming on the provider as well
+	return a.llmManager.EnableStreaming(a.config.Provider)
+}
+
+// DisableStreaming disables streaming mode for the agent
+func (a *Agent) DisableStreaming() error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	a.config.EnableStreaming = false
+	a.config.StreamingMode = llm.StreamModeNone
+
+	// Disable streaming on the provider as well
+	return a.llmManager.DisableStreaming(a.config.Provider)
+}
+
+// SetStreamingMode sets the streaming mode for the agent
+func (a *Agent) SetStreamingMode(mode llm.StreamMode) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	a.config.StreamingMode = mode
+	a.config.EnableStreaming = mode != llm.StreamModeNone
+
+	// Set streaming mode on the provider as well
+	return a.llmManager.SetStreamingMode(a.config.Provider, mode)
+}
+
+// GetStreamingMode returns the current streaming mode
+func (a *Agent) GetStreamingMode() llm.StreamMode {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	return a.config.StreamingMode
+}
+
+// IsStreamingEnabled returns whether streaming is enabled
+func (a *Agent) IsStreamingEnabled() bool {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	return a.config.EnableStreaming
 }
 
 // MultiAgentCoordinator manages multiple agents working together
