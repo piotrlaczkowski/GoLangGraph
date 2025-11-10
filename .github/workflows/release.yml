@@ -16,6 +16,7 @@ permissions:
   pages: write
   id-token: write
   packages: write
+  security-events: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -30,6 +31,10 @@ jobs:
   validation:
     name: Validation
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      security-events: read
 
     steps:
     - name: Checkout code
