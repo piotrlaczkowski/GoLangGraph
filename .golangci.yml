@@ -19,7 +19,6 @@ linters-settings:
       - fieldalignment
 
   revive:
-    min-confidence: 0.8
     rules:
       - name: package-comments
         disabled: true
@@ -57,10 +56,6 @@ linters-settings:
   nestif:
     min-complexity: 6
 
-  gomnd:
-    checks: argument,case,condition,operation,return,assign
-    ignored-numbers: 0,1,2,3,4,5,10,100,1000
-
   godox:
     keywords:
       - FIXME
@@ -92,7 +87,6 @@ linters:
     - goimports
 
 issues:
-  uniq-by-line: true
   exclude-dirs:
     - examples/
     - cmd/examples/
