@@ -415,7 +415,7 @@ go test -v -run TestSpecificFunction ./pkg/core
 
 ## 🤝 Contributing Guidelines
 
-Please read [CONTRIBUTING.md](../CONTRIBUTING.md) for detailed contribution guidelines.
+Please read [CONTRIBUTING.md](https://github.com/piotrlaczkowski/GoLangGraph/blob/main/CONTRIBUTING.md) for detailed contribution guidelines.
 
 ### Development Checklist
 

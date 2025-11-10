@@ -441,6 +441,6 @@ volumes:
 
 - [Ollama Documentation](https://ollama.ai/docs)
 - [Gemma Model Card](https://ai.google.dev/gemma)
-- [GoLangGraph Examples](../../examples/)
+- [GoLangGraph Examples](https://github.com/piotrlaczkowski/GoLangGraph/tree/main/examples)
 - [Quick Start Guide](../getting-started/quick-start.md)
 - [Development Guide](../DEVELOPMENT.md) 

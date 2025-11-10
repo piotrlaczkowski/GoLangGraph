@@ -186,6 +186,9 @@ nav:
   - 📚 Core Concepts:
     - 🧠 Core Package: CORE_PACKAGE.md
     - 💾 Persistence Guide: PERSISTENCE_GUIDE.md
+    - 🚀 Auto Server Guide: AUTO_SERVER_GUIDE.md
+  - 🛠️ Development:
+    - 🔧 Development Guide: DEVELOPMENT.md
   - 📖 Examples:
     - 🦙 Ollama Integration: examples/ollama-integration.md
   - 🤝 Community:
