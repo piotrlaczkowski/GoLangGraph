@@ -16,7 +16,7 @@ permissions:
   pages: write
   id-token: write
   packages: write
-  security-events: read
+  security-events: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -34,7 +34,7 @@ jobs:
 
     permissions:
       contents: read
-      security-events: read
+      security-events: write
 
     steps:
     - name: Checkout code
