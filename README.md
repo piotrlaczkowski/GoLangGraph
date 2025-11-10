@@ -26,6 +26,11 @@
 
 > 💡 **Perfect for**: Building AI applications, RAG systems, multi-agent workflows, and intelligent automation tools using local LLMs like Ollama.
 
+## 🚀 Graphical Interface Studio
+
+`GoLangGraphStudio` -> we are working on a GUI based Studio component for this library [GoLangGraphStudio](https://github.com/piotrlaczkowski/GoLangGraphStudio)
+don't hesitate to contribute !
+
 ## ✨ Key Features
 
 - 🔄 **Graph-Based Execution** - Build workflows as directed graphs with nodes and edges
