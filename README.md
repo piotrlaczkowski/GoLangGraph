@@ -415,7 +415,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 | 📚 **Documentation** | [GoDoc](https://godoc.org/github.com/piotrlaczkowski/GoLangGraph) |
 | 🐛 **Issues** | [GitHub Issues](https://github.com/piotrlaczkowski/GoLangGraph/issues) |
 | 💬 **Discussions** | [GitHub Discussions](https://github.com/piotrlaczkowski/GoLangGraph/discussions) |
-| 🎮 **Discord** | [Join our Discord](https://discord.gg/Wh9XjtCv) |
+| 🎮 **Discord** | [Join our Discord](https://discord.gg/mRNHGvf3wg) |
 
 
 </div>
