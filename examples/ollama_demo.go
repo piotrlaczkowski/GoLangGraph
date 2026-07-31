@@ -236,9 +236,9 @@ func testMultiAgentCoordination(ctx context.Context) error {
 	writer := agent.NewAgent(writerConfig, llmManager, toolRegistry)
 
 	fmt.Println("  Creating coordinator...")
-	coordinator := agent.NewMultiAgentCoordinator()
-	coordinator.AddAgent("researcher", researcher)
-	coordinator.AddAgent("writer", writer)
+	coordinator := agent.NewMultiAgentCoordinator(nil)
+	coordinator.RegisterAgent("researcher", researcher)
+	coordinator.RegisterAgent("writer", writer)
 
 	fmt.Println("  Executing sequential workflow...")
 	results, err := coordinator.ExecuteSequential(ctx,

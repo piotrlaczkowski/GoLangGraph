@@ -103,7 +103,8 @@ func UltimateMinimalDemo() {
 	results, _ := pipeline.Execute(ctx, "Research Go benefits and write a summary")
 	fmt.Printf("   Pipeline Results: %d agents executed\n", len(results))
 	for i, result := range results {
-		fmt.Printf("   Agent %d: %s\n", i+1, truncate(result.Output, 80))
+		outputStr, _ := result.Output.(string)
+		fmt.Printf("   Agent %d: %s\n", i+1, truncate(outputStr, 80))
 	}
 	fmt.Println()
 
@@ -113,7 +114,8 @@ func UltimateMinimalDemo() {
 	results, _ = swarm.Execute(ctx, "Analyze Go performance and write example code")
 	fmt.Printf("   Swarm Results: %d agents executed in parallel\n", len(results))
 	for i, result := range results {
-		fmt.Printf("   Agent %d: %s\n", i+1, truncate(result.Output, 80))
+		outputStr, _ := result.Output.(string)
+		fmt.Printf("   Agent %d: %s\n", i+1, truncate(outputStr, 80))
 	}
 	fmt.Println()
 
@@ -138,14 +140,15 @@ func UltimateMinimalDemo() {
 	// 12. Multi-Agent Coordinator
 	fmt.Println("🎯 Multi-Agent Coordinator:")
 	coordinator := builder.Quick().Multi()
-	coordinator.AddAgent("researcher", researcher)
-	coordinator.AddAgent("writer", writer)
-	coordinator.AddAgent("analyst", analyst)
+	coordinator.RegisterAgent("researcher", researcher)
+	coordinator.RegisterAgent("writer", writer)
+	coordinator.RegisterAgent("analyst", analyst)
 
 	coordResults, _ := coordinator.ExecuteSequential(ctx, []string{"researcher", "analyst", "writer"}, "Create a comprehensive Go programming guide")
 	fmt.Printf("   Coordination Results: %d agents in sequence\n", len(coordResults))
 	for i, result := range coordResults {
-		fmt.Printf("   Step %d: %s\n", i+1, truncate(result.Output, 80))
+		outputStr, _ := result.Output.(string)
+		fmt.Printf("   Step %d: %s\n", i+1, truncate(outputStr, 80))
 	}
 	fmt.Println()
 
@@ -193,7 +196,11 @@ func UltimateMinimalDemo() {
 }
 
 // Helper function to truncate long strings
-func truncate(s string, maxLen int) string {
+func truncate(v interface{}, maxLen int) string {
+	s, ok := v.(string)
+	if !ok {
+		return ""
+	}
 	if len(s) <= maxLen {
 		return s
 	}
@@ -225,7 +232,8 @@ func CustomerSupportExample() {
 
 	fmt.Printf("Support Pipeline Results: %d steps\n", len(results))
 	for i, result := range results {
-		fmt.Printf("Step %d: %s\n", i+1, truncate(result.Output, 100))
+		outputStr, _ := result.Output.(string)
+		fmt.Printf("Step %d: %s\n", i+1, truncate(outputStr, 100))
 	}
 }
 
@@ -252,7 +260,8 @@ func ContentCreationExample() {
 
 	fmt.Printf("Content Creation Results: %d agents worked in parallel\n", len(results))
 	for i, result := range results {
-		fmt.Printf("Agent %d: %s\n", i+1, truncate(result.Output, 100))
+		outputStr, _ := result.Output.(string)
+		fmt.Printf("Agent %d: %s\n", i+1, truncate(outputStr, 100))
 	}
 }
 
@@ -279,7 +288,8 @@ func DataAnalysisExample() {
 
 	fmt.Printf("Data Analysis Results: %d sequential steps\n", len(results))
 	for i, result := range results {
-		fmt.Printf("Step %d: %s\n", i+1, truncate(result.Output, 100))
+		outputStr, _ := result.Output.(string)
+		fmt.Printf("Step %d: %s\n", i+1, truncate(outputStr, 100))
 	}
 }
 
@@ -295,9 +305,9 @@ func CodeReviewExample() {
 
 	// Create review coordinator
 	coordinator := builder.Quick().Multi()
-	coordinator.AddAgent("analyzer", codeAnalyzer)
-	coordinator.AddAgent("security", securityChecker)
-	coordinator.AddAgent("reviewer", reviewer)
+	coordinator.RegisterAgent("analyzer", codeAnalyzer)
+	coordinator.RegisterAgent("security", securityChecker)
+	coordinator.RegisterAgent("reviewer", reviewer)
 
 	ctx := context.Background()
 	results, err := coordinator.ExecuteSequential(ctx, []string{"analyzer", "security", "reviewer"}, "Review this Go code for best practices and security issues")
@@ -309,7 +319,8 @@ func CodeReviewExample() {
 
 	fmt.Printf("Code Review Results: %d review steps\n", len(results))
 	for i, result := range results {
-		fmt.Printf("Review Step %d: %s\n", i+1, truncate(result.Output, 100))
+		outputStr, _ := result.Output.(string)
+		fmt.Printf("Review Step %d: %s\n", i+1, truncate(outputStr, 100))
 	}
 }
 
@@ -417,7 +428,8 @@ func AIDevTeamExample() {
 	phases := []string{"Architecture", "Development", "Testing", "Review", "Deployment"}
 	for i, result := range results {
 		if i < len(phases) {
-			fmt.Printf("%s: %s\n", phases[i], truncate(result.Output, 100))
+			outputStr, _ := result.Output.(string)
+			fmt.Printf("%s: %s\n", phases[i], truncate(outputStr, 100))
 		}
 	}
 

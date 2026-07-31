@@ -152,12 +152,12 @@ Provide structured analysis that helps inform design decisions.`,
 }
 
 // GetHighlighterConfig returns the configuration for backward compatibility
-func GetHighlighterConfig() *agent.AgentConfig {
+func GetHighlighterConfig() agent.AgentConfig {
 	return NewHighlighterDefinition().GetConfig()
 }
 
 // CreateAgent creates a Highlighter agent with custom graph workflow
-func (h *HighlighterDefinition) CreateAgent() (*agent.Agent, error) {
+func (h *HighlighterDefinition) CreateAgent() (agent.Agent, error) {
 	baseAgent, err := h.BaseAgentDefinition.CreateAgent()
 	if err != nil {
 		return nil, err

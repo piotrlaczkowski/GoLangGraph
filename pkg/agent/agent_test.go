@@ -105,32 +105,39 @@ func (m *mockProvider) Close() error {
 	return nil
 }
 
-// Helper function to create test agent
-func createTestAgent(t testing.TB, agentType AgentType) *Agent {
+// Helper function to create a test LLM manager
+func createTestLLMManager() *llm.ProviderManager {
 	provider := &mockProvider{response: "Hello, World!"}
 	llmManager := llm.NewProviderManager()
-	err := llmManager.RegisterProvider("mock", provider)
-	if err != nil {
-		t.Fatalf("Failed to register provider: %v", err)
-	}
-
-	toolRegistry := tools.NewToolRegistry()
-
-	config := &AgentConfig{
-		Name:     "test-agent",
-		Type:     agentType,
-		Provider: "mock",
-		Model:    "test-model",
-	}
-
-	return NewAgent(config, llmManager, toolRegistry)
+	llmManager.RegisterProvider("mock", provider)
+	return llmManager
 }
 
-func TestNewAgent(t *testing.T) {
-	agent := createTestAgent(t, AgentTypeChat)
+// Helper function to create a test tool registry
+func createTestToolRegistry() *tools.ToolRegistry {
+	return tools.NewToolRegistry()
+}
+
+// Helper function to create a test agent
+func createTestAgent(t testing.TB, name string) Agent {
+	config := &AgentConfig{
+		Name:          name,
+		Type:          AgentTypeChat,
+		Model:         "test-model",
+		Provider:      "mock",
+		Temperature:   0.7,
+		MaxTokens:     1000,
+		MaxIterations: 3,
+	}
+
+	return NewAgent(config, createTestLLMManager(), createTestToolRegistry())
+}
+
+func TestAgentCreation(t *testing.T) {
+	agent := createTestAgent(t, "test-agent")
 
 	if agent == nil {
-		t.Error("NewAgent() should return a non-nil agent")
+		t.Fatal("Agent should not be nil")
 	}
 
 	if agent.GetConfig().Name != "test-agent" {
@@ -142,27 +149,17 @@ func TestNewAgent(t *testing.T) {
 	}
 }
 
-func TestAgent_GetConfig(t *testing.T) {
-	agent := createTestAgent(t, AgentTypeChat)
-
-	config := agent.GetConfig()
-	if config == nil {
-		t.Error("GetConfig() should return a non-nil config")
-	}
-
-	if config.Name != "test-agent" {
-		t.Errorf("Expected config name 'test-agent', got '%s'", config.Name)
-	}
-}
-
-func TestAgent_UpdateConfig(t *testing.T) {
-	agent := createTestAgent(t, AgentTypeChat)
+func TestAgentConfigurationUpdate(t *testing.T) {
+	agent := createTestAgent(t, "config-test")
 
 	newConfig := &AgentConfig{
-		Name:     "updated-agent",
-		Type:     AgentTypeReAct,
-		Provider: "mock",
-		Model:    "updated-model",
+		Name:          "updated-agent",
+		Type:          AgentTypeReAct,
+		Model:         "updated-model",
+		Provider:      "mock",
+		Temperature:   0.5,
+		MaxTokens:     500,
+		MaxIterations: 5,
 	}
 
 	agent.UpdateConfig(newConfig)
@@ -178,7 +175,7 @@ func TestAgent_UpdateConfig(t *testing.T) {
 }
 
 func TestAgent_Execute(t *testing.T) {
-	agent := createTestAgent(t, AgentTypeChat)
+	agent := createTestAgent(t, "execute-test")
 
 	ctx := context.Background()
 	execution, err := agent.Execute(ctx, "Hello")
@@ -201,7 +198,7 @@ func TestAgent_Execute(t *testing.T) {
 }
 
 func TestAgent_GetConversation(t *testing.T) {
-	agent := createTestAgent(t, AgentTypeChat)
+	agent := createTestAgent(t, "conversation-test")
 
 	// Initially empty
 	conversation := agent.GetConversation()
@@ -220,7 +217,7 @@ func TestAgent_GetConversation(t *testing.T) {
 }
 
 func TestAgent_ClearConversation(t *testing.T) {
-	agent := createTestAgent(t, AgentTypeChat)
+	agent := createTestAgent(t, "clear-conversation-test")
 
 	// Add some conversation
 	ctx := context.Background()
@@ -236,7 +233,7 @@ func TestAgent_ClearConversation(t *testing.T) {
 }
 
 func TestAgent_GetExecutionHistory(t *testing.T) {
-	agent := createTestAgent(t, AgentTypeChat)
+	agent := createTestAgent(t, "history-test")
 
 	// Initially empty
 	history := agent.GetExecutionHistory()
@@ -255,7 +252,7 @@ func TestAgent_GetExecutionHistory(t *testing.T) {
 }
 
 func TestAgent_IsRunning(t *testing.T) {
-	agent := createTestAgent(t, AgentTypeChat)
+	agent := createTestAgent(t, "running-test")
 
 	// Initially not running
 	if agent.IsRunning() {
@@ -264,7 +261,7 @@ func TestAgent_IsRunning(t *testing.T) {
 }
 
 func TestAgent_GetGraph(t *testing.T) {
-	agent := createTestAgent(t, AgentTypeChat)
+	agent := createTestAgent(t, "graph-test")
 
 	graph := agent.GetGraph()
 	if graph == nil {
@@ -284,7 +281,18 @@ func TestAgentTypes(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			agent := createTestAgent(t, tc.agentType)
+			// Create agent with specific type
+			config := &AgentConfig{
+				Name:          "test-agent",
+				Type:          tc.agentType,
+				Model:         "test-model",
+				Provider:      "mock",
+				Temperature:   0.7,
+				MaxTokens:     1000,
+				MaxIterations: 3,
+			}
+			agent := NewAgent(config, createTestLLMManager(), createTestToolRegistry())
+
 			if agent.GetConfig().Type != tc.agentType {
 				t.Errorf("Expected agent type '%s', got '%s'", tc.agentType, agent.GetConfig().Type)
 			}
@@ -313,18 +321,18 @@ func TestDefaultAgentConfig(t *testing.T) {
 }
 
 func TestMultiAgentCoordinator(t *testing.T) {
-	coordinator := NewMultiAgentCoordinator()
+	coordinator := NewMultiAgentCoordinator(nil)
 
 	if coordinator == nil {
-		t.Error("NewMultiAgentCoordinator() should return a non-nil coordinator")
+		t.Error("NewMultiAgentCoordinator(nil) should return a non-nil coordinator")
 	}
 
 	// Test adding agents
-	agent1 := createTestAgent(t, AgentTypeChat)
-	agent2 := createTestAgent(t, AgentTypeReAct)
+	agent1 := createTestAgent(t, "agent1")
+	agent2 := createTestAgent(t, "agent2")
 
-	coordinator.AddAgent("agent1", agent1)
-	coordinator.AddAgent("agent2", agent2)
+	coordinator.RegisterAgent("agent1", agent1)
+	coordinator.RegisterAgent("agent2", agent2)
 
 	// Test getting agents
 	retrievedAgent1, exists := coordinator.GetAgent("agent1")
@@ -348,7 +356,7 @@ func TestMultiAgentCoordinator(t *testing.T) {
 
 // Benchmark tests
 func BenchmarkAgent_Execute(b *testing.B) {
-	agent := createTestAgent(b, AgentTypeChat)
+	agent := createTestAgent(b, "benchmark-agent")
 	ctx := context.Background()
 
 	b.ResetTimer()
@@ -358,7 +366,7 @@ func BenchmarkAgent_Execute(b *testing.B) {
 }
 
 func BenchmarkAgent_GetConfig(b *testing.B) {
-	agent := createTestAgent(b, AgentTypeChat)
+	agent := createTestAgent(b, "benchmark-agent")
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -367,7 +375,7 @@ func BenchmarkAgent_GetConfig(b *testing.B) {
 }
 
 func BenchmarkAgent_GetConversation(b *testing.B) {
-	agent := createTestAgent(b, AgentTypeChat)
+	agent := createTestAgent(b, "benchmark-agent")
 
 	// Add some conversation history
 	ctx := context.Background()

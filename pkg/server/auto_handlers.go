@@ -212,7 +212,6 @@ func (as *AutoServer) createAgentHandler(agentID string) http.HandlerFunc {
 			"timestamp":       time.Now().UTC().Format(time.RFC3339),
 			"execution_id":    result.ID,
 			"execution_path":  result.ExecutionPath,
-			"state_changes":   result.StateChanges,
 			"tool_calls":      result.ToolCalls,
 		}
 

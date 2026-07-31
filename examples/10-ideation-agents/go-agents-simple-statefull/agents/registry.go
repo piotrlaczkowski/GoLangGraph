@@ -171,8 +171,8 @@ func (sar *StatefulAgentRegistry) RegisterAllAgents(databaseManager *database.Da
 }
 
 // GetAllAgentConfigs returns all agent configurations for backward compatibility
-func (sar *StatefulAgentRegistry) GetAllAgentConfigs() map[string]*agent.AgentConfig {
-	return map[string]*agent.AgentConfig{
+func (sar *StatefulAgentRegistry) GetAllAgentConfigs() map[string]agent.AgentConfig {
+	return map[string]agent.AgentConfig{
 		"designer":    GetDesignerConfig(),
 		"interviewer": GetInterviewerConfig(),
 		"highlighter": GetHighlighterConfig(),
@@ -332,8 +332,8 @@ func RegisterAllAgents(registry *agent.AgentRegistry, databaseManager *database.
 }
 
 // GetAllAgentConfigs returns all agent configurations for backward compatibility (legacy)
-func GetAllAgentConfigs() map[string]*agent.AgentConfig {
-	return map[string]*agent.AgentConfig{
+func GetAllAgentConfigs() map[string]agent.AgentConfig {
+	return map[string]agent.AgentConfig{
 		"designer":    GetDesignerConfig(),
 		"interviewer": GetInterviewerConfig(),
 		"highlighter": GetHighlighterConfig(),

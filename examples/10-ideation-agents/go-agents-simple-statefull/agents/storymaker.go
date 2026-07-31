@@ -317,7 +317,7 @@ Focus on human connections, emotional journeys, and practical sustainability sol
 }
 
 // CreateAgent creates an enhanced Storymaker agent with story workflow
-func (s *StorymakingDefinition) CreateAgent() (*agent.Agent, error) {
+func (s *StorymakingDefinition) CreateAgent() (agent.Agent, error) {
 	baseAgent, err := s.BaseAgentDefinition.CreateAgent()
 	if err != nil {
 		return nil, err
@@ -949,8 +949,8 @@ func (s *StorymakingDefinition) deduplicateThemes(themes []string) []string {
 }
 
 // GetStorymakerConfig returns the configuration for backward compatibility
-func GetStorymakerConfig() *agent.AgentConfig {
+func GetStorymakerConfig() agent.AgentConfig {
 	// For backward compatibility, create a temporary instance
 	temp := NewStorymakerDefinition()
-	return temp.GetConfig()
+	return *temp.GetConfig()
 }

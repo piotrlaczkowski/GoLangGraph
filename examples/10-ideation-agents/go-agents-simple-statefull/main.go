@@ -59,10 +59,10 @@ type ProviderConfig struct {
 
 // AgentsConfig configures agent behavior
 type AgentsConfig struct {
-	EnableAutoDiscovery bool                          `json:"enable_auto_discovery"`
-	DefaultModel        string                        `json:"default_model"`
-	DefaultProvider     string                        `json:"default_provider"`
-	AgentConfigs        map[string]*agent.AgentConfig `json:"agent_configs"`
+	EnableAutoDiscovery bool                         `json:"enable_auto_discovery"`
+	DefaultModel        string                       `json:"default_model"`
+	DefaultProvider     string                       `json:"default_provider"`
+	AgentConfigs        map[string]agent.AgentConfig `json:"agent_configs"`
 }
 
 // FeaturesConfig enables/disables application features

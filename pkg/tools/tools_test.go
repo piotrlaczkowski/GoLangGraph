@@ -138,7 +138,7 @@ func TestCalculatorTool(t *testing.T) {
 		t.Fatalf("Calculator execution failed: %v", err)
 	}
 
-	if !strings.Contains(result, "5") {
+	if !strings.Contains(result.(string), "5") {
 		t.Error("Calculator should return 5 for 2 + 3")
 	}
 
@@ -376,7 +376,7 @@ func TestShellTool(t *testing.T) {
 		t.Fatalf("Shell execution failed: %v", err)
 	}
 
-	if !strings.Contains(result, "test") {
+	if !strings.Contains(result.(string), "test") {
 		t.Error("Shell should return command output")
 	}
 }
@@ -523,7 +523,7 @@ func (m *MockTool) GetDefinition() llm.ToolDefinition {
 	}
 }
 
-func (m *MockTool) Execute(ctx context.Context, args string) (string, error) {
+func (m *MockTool) Execute(ctx context.Context, args string) (interface{}, error) {
 	return "mock result", nil
 }
 

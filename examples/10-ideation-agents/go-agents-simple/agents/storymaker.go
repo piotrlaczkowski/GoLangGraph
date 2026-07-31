@@ -171,12 +171,12 @@ Make complex sustainability concepts accessible through storytelling.`,
 }
 
 // GetStorymakerConfig returns the configuration for backward compatibility
-func GetStorymakerConfig() *agent.AgentConfig {
+func GetStorymakerConfig() agent.AgentConfig {
 	return NewStorymakerDefinition().GetConfig()
 }
 
 // CreateAgent creates a Storymaker agent with custom graph workflow
-func (s *StorymakerDefinition) CreateAgent() (*agent.Agent, error) {
+func (s *StorymakerDefinition) CreateAgent() (agent.Agent, error) {
 	baseAgent, err := s.BaseAgentDefinition.CreateAgent()
 	if err != nil {
 		return nil, err

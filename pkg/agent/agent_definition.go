@@ -9,7 +9,6 @@ package agent
 import (
 	"fmt"
 	"plugin"
-	"reflect"
 	"sync"
 
 	"github.com/piotrlaczkowski/GoLangGraph/pkg/core"
@@ -26,7 +25,7 @@ type AgentDefinition interface {
 	Initialize(llmManager *llm.ProviderManager, toolRegistry *tools.ToolRegistry) error
 
 	// CreateAgent creates and returns the configured agent instance
-	CreateAgent() (*Agent, error)
+	CreateAgent() (Agent, error)
 
 	// GetMetadata returns additional metadata about the agent
 	GetMetadata() map[string]interface{}
@@ -142,7 +141,7 @@ func (ar *AgentRegistry) GetDefinition(id string) (AgentDefinition, bool) {
 }
 
 // CreateAgentFromDefinition creates an agent from a registered definition
-func (ar *AgentRegistry) CreateAgentFromDefinition(id string, llmManager *llm.ProviderManager, toolRegistry *tools.ToolRegistry) (*Agent, error) {
+func (ar *AgentRegistry) CreateAgentFromDefinition(id string, llmManager *llm.ProviderManager, toolRegistry *tools.ToolRegistry) (Agent, error) {
 	definition, exists := ar.GetDefinition(id)
 	if !exists {
 		return nil, fmt.Errorf("agent definition %s not found", id)
@@ -156,7 +155,7 @@ func (ar *AgentRegistry) CreateAgentFromDefinition(id string, llmManager *llm.Pr
 }
 
 // CreateAgentFromFactory creates an agent using a registered factory
-func (ar *AgentRegistry) CreateAgentFromFactory(id string, llmManager *llm.ProviderManager, toolRegistry *tools.ToolRegistry) (*Agent, error) {
+func (ar *AgentRegistry) CreateAgentFromFactory(id string, llmManager *llm.ProviderManager, toolRegistry *tools.ToolRegistry) (Agent, error) {
 	ar.mu.RLock()
 	factory, exists := ar.factories[id]
 	ar.mu.RUnlock()
@@ -240,7 +239,7 @@ func (bad *BaseAgentDefinition) Initialize(llmManager *llm.ProviderManager, tool
 }
 
 // CreateAgent creates a standard agent instance
-func (bad *BaseAgentDefinition) CreateAgent() (*Agent, error) {
+func (bad *BaseAgentDefinition) CreateAgent() (Agent, error) {
 	if bad.llmManager == nil || bad.toolRegistry == nil {
 		return nil, fmt.Errorf("agent definition not properly initialized")
 	}
@@ -438,7 +437,7 @@ func (aad *AdvancedAgentDefinition) BuildGraph() (*core.Graph, error) {
 		return aad.customGraph, nil
 	}
 
-	// Fall back to default graph building
+	// Fall back to default graph
 	agent := NewAgent(aad.config, aad.llmManager, aad.toolRegistry)
 	return agent.GetGraph(), nil
 }
@@ -460,7 +459,7 @@ func (aad *AdvancedAgentDefinition) GetCustomMiddleware() []func(next func(*core
 }
 
 // CreateAgent creates an advanced agent with custom components
-func (aad *AdvancedAgentDefinition) CreateAgent() (*Agent, error) {
+func (aad *AdvancedAgentDefinition) CreateAgent() (Agent, error) {
 	// Create base agent
 	agent, err := aad.BaseAgentDefinition.CreateAgent()
 	if err != nil {
@@ -479,21 +478,20 @@ func (aad *AdvancedAgentDefinition) CreateAgent() (*Agent, error) {
 			return nil, fmt.Errorf("failed to build custom graph: %w", err)
 		}
 
-		// Note: In a real implementation, you'd need a way to set the graph on the agent
-		// For now, we'll use reflection or provide a setter method
-		aad.setAgentGraph(agent, graph)
+		// Type assert to *BaseAgent to access SetGraph (if needed)
+		if baseAgent, ok := agent.(*BaseAgent); ok {
+			baseAgent.SetGraph(graph)
+		}
 	}
 
 	return agent, nil
 }
 
-// setAgentGraph sets the graph on an agent using reflection
-func (aad *AdvancedAgentDefinition) setAgentGraph(agent *Agent, graph *core.Graph) {
-	// Use reflection to set the graph field
-	agentValue := reflect.ValueOf(agent).Elem()
-	graphField := agentValue.FieldByName("graph")
-	if graphField.IsValid() && graphField.CanSet() {
-		graphField.Set(reflect.ValueOf(graph))
+// setAgentGraph is no longer needed since we can use type assertion
+// Keeping it for backwards compatibility but it's deprecated
+func (aad *AdvancedAgentDefinition) setAgentGraph(agent Agent, graph *core.Graph) {
+	if baseAgent, ok := agent.(*BaseAgent); ok {
+		baseAgent.SetGraph(graph)
 	}
 }
 

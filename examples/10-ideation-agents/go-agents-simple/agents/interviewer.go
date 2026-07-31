@@ -122,7 +122,7 @@ Be conversational and engaging!`,
 }
 
 // CreateAgent creates an Interviewer agent with custom graph workflow
-func (i *InterviewerDefinition) CreateAgent() (*agent.Agent, error) {
+func (i *InterviewerDefinition) CreateAgent() (agent.Agent, error) {
 	baseAgent, err := i.BaseAgentDefinition.CreateAgent()
 	if err != nil {
 		return nil, err
@@ -314,6 +314,6 @@ func (i *InterviewerDefinition) generateFallbackQuestions(phase string) []string
 }
 
 // GetInterviewerConfig returns the configuration for backward compatibility
-func GetInterviewerConfig() *agent.AgentConfig {
+func GetInterviewerConfig() agent.AgentConfig {
 	return NewInterviewerDefinition().GetConfig()
 }

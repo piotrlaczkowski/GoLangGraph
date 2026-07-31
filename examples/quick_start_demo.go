@@ -70,14 +70,14 @@ func QuickStartDemo() {
 }
 
 // Example 1: Simple Chat Agent - Just 3 lines!
-func CreateSimpleChatAgent() *agent.Agent {
+func CreateSimpleChatAgent() agent.Agent {
 	config := &agent.AgentConfig{Name: "ChatBot", Type: agent.AgentTypeChat, SystemPrompt: "You are a helpful AI assistant specialized in Go programming."}
 	llmManager := createMockLLMManager()
 	return agent.NewAgent(config, llmManager, tools.NewToolRegistry())
 }
 
 // Example 2: ReAct Agent with Tools - Just 4 lines!
-func CreateReActAgent() *agent.Agent {
+func CreateReActAgent() agent.Agent {
 	config := &agent.AgentConfig{Name: "ReActAgent", Type: agent.AgentTypeReAct, SystemPrompt: "You are a helpful assistant that can reason and use tools.", Tools: []string{"calculator"}}
 	llmManager := createMockLLMManager()
 	toolRegistry := createToolRegistry()
@@ -86,23 +86,23 @@ func CreateReActAgent() *agent.Agent {
 
 // Example 3: Multi-Agent System - Just 5 lines!
 func CreateMultiAgentSystem() *agent.MultiAgentCoordinator {
-	coordinator := agent.NewMultiAgentCoordinator()
+	coordinator := agent.NewMultiAgentCoordinator(nil)
 	researcher := agent.NewAgent(&agent.AgentConfig{Name: "Researcher", Type: agent.AgentTypeReAct, SystemPrompt: "You are a research specialist.", Tools: []string{"web_search"}}, createMockLLMManager(), createToolRegistry())
 	writer := agent.NewAgent(&agent.AgentConfig{Name: "Writer", Type: agent.AgentTypeChat, SystemPrompt: "You are a technical writer."}, createMockLLMManager(), tools.NewToolRegistry())
-	coordinator.AddAgent("researcher", researcher)
-	coordinator.AddAgent("writer", writer)
+	coordinator.RegisterAgent("researcher", researcher)
+	coordinator.RegisterAgent("writer", writer)
 	return coordinator
 }
 
 // One-liner functions for ultra-minimal agent creation
 
 // OneLiner: Chat Agent
-func QuickChat() *agent.Agent {
+func QuickChat() agent.Agent {
 	return agent.NewAgent(&agent.AgentConfig{Name: "QuickChat", Type: agent.AgentTypeChat}, createMockLLMManager(), tools.NewToolRegistry())
 }
 
 // OneLiner: ReAct Agent
-func QuickReAct() *agent.Agent {
+func QuickReAct() agent.Agent {
 	return agent.NewAgent(&agent.AgentConfig{Name: "QuickReAct", Type: agent.AgentTypeReAct, Tools: []string{"calculator"}}, createMockLLMManager(), createToolRegistry())
 }
 

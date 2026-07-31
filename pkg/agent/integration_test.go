@@ -181,9 +181,11 @@ func TestAgentCreationWithValidation(t *testing.T) {
 
 			if tt.expectValidResponse {
 				// Should get a complete response, not truncated
-				assert.NotEmpty(t, execution.Output)
-				assert.NotEqual(t, "Hello", execution.Output, "Response appears to be truncated")
-				assert.Greater(t, len(execution.Output), 10, "Response should be substantial")
+				outputStr, ok := execution.Output.(string)
+				require.True(t, ok, "Output should be a string")
+				assert.NotEmpty(t, outputStr)
+				assert.NotEqual(t, "Hello", outputStr, "Response appears to be truncated")
+				assert.Greater(t, len(outputStr), 10, "Response should be substantial")
 			}
 		})
 	}
@@ -227,8 +229,10 @@ func TestMaxTokensPreventionIntegration(t *testing.T) {
 	require.NotNil(t, execution)
 
 	// Should not be truncated because MaxTokens was sanitized
-	assert.NotEqual(t, "Hello", execution.Output)
-	assert.Greater(t, len(execution.Output), 20)
+	outputStr, ok := execution.Output.(string)
+	require.True(t, ok, "Output should be a string")
+	assert.NotEqual(t, "Hello", outputStr)
+	assert.Greater(t, len(outputStr), 20)
 }
 
 func TestProviderValidation(t *testing.T) {
@@ -328,7 +332,9 @@ func TestSystemIntegrationWithDebugging(t *testing.T) {
 			execution, err := agent.Execute(ctx, "Test message")
 			require.NoError(t, err)
 			assert.NotEmpty(t, execution.Output)
-			assert.Contains(t, execution.Output, "Agent system is working correctly")
+			outputStr, ok := execution.Output.(string)
+			require.True(t, ok, "Output should be a string")
+			assert.Contains(t, outputStr, "Agent system is working correctly")
 		})
 	}
 }

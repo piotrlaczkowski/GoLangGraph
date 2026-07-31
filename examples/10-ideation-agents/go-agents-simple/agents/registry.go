@@ -18,7 +18,7 @@ import (
 
 // RegisterAllAgents registers all ideation agents with the provided registry
 // This replaces hundreds of lines of manual endpoint creation and validation code
-func RegisterAllAgents(registry *agent.AgentRegistry) error {
+func RegisterAllAgents(registry agent.AgentRegistry) error {
 	// Register Designer agent
 	if err := registry.RegisterDefinition("designer", NewDesignerDefinition()); err != nil {
 		return err
@@ -43,8 +43,8 @@ func RegisterAllAgents(registry *agent.AgentRegistry) error {
 }
 
 // GetAllAgentConfigs returns all agent configurations for backward compatibility
-func GetAllAgentConfigs() map[string]*agent.AgentConfig {
-	return map[string]*agent.AgentConfig{
+func GetAllAgentConfigs() map[string]agent.AgentConfig {
+	return map[string]agent.AgentConfig{
 		"designer":    GetDesignerConfig(),
 		"interviewer": GetInterviewerConfig(),
 		"highlighter": GetHighlighterConfig(),

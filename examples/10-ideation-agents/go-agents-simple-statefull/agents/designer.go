@@ -505,7 +505,7 @@ Be creative, practical, and environmentally conscious. Use your memory of past i
 }
 
 // CreateAgent creates a Designer agent with advanced state management
-func (d *DesignerDefinition) CreateAgent() (*agent.Agent, error) {
+func (d *DesignerDefinition) CreateAgent() (agent.Agent, error) {
 	baseAgent, err := d.BaseAgentDefinition.CreateAgent()
 	if err != nil {
 		return nil, err
@@ -1352,9 +1352,9 @@ func formatImprovements(evaluation interface{}) string {
 }
 
 // GetDesignerConfig returns the configuration for backward compatibility
-func GetDesignerConfig() *agent.AgentConfig {
+func GetDesignerConfig() agent.AgentConfig {
 	// For backward compatibility, create a simple configuration
-	return &agent.AgentConfig{
+	return agent.AgentConfig{
 		Name:         "Advanced Visual Designer with State Management",
 		Type:         agent.AgentTypeChat,
 		Model:        "llama3.2:latest",

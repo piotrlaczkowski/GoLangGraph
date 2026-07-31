@@ -179,7 +179,7 @@ func (qb *QuickBuilder) WithPersistence(checkpointer persistence.Checkpointer) *
 // ========== ULTRA-MINIMAL AGENT CREATION ==========
 
 // Chat creates a simple chat agent in 1 line
-func (qb *QuickBuilder) Chat(name ...string) *agent.Agent {
+func (qb *QuickBuilder) Chat(name ...string) agent.Agent {
 	agentName := "ChatAgent"
 	if len(name) > 0 {
 		agentName = name[0]
@@ -199,7 +199,7 @@ func (qb *QuickBuilder) Chat(name ...string) *agent.Agent {
 }
 
 // ReAct creates a ReAct agent with reasoning capabilities
-func (qb *QuickBuilder) ReAct(name ...string) *agent.Agent {
+func (qb *QuickBuilder) ReAct(name ...string) agent.Agent {
 	agentName := "ReActAgent"
 	if len(name) > 0 {
 		agentName = name[0]
@@ -221,7 +221,7 @@ func (qb *QuickBuilder) ReAct(name ...string) *agent.Agent {
 }
 
 // Tool creates a tool-focused agent
-func (qb *QuickBuilder) Tool(name ...string) *agent.Agent {
+func (qb *QuickBuilder) Tool(name ...string) agent.Agent {
 	agentName := "ToolAgent"
 	if len(name) > 0 {
 		agentName = name[0]
@@ -242,7 +242,7 @@ func (qb *QuickBuilder) Tool(name ...string) *agent.Agent {
 }
 
 // RAG creates a RAG (Retrieval-Augmented Generation) agent
-func (qb *QuickBuilder) RAG(name ...string) *agent.Agent {
+func (qb *QuickBuilder) RAG(name ...string) agent.Agent {
 	agentName := "RAGAgent"
 	if len(name) > 0 {
 		agentName = name[0]
@@ -264,13 +264,13 @@ func (qb *QuickBuilder) RAG(name ...string) *agent.Agent {
 
 // Multi creates a multi-agent coordinator
 func (qb *QuickBuilder) Multi() *agent.MultiAgentCoordinator {
-	return agent.NewMultiAgentCoordinator()
+	return agent.NewMultiAgentCoordinator(nil)
 }
 
 // ========== SPECIALIZED AGENTS ==========
 
 // Researcher creates a research-focused agent
-func (qb *QuickBuilder) Researcher(name ...string) *agent.Agent {
+func (qb *QuickBuilder) Researcher(name ...string) agent.Agent {
 	agentName := "Researcher"
 	if len(name) > 0 {
 		agentName = name[0]
@@ -291,7 +291,7 @@ func (qb *QuickBuilder) Researcher(name ...string) *agent.Agent {
 }
 
 // Writer creates a writing-focused agent
-func (qb *QuickBuilder) Writer(name ...string) *agent.Agent {
+func (qb *QuickBuilder) Writer(name ...string) agent.Agent {
 	agentName := "Writer"
 	if len(name) > 0 {
 		agentName = name[0]
@@ -312,7 +312,7 @@ func (qb *QuickBuilder) Writer(name ...string) *agent.Agent {
 }
 
 // Analyst creates a data analysis agent
-func (qb *QuickBuilder) Analyst(name ...string) *agent.Agent {
+func (qb *QuickBuilder) Analyst(name ...string) agent.Agent {
 	agentName := "Analyst"
 	if len(name) > 0 {
 		agentName = name[0]
@@ -333,7 +333,7 @@ func (qb *QuickBuilder) Analyst(name ...string) *agent.Agent {
 }
 
 // Coder creates a coding assistant agent
-func (qb *QuickBuilder) Coder(name ...string) *agent.Agent {
+func (qb *QuickBuilder) Coder(name ...string) agent.Agent {
 	agentName := "Coder"
 	if len(name) > 0 {
 		agentName = name[0]
@@ -356,18 +356,18 @@ func (qb *QuickBuilder) Coder(name ...string) *agent.Agent {
 // ========== WORKFLOW BUILDERS ==========
 
 // Pipeline creates a sequential agent pipeline
-func (qb *QuickBuilder) Pipeline(agents ...*agent.Agent) *AgentPipeline {
+func (qb *QuickBuilder) Pipeline(agents ...agent.Agent) *AgentPipeline {
 	return &AgentPipeline{
 		agents:      agents,
-		coordinator: agent.NewMultiAgentCoordinator(),
+		coordinator: agent.NewMultiAgentCoordinator(nil),
 	}
 }
 
 // Swarm creates a parallel agent swarm
-func (qb *QuickBuilder) Swarm(agents ...*agent.Agent) *AgentSwarm {
+func (qb *QuickBuilder) Swarm(agents ...agent.Agent) *AgentSwarm {
 	return &AgentSwarm{
 		agents:      agents,
-		coordinator: agent.NewMultiAgentCoordinator(),
+		coordinator: agent.NewMultiAgentCoordinator(nil),
 	}
 }
 
@@ -431,7 +431,7 @@ func (qb *QuickBuilder) getBestProvider() string {
 
 // AgentPipeline represents a sequential workflow
 type AgentPipeline struct {
-	agents      []*agent.Agent
+	agents      []agent.Agent
 	coordinator *agent.MultiAgentCoordinator
 }
 
@@ -439,10 +439,10 @@ type AgentPipeline struct {
 func (ap *AgentPipeline) Execute(ctx context.Context, input string) ([]agent.AgentExecution, error) {
 	agentIDs := make([]string, len(ap.agents))
 
-	for i, agent := range ap.agents {
+	for i, ag := range ap.agents {
 		id := fmt.Sprintf("agent_%d", i)
 		agentIDs[i] = id
-		ap.coordinator.AddAgent(id, agent)
+		ap.coordinator.RegisterAgent(id, ag)
 	}
 
 	return ap.coordinator.ExecuteSequential(ctx, agentIDs, input)
@@ -450,7 +450,7 @@ func (ap *AgentPipeline) Execute(ctx context.Context, input string) ([]agent.Age
 
 // AgentSwarm represents a parallel workflow
 type AgentSwarm struct {
-	agents      []*agent.Agent
+	agents      []agent.Agent
 	coordinator *agent.MultiAgentCoordinator
 }
 
@@ -458,10 +458,10 @@ type AgentSwarm struct {
 func (as *AgentSwarm) Execute(ctx context.Context, input string) ([]agent.AgentExecution, error) {
 	agentIDs := make([]string, len(as.agents))
 
-	for i, agent := range as.agents {
+	for i, ag := range as.agents {
 		id := fmt.Sprintf("agent_%d", i)
 		agentIDs[i] = id
-		as.coordinator.AddAgent(id, agent)
+		as.coordinator.RegisterAgent(id, ag)
 	}
 
 	results, err := as.coordinator.ExecuteParallel(ctx, agentIDs, input)
@@ -486,22 +486,22 @@ func Quick() *QuickBuilder {
 }
 
 // OneLineChat creates a chat agent in one line
-func OneLineChat(name ...string) *agent.Agent {
+func OneLineChat(name ...string) agent.Agent {
 	return Quick().Chat(name...)
 }
 
 // OneLineReAct creates a ReAct agent in one line
-func OneLineReAct(name ...string) *agent.Agent {
+func OneLineReAct(name ...string) agent.Agent {
 	return Quick().ReAct(name...)
 }
 
 // OneLineTool creates a tool agent in one line
-func OneLineTool(name ...string) *agent.Agent {
+func OneLineTool(name ...string) agent.Agent {
 	return Quick().Tool(name...)
 }
 
 // OneLineRAG creates a RAG agent in one line
-func OneLineRAG(name ...string) *agent.Agent {
+func OneLineRAG(name ...string) agent.Agent {
 	return Quick().RAG(name...)
 }
 
@@ -511,11 +511,11 @@ func OneLineServer(port ...int) *server.Server {
 }
 
 // OneLinePipeline creates a pipeline in one line
-func OneLinePipeline(agents ...*agent.Agent) *AgentPipeline {
+func OneLinePipeline(agents ...agent.Agent) *AgentPipeline {
 	return Quick().Pipeline(agents...)
 }
 
 // OneLineSwarm creates a swarm in one line
-func OneLineSwarm(agents ...*agent.Agent) *AgentSwarm {
+func OneLineSwarm(agents ...agent.Agent) *AgentSwarm {
 	return Quick().Swarm(agents...)
 }

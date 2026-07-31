@@ -30,6 +30,7 @@ type ToolCall struct {
 	ID       string                 `json:"id"`
 	Type     string                 `json:"type"`
 	Function FunctionCall           `json:"function"`
+	Index    int                    `json:"index,omitempty"` // stream delta index
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
@@ -63,6 +64,10 @@ type CompletionRequest struct {
 	Stream        bool             `json:"stream,omitempty"`
 	SystemPrompt  string           `json:"system_prompt,omitempty"`
 	StopSequences []string         `json:"stop_sequences,omitempty"`
+	// EarlyExit, when set on a streaming completion, is checked after each
+	// chunk. Returning true cancels the remainder of the token stream
+	// (saves SLM decode latency once a complete JSON/tool-call is formed).
+	EarlyExit EarlyExitFunc `json:"-"`
 }
 
 // CompletionResponse represents a response from completion

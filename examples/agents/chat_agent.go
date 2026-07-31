@@ -70,7 +70,7 @@ func (cad *ChatAgentDefinition) Initialize(llmManager *llm.ProviderManager, tool
 }
 
 // CreateAgent creates a specialized chat agent with memory
-func (cad *ChatAgentDefinition) CreateAgent() (*agent.Agent, error) {
+func (cad *ChatAgentDefinition) CreateAgent() (agent.Agent, error) {
 	// Create base agent
 	baseAgent, err := cad.BaseAgentDefinition.CreateAgent()
 	if err != nil {
@@ -259,7 +259,7 @@ func (lt *LogicTool) GetDefinition() llm.ToolDefinition {
 	}
 }
 
-func (lt *LogicTool) Execute(ctx context.Context, args string) (string, error) {
+func (lt *LogicTool) Execute(ctx context.Context, args string) (interface{}, error) {
 	// Simple logic tool implementation
 	return fmt.Sprintf("Logical operation performed on: %s", args), nil
 }

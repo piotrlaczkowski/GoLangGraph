@@ -52,7 +52,7 @@ type Agent struct {
 
 // AgentPool manages multiple agents and their interactions
 type AgentPool struct {
-	agents   map[string]*Agent
+	agents   map[string]Agent
 	endpoint string
 	model    string
 	history  []string
@@ -109,7 +109,7 @@ func main() {
 // NewAgentPool creates a new agent pool with specialized agents
 func NewAgentPool(endpoint, model string) *AgentPool {
 	pool := &AgentPool{
-		agents:   make(map[string]*Agent),
+		agents:   make(map[string]Agent),
 		endpoint: endpoint,
 		model:    model,
 		history:  make([]string, 0),
@@ -124,7 +124,7 @@ func NewAgentPool(endpoint, model string) *AgentPool {
 // initializeAgents creates specialized agents with different roles
 func (ap *AgentPool) initializeAgents() {
 	// Research Agent
-	ap.agents["researcher"] = &Agent{
+	ap.agents["researcher"] = Agent{
 		name:         "Research Agent",
 		role:         "researcher",
 		expertise:    "Information gathering, fact-checking, data collection",
@@ -134,7 +134,7 @@ func (ap *AgentPool) initializeAgents() {
 	}
 
 	// Analysis Agent
-	ap.agents["analyst"] = &Agent{
+	ap.agents["analyst"] = Agent{
 		name:         "Analysis Agent",
 		role:         "analyst",
 		expertise:    "Data analysis, pattern recognition, insights generation",
@@ -144,7 +144,7 @@ func (ap *AgentPool) initializeAgents() {
 	}
 
 	// Writing Agent
-	ap.agents["writer"] = &Agent{
+	ap.agents["writer"] = Agent{
 		name:         "Writing Agent",
 		role:         "writer",
 		expertise:    "Content creation, summarization, communication",
@@ -154,7 +154,7 @@ func (ap *AgentPool) initializeAgents() {
 	}
 
 	// Coordination Agent
-	ap.agents["coordinator"] = &Agent{
+	ap.agents["coordinator"] = Agent{
 		name:         "Coordination Agent",
 		role:         "coordinator",
 		expertise:    "Task management, workflow coordination, decision making",

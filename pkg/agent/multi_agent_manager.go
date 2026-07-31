@@ -29,7 +29,7 @@ import (
 // MultiAgentManager manages multiple agents with routing and deployment capabilities
 type MultiAgentManager struct {
 	config          *MultiAgentConfig
-	agents          map[string]*Agent
+	agents          map[string]Agent // Changed from map[string]Agent to map[string]Agent
 	llmManager      *llm.ProviderManager
 	toolRegistry    *tools.ToolRegistry
 	router          *mux.Router
@@ -122,7 +122,7 @@ func NewMultiAgentManager(config *MultiAgentConfig, llmManager *llm.ProviderMana
 
 	manager := &MultiAgentManager{
 		config:         config,
-		agents:         make(map[string]*Agent),
+		agents:         make(map[string]Agent),
 		llmManager:     llmManager,
 		toolRegistry:   toolRegistry,
 		router:         mux.NewRouter(),
@@ -176,8 +176,8 @@ func (mam *MultiAgentManager) initializeAgents() error {
 			agentConfig.ID = agentID
 		}
 
-		// Create agent instance
-		var agent *Agent
+		// Create agent instance (as Agent interface)
+		var agent Agent
 		var err error
 
 		// Check if agent is defined programmatically first
@@ -200,6 +200,7 @@ func (mam *MultiAgentManager) initializeAgents() error {
 			}
 
 			if isFactory {
+				// CreateAgentFromFactory returns Agent interface
 				agent, err = registry.CreateAgentFromFactory(agentID, mam.llmManager, mam.toolRegistry)
 				if err != nil {
 					return fmt.Errorf("failed to create agent %s from factory: %w", agentID, err)
@@ -207,6 +208,7 @@ func (mam *MultiAgentManager) initializeAgents() error {
 				mam.logger.WithField("agent_id", agentID).Info("Agent created from factory")
 			} else {
 				// Fall back to config-based agent creation
+				// NewAgent returns *BaseAgent which implements Agent interface
 				agent = NewAgent(agentConfig, mam.llmManager, mam.toolRegistry)
 				mam.logger.WithField("agent_id", agentID).Info("Agent created from config")
 			}
@@ -605,7 +607,7 @@ func (mam *MultiAgentManager) metricsMiddleware(next http.Handler) http.Handler 
 }
 
 // Helper methods
-func (mam *MultiAgentManager) getAgent(agentID string) (*Agent, bool) {
+func (mam *MultiAgentManager) getAgent(agentID string) (Agent, bool) {
 	mam.mu.RLock()
 	defer mam.mu.RUnlock()
 

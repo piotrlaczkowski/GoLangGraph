@@ -208,12 +208,12 @@ func TestQuickBuilder_Specialized(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		create func() *agent.Agent
+		create func() agent.Agent
 	}{
-		{"Researcher", func() *agent.Agent { return builder.Researcher("TestResearcher") }},
-		{"Writer", func() *agent.Agent { return builder.Writer("TestWriter") }},
-		{"Analyst", func() *agent.Agent { return builder.Analyst("TestAnalyst") }},
-		{"Coder", func() *agent.Agent { return builder.Coder("TestCoder") }},
+		{"Researcher", func() agent.Agent { return builder.Researcher("TestResearcher") }},
+		{"Writer", func() agent.Agent { return builder.Writer("TestWriter") }},
+		{"Analyst", func() agent.Agent { return builder.Analyst("TestAnalyst") }},
+		{"Coder", func() agent.Agent { return builder.Coder("TestCoder") }},
 	}
 
 	for _, tt := range tests {
@@ -241,7 +241,7 @@ func TestQuickBuilder_Multi(t *testing.T) {
 
 	// Test adding agents
 	chatAgent := builder.Chat("TestChat")
-	multi.AddAgent("chat", chatAgent)
+	multi.RegisterAgent("chat", chatAgent)
 
 	agents := multi.ListAgents()
 	if len(agents) != 1 {

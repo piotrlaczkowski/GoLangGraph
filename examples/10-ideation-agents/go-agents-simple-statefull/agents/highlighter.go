@@ -257,7 +257,7 @@ Provide comprehensive structured analysis that helps inform design decisions and
 }
 
 // CreateAgent creates an enhanced Highlighter agent with analysis workflow
-func (h *HighlighterDefinition) CreateAgent() (*agent.Agent, error) {
+func (h *HighlighterDefinition) CreateAgent() (agent.Agent, error) {
 	baseAgent, err := h.BaseAgentDefinition.CreateAgent()
 	if err != nil {
 		return nil, err
@@ -821,8 +821,8 @@ func (h *HighlighterDefinition) calculateQualityScore(insights []string, themes 
 }
 
 // GetHighlighterConfig returns the configuration for backward compatibility
-func GetHighlighterConfig() *agent.AgentConfig {
+func GetHighlighterConfig() agent.AgentConfig {
 	// For backward compatibility, create a temporary instance
 	temp := NewHighlighterDefinition()
-	return temp.GetConfig()
+	return *temp.GetConfig()
 }

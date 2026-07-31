@@ -8,6 +8,7 @@ package llm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -89,6 +90,7 @@ func (p *OpenAIProvider) Complete(ctx context.Context, req CompletionRequest) (*
 // CompleteStream generates a streaming completion
 func (p *OpenAIProvider) CompleteStream(ctx context.Context, req CompletionRequest, callback StreamCallback) error {
 	openaiReq := p.convertToOpenAIRequest(req)
+	openaiReq.Stream = true
 
 	stream, err := p.client.CreateChatCompletionStream(ctx, openaiReq)
 	if err != nil {
@@ -97,9 +99,12 @@ func (p *OpenAIProvider) CompleteStream(ctx context.Context, req CompletionReque
 	defer stream.Close()
 
 	for {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		response, err := stream.Recv()
 		if err != nil {
-			if err.Error() == "EOF" {
+			if err.Error() == "EOF" || errors.Is(err, context.Canceled) {
 				break
 			}
 			return fmt.Errorf("stream error: %w", err)
@@ -108,6 +113,10 @@ func (p *OpenAIProvider) CompleteStream(ctx context.Context, req CompletionReque
 		// Convert to our format and call callback
 		converted := p.convertFromOpenAIStreamResponse(response)
 		if err := callback(converted); err != nil {
+			// Propagate early-exit unwrapped so CollectStream can treat it as success.
+			if IsStreamEarlyExit(err) {
+				return err
+			}
 			return fmt.Errorf("callback error: %w", err)
 		}
 	}
@@ -331,13 +340,18 @@ func (p *OpenAIProvider) convertFromOpenAIStreamResponse(resp openai.ChatComplet
 			Content: choice.Delta.Content,
 		}
 
-		// Convert tool calls in delta
+		// Convert tool calls in delta (preserve Index for stream accumulation)
 		if len(choice.Delta.ToolCalls) > 0 {
 			toolCalls := make([]ToolCall, len(choice.Delta.ToolCalls))
 			for j, tc := range choice.Delta.ToolCalls {
+				idx := j
+				if tc.Index != nil {
+					idx = *tc.Index
+				}
 				toolCalls[j] = ToolCall{
-					ID:   tc.ID,
-					Type: string(tc.Type),
+					ID:    tc.ID,
+					Type:  string(tc.Type),
+					Index: idx,
 					Function: FunctionCall{
 						Name:      tc.Function.Name,
 						Arguments: tc.Function.Arguments,
@@ -444,34 +458,11 @@ func (p *OpenAIProvider) completeNonStreaming(ctx context.Context, req Completio
 	return p.Complete(ctx, req)
 }
 
-// completeStreamingCollected forces streaming but collects all chunks into single response
+// completeStreamingCollected forces streaming but collects all chunks into single response.
+// When req.EarlyExit fires, the remainder of the token stream is cancelled and the
+// accumulated content/tool-calls are returned successfully (FinishReason=early_exit).
 func (p *OpenAIProvider) completeStreamingCollected(ctx context.Context, req CompletionRequest) (*CompletionResponse, error) {
-	var completeContent strings.Builder
-	var finalResponse *CompletionResponse
-
-	err := p.CompleteStream(ctx, req, func(chunk CompletionResponse) error {
-		if len(chunk.Choices) > 0 {
-			completeContent.WriteString(chunk.Choices[0].Delta.Content)
-			finalResponse = &chunk
-		}
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	if finalResponse != nil {
-		// Convert delta to complete message
-		finalResponse.Choices[0].Message = Message{
-			Role:    finalResponse.Choices[0].Delta.Role,
-			Content: completeContent.String(),
-		}
-		finalResponse.Choices[0].Delta = Message{} // Clear delta
-		finalResponse.Object = "chat.completion"   // Change from chunk to completion
-	}
-
-	return finalResponse, nil
+	return CollectStream(ctx, p.CompleteStream, req)
 }
 
 // SupportsToolCalls returns true if the provider supports tool calls

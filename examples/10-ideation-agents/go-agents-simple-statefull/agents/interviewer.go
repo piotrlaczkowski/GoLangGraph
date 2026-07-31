@@ -181,7 +181,7 @@ Adapt your interview style based on the user's responses and engagement level.`,
 }
 
 // CreateAgent creates an enhanced Interviewer agent with custom processing
-func (i *InterviewerDefinition) CreateAgent() (*agent.Agent, error) {
+func (i *InterviewerDefinition) CreateAgent() (agent.Agent, error) {
 	baseAgent, err := i.BaseAgentDefinition.CreateAgent()
 	if err != nil {
 		return nil, err
@@ -508,8 +508,8 @@ func findInString(text, substring string) bool {
 }
 
 // GetInterviewerConfig returns the configuration for backward compatibility
-func GetInterviewerConfig() *agent.AgentConfig {
+func GetInterviewerConfig() agent.AgentConfig {
 	// For backward compatibility, create a temporary instance
 	temp := NewInterviewerDefinition()
-	return temp.GetConfig()
+	return *temp.GetConfig()
 }

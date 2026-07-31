@@ -30,7 +30,7 @@ type AutoServer struct {
 	logger       *logrus.Logger
 
 	// Dynamic agent instances
-	agentInstances map[string]*agent.Agent
+	agentInstances map[string]agent.Agent
 	agentMetadata  map[string]map[string]interface{}
 
 	// Metrics tracking
@@ -98,7 +98,7 @@ func NewAutoServer(config *AutoServerConfig) *AutoServer {
 		router:         router,
 		config:         config,
 		logger:         logger,
-		agentInstances: make(map[string]*agent.Agent),
+		agentInstances: make(map[string]agent.Agent),
 		agentMetadata:  make(map[string]map[string]interface{}),
 		startTime:      time.Now(),
 		requestCount:   0,

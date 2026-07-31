@@ -133,9 +133,10 @@ func SimpleAgentDemo() {
 	history := agentInstance.GetExecutionHistory()
 	fmt.Printf("Total executions: %d\n", len(history))
 	for i, exec := range history {
+		outputStr, _ := exec.Output.(string)
 		fmt.Printf("%d. %s -> %s (Success: %v)\n", i+1,
 			truncateString(exec.Input, 50),
-			truncateString(exec.Output, 50),
+			truncateString(outputStr, 50),
 			exec.Success)
 	}
 

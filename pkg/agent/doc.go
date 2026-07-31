@@ -104,12 +104,12 @@
 //
 // The package supports multi-agent systems where agents can coordinate and collaborate:
 //
-//	coordinator := agent.NewMultiAgentCoordinator()
+//	coordinator := agent.NewMultiAgentCoordinator(nil)
 //
 //	// Add agents to the coordinator
-//	coordinator.AddAgent("researcher", researchAgent)
-//	coordinator.AddAgent("writer", writerAgent)
-//	coordinator.AddAgent("reviewer", reviewAgent)
+//	coordinator.RegisterAgent("researcher", researchAgent)
+//	coordinator.RegisterAgent("writer", writerAgent)
+//	coordinator.RegisterAgent("reviewer", reviewAgent)
 //
 //	// Execute coordinated workflow
 //	result, err := coordinator.Execute(ctx, task)

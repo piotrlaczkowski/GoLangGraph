@@ -270,6 +270,9 @@ func (p *OllamaProvider) CompleteStream(ctx context.Context, req CompletionReque
 		// Convert to our format and call callback
 		converted := p.convertFromOllamaStreamResponse(ollamaResp)
 		if err := callback(converted); err != nil {
+			if IsStreamEarlyExit(err) {
+				return err
+			}
 			return fmt.Errorf("callback error: %w", err)
 		}
 
@@ -596,34 +599,10 @@ func (p *OllamaProvider) completeNonStreaming(ctx context.Context, req Completio
 	return p.Complete(ctx, req)
 }
 
-// completeStreamingCollected forces streaming but collects all chunks into single response
+// completeStreamingCollected forces streaming but collects all chunks into single response.
+// Supports req.EarlyExit to cancel wasted tokens once a complete JSON/tool result is formed.
 func (p *OllamaProvider) completeStreamingCollected(ctx context.Context, req CompletionRequest) (*CompletionResponse, error) {
-	var completeContent strings.Builder
-	var finalResponse *CompletionResponse
-
-	err := p.CompleteStream(ctx, req, func(chunk CompletionResponse) error {
-		if len(chunk.Choices) > 0 {
-			completeContent.WriteString(chunk.Choices[0].Delta.Content)
-			finalResponse = &chunk
-		}
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	if finalResponse != nil {
-		// Convert delta to complete message
-		finalResponse.Choices[0].Message = Message{
-			Role:    finalResponse.Choices[0].Delta.Role,
-			Content: completeContent.String(),
-		}
-		finalResponse.Choices[0].Delta = Message{} // Clear delta
-		finalResponse.Object = "chat.completion"   // Change from chunk to completion
-	}
-
-	return finalResponse, nil
+	return CollectStream(ctx, p.CompleteStream, req)
 }
 
 // SupportsToolCalls returns true if the provider supports tool calls

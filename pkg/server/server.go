@@ -828,7 +828,7 @@ func (s *Server) handleAgentWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) streamAgentExecution(conn *websocket.Conn, agent *agent.Agent, input string) {
+func (s *Server) streamAgentExecution(conn *websocket.Conn, agent agent.Agent, input string) {
 	ctx := context.Background()
 
 	// Send start message
@@ -1137,7 +1137,7 @@ func (s *Server) handlePlaygroundAgentTest(w http.ResponseWriter, r *http.Reques
 
 // AgentManager manages multiple agents
 type AgentManager struct {
-	agents       map[string]*agent.Agent
+	agents       map[string]agent.Agent
 	llmManager   *llm.ProviderManager
 	toolRegistry *tools.ToolRegistry
 	mu           sync.RWMutex
@@ -1146,14 +1146,15 @@ type AgentManager struct {
 // NewAgentManager creates a new agent manager
 func NewAgentManager(llmManager *llm.ProviderManager, toolRegistry *tools.ToolRegistry) *AgentManager {
 	return &AgentManager{
-		agents:       make(map[string]*agent.Agent),
+		agents:       make(map[string]agent.Agent),
 		llmManager:   llmManager,
 		toolRegistry: toolRegistry,
 	}
 }
 
 // CreateAgent creates a new agent
-func (am *AgentManager) CreateAgent(config *agent.AgentConfig) (*agent.Agent, error) {
+// CreateAgent creates a new agent
+func (am *AgentManager) CreateAgent(config *agent.AgentConfig) (agent.Agent, error) {
 	am.mu.Lock()
 	defer am.mu.Unlock()
 
@@ -1164,7 +1165,7 @@ func (am *AgentManager) CreateAgent(config *agent.AgentConfig) (*agent.Agent, er
 }
 
 // GetAgent retrieves an agent by ID
-func (am *AgentManager) GetAgent(id string) (*agent.Agent, bool) {
+func (am *AgentManager) GetAgent(id string) (agent.Agent, bool) {
 	am.mu.RLock()
 	defer am.mu.RUnlock()
 
