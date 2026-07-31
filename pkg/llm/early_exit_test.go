@@ -182,13 +182,13 @@ func TestCollectStreamEstimatesUsageWhenEmpty(t *testing.T) {
 }
 
 func TestEstimateTokensHeuristic(t *testing.T) {
-	if EstimateTokens("") != 0 {
+	if estimateTokensHeuristic("") != 0 {
 		t.Fatal("empty")
 	}
-	if EstimateTokens("abcd") != 1 {
-		t.Fatalf("got %d", EstimateTokens("abcd"))
+	if estimateTokensHeuristic("abcd") != 1 {
+		t.Fatalf("got %d", estimateTokensHeuristic("abcd"))
 	}
-	if EstimateTokens(strings.Repeat("x", 40)) != 10 {
-		t.Fatalf("got %d", EstimateTokens(strings.Repeat("x", 40)))
+	if estimateTokensHeuristic(strings.Repeat("x", 40)) != 10 {
+		t.Fatalf("got %d", estimateTokensHeuristic(strings.Repeat("x", 40)))
 	}
 }

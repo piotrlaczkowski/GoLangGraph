@@ -10,12 +10,58 @@
 
 package llm
 
-import "strings"
+import (
+	"strings"
+	"sync"
 
-// EstimateTokens approximates token count with a tiktoken-lite heuristic:
-// ~4 chars/token for ASCII-heavy text, with a small message overhead.
-// Used when providers omit usage (common on stream early_exit).
+	"github.com/pkoukk/tiktoken-go"
+	tiktoken_loader "github.com/pkoukk/tiktoken-go-loader"
+)
+
+func init() {
+	// Prefer offline BPE dictionaries so estimation works without network.
+	tiktoken.SetBpeLoader(tiktoken_loader.NewOfflineLoader())
+}
+
+var (
+	encOnce sync.Once
+	enc     *tiktoken.Tiktoken
+	encOK   bool
+)
+
+func tokenizer() (*tiktoken.Tiktoken, bool) {
+	encOnce.Do(func() {
+		tke, err := tiktoken.GetEncoding("cl100k_base")
+		if err != nil {
+			return
+		}
+		enc = tke
+		encOK = true
+	})
+	return enc, encOK
+}
+
+// TokenizerAvailable reports whether a real tiktoken encoding is loaded.
+func TokenizerAvailable() bool {
+	_, ok := tokenizer()
+	return ok
+}
+
+// EstimateTokens counts tokens with cl100k_base (tiktoken) when available,
+// otherwise falls back to a ~4 chars/token heuristic. Used when providers
+// omit usage (common on stream early_exit).
 func EstimateTokens(text string) int {
+	if text == "" {
+		return 0
+	}
+	if tke, ok := tokenizer(); ok {
+		return len(tke.Encode(text, nil, nil))
+	}
+	return estimateTokensHeuristic(text)
+}
+
+// estimateTokensHeuristic is the chars/4 fallback when tiktoken is unavailable.
+func estimateTokensHeuristic(text string) int {
 	n := len(text)
 	if n == 0 {
 		return 0
@@ -93,5 +139,10 @@ func EnsureUsage(resp *CompletionResponse, req CompletionRequest) bool {
 		resp.Metadata = map[string]interface{}{}
 	}
 	resp.Metadata["usage_estimated"] = true
+	if TokenizerAvailable() {
+		resp.Metadata["usage_tokenizer"] = "cl100k_base"
+	} else {
+		resp.Metadata["usage_tokenizer"] = "heuristic"
+	}
 	return true
 }
