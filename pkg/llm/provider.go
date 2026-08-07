@@ -562,6 +562,16 @@ func (ch *ConversationHistory) AddMessage(message Message) {
 	ch.messages = append(ch.messages, message)
 }
 
+// ReplaceMessage overwrites the message at index i (no-op if out of range).
+func (ch *ConversationHistory) ReplaceMessage(i int, message Message) {
+	ch.mu.Lock()
+	defer ch.mu.Unlock()
+	if i < 0 || i >= len(ch.messages) {
+		return
+	}
+	ch.messages[i] = message
+}
+
 // GetMessages returns all messages in the conversation
 func (ch *ConversationHistory) GetMessages() []Message {
 	ch.mu.RLock()

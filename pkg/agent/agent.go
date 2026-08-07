@@ -315,12 +315,15 @@ func (a *BaseAgent) buildReActGraph() {
 	observeNode.Metadata["type"] = "observation"
 	finalizeNode.Metadata["type"] = "finalization"
 
-	// Define edges with conditions
-	a.graph.AddEdge("reason", "act", a.shouldAct)
-	a.graph.AddEdge("reason", "finalize", a.shouldFinalize)
-	a.graph.AddEdge("act", "observe", a.shouldObserve) // Conditional edge to handle interrupts
-	a.graph.AddEdge("observe", "reason", a.shouldContinueReasoning)
-	a.graph.AddEdge("observe", "finalize", a.shouldFinalize)
+	// Define edges with conditions.
+	// IMPORTANT: do not add a parallel always-true finalize edge. Edges live in a
+	// map, so iteration order is random — an always-matching finalize raced with
+	// act/reason and skipped tool execution (DeepSeek 400: unpaired tool_calls).
+	a.graph.AddEdge("reason", "act", a.shouldAct) // returns "act" or "finalize"
+	a.graph.AddEdge("reason", "finalize", a.shouldAct)
+	a.graph.AddEdge("act", "observe", a.shouldObserve)              // Conditional edge to handle interrupts
+	a.graph.AddEdge("observe", "reason", a.shouldContinueReasoning) // "reason" or "finalize"
+	a.graph.AddEdge("observe", "finalize", a.shouldContinueReasoning)
 
 	// Set start and end nodes
 	a.graph.SetStartNode("reason")
@@ -671,17 +674,66 @@ func (a *BaseAgent) actNode(ctx context.Context, state *core.BaseState) (*core.B
 		// Resume commands would be handled by HITL system
 	}
 
-	// Convert tool messages to action results
+	// Ensure tool call IDs exist and mirror them onto the last assistant message.
+	// Strict OpenAI-compat APIs (DeepSeek) reject empty/mismatched tool_call_id pairs.
+	for i := range toolCalls {
+		if strings.TrimSpace(toolCalls[i].ID) == "" {
+			toolCalls[i].ID = uuid.NewString()
+		}
+		if toolCalls[i].Type == "" {
+			toolCalls[i].Type = "function"
+		}
+	}
+	a.ensureAssistantToolCallIDs(toolCalls)
+
+	// Convert tool messages to action results and append role=tool replies so the
+	// next reason step has a valid OpenAI tool-call conversation shape.
 	var results []string
-	for _, msg := range messages {
+	for i, msg := range messages {
+		if strings.TrimSpace(msg.ToolCallID) == "" && i < len(toolCalls) {
+			msg.ToolCallID = toolCalls[i].ID
+		}
+		if msg.Role == "" {
+			msg.Role = "tool"
+		}
 		results = append(results, msg.Content)
+		a.conversation.AddMessage(msg)
 	}
 
 	state.Set("action", strings.Join(results, "\n"))
 	state.Set("tool_calls", toolCalls)
+	state.Set("tool_messages_added", true)
 
 	a.logger.WithField("tool_calls", len(toolCalls)).Info("Agent action completed")
 	return state, nil
+}
+
+// ensureAssistantToolCallIDs rewrites the most recent assistant tool_calls to match
+// the IDs used for subsequent role=tool messages.
+func (a *BaseAgent) ensureAssistantToolCallIDs(toolCalls []llm.ToolCall) {
+	if a.conversation == nil || len(toolCalls) == 0 {
+		return
+	}
+	msgs := a.conversation.GetMessages()
+	for i := len(msgs) - 1; i >= 0; i-- {
+		if msgs[i].Role != "assistant" || len(msgs[i].ToolCalls) == 0 {
+			continue
+		}
+		updated := msgs[i]
+		calls := make([]llm.ToolCall, len(updated.ToolCalls))
+		copy(calls, updated.ToolCalls)
+		for j := range calls {
+			if j < len(toolCalls) {
+				calls[j].ID = toolCalls[j].ID
+				if calls[j].Type == "" {
+					calls[j].Type = toolCalls[j].Type
+				}
+			}
+		}
+		updated.ToolCalls = calls
+		a.conversation.ReplaceMessage(i, updated)
+		return
+	}
 }
 
 // observeNode implements the observation step in ReAct
@@ -692,11 +744,17 @@ func (a *BaseAgent) observeNode(ctx context.Context, state *core.BaseState) (*co
 	observation := fmt.Sprintf("Observation: %v", action)
 	state.Set("observation", observation)
 
-	// Add observation to conversation
-	a.conversation.AddMessage(llm.Message{
-		Role:    "assistant",
-		Content: observation,
-	})
+	// When actNode already appended role=tool messages, do NOT add another
+	// assistant "Observation:" turn — that leaves orphan tool_calls and breaks
+	// strict providers (DeepSeek 400: insufficient tool messages).
+	toolMsgsAdded, _ := state.Get("tool_messages_added")
+	if toolMsgsAdded != true {
+		a.conversation.AddMessage(llm.Message{
+			Role:    "user",
+			Content: observation,
+		})
+	}
+	state.Set("tool_messages_added", false)
 
 	// Increment iteration
 	iteration, _ := state.Get("iteration")
@@ -730,14 +788,17 @@ func (a *BaseAgent) finalizeNode(ctx context.Context, state *core.BaseState) (*c
 	}
 
 	output := resp.Choices[0].Message.Content
-	// SLMs often emit raw tool-call XML as "final" — prefer last observation / strip junk.
-	if looksLikeToolCallJunk(output) {
+	// SLMs often emit empty replies or raw tool-call XML as "final" — recover from
+	// the last observation when possible instead of leaving an unusable finish.
+	if strings.TrimSpace(output) == "" || looksLikeToolCallJunk(output) {
 		if obs, ok := state.Get("observation"); ok {
 			if s, ok := obs.(string); ok && strings.TrimSpace(s) != "" {
-				output = fmt.Sprintf(`{"status":"done","summary":%q,"notes":"recovered from tool-junk finalize"}`, truncateStr(s, 500))
+				output = fmt.Sprintf(`{"status":"done","summary":%q,"notes":"recovered from incomplete finalize"}`, truncateStr(s, 500))
 			}
 		}
-		if looksLikeToolCallJunk(output) {
+		if strings.TrimSpace(output) == "" {
+			output = `{"status":"blocked","summary":"empty finalize","notes":"retry with clearer finish instruction"}`
+		} else if looksLikeToolCallJunk(output) {
 			output = `{"status":"blocked","summary":"model ended on a tool call","notes":"retry with clearer finish instruction"}`
 		}
 	}
@@ -1045,7 +1106,7 @@ func (a *BaseAgent) shouldReplan(ctx context.Context, state *core.BaseState) (st
 // Helper methods
 
 func (a *BaseAgent) buildReasoningMessages(state *core.BaseState) []llm.Message {
-	messages := a.conversation.GetMessages()
+	messages := sanitizeToolPairing(a.conversation.GetMessages())
 
 	// Add system prompt
 	if a.config.SystemPrompt != "" {
@@ -1060,7 +1121,54 @@ func (a *BaseAgent) buildReasoningMessages(state *core.BaseState) []llm.Message 
 }
 
 func (a *BaseAgent) buildFinalizationMessages(state *core.BaseState) []llm.Message {
-	return a.buildReasoningMessages(state)
+	messages := a.buildReasoningMessages(state)
+	messages = sanitizeToolPairing(messages)
+	// Explicit finish steer — SLMs otherwise often emit another tool call as "final".
+	messages = append(messages, llm.Message{
+		Role: "user",
+		Content: "Finalize now. Do NOT emit tool calls or <tool_call> XML. " +
+			`Reply with STRICT JSON only: {"status":"done|blocked","summary":"...","files_changed":[],"notes":""}`,
+	})
+	return messages
+}
+
+// sanitizeToolPairing drops trailing unpaired assistant tool_calls (or injects
+// stub tool errors) so strict OpenAI-compat APIs accept the history.
+func sanitizeToolPairing(messages []llm.Message) []llm.Message {
+	if len(messages) == 0 {
+		return messages
+	}
+	out := make([]llm.Message, 0, len(messages)+4)
+	for i := 0; i < len(messages); i++ {
+		m := messages[i]
+		if m.Role != "assistant" || len(m.ToolCalls) == 0 {
+			out = append(out, m)
+			continue
+		}
+		needed := make(map[string]bool, len(m.ToolCalls))
+		for _, tc := range m.ToolCalls {
+			if id := strings.TrimSpace(tc.ID); id != "" {
+				needed[id] = true
+			}
+		}
+		j := i + 1
+		for j < len(messages) && messages[j].Role == "tool" {
+			delete(needed, messages[j].ToolCallID)
+			j++
+		}
+		out = append(out, m)
+		for ; i+1 < j; i++ {
+			out = append(out, messages[i+1])
+		}
+		for id := range needed {
+			out = append(out, llm.Message{
+				Role:       "tool",
+				ToolCallID: id,
+				Content:    "Error: tool call was not executed (routing skipped act)",
+			})
+		}
+	}
+	return out
 }
 
 func (a *BaseAgent) parseToolCalls(content string) []llm.ToolCall {
